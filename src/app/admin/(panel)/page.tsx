@@ -279,7 +279,7 @@ export default async function AdminDashboardPage() {
                     fontWeight: 500,
                   }}>
                     {(() => {
-                      const eventsValue = reg.events
+                      const eventsValue = reg.events as { title?: string } | { title?: string }[] | null | undefined
                       const title = Array.isArray(eventsValue)
                         ? eventsValue[0]?.title
                         : eventsValue?.title
