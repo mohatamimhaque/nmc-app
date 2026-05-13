@@ -348,12 +348,12 @@ export function EventsSettingsForm({
   }
 
   const toggleVisibility = async (event: Event) => {
-    const nextStatus = event.status === 'published'
+    const nextStatus: Event['status'] = event.status === 'published'
       ? 'hidden'
       : event.status === 'hidden'
         ? 'published'
         : 'hidden'
-    const updated = { ...event, status: nextStatus }
+    const updated: Event = { ...event, status: nextStatus }
 
     setEvents(prev => prev.map(item => (item.id === event.id ? updated : item)))
     await fetch('/api/admin/events', {
