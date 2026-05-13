@@ -6,6 +6,7 @@ import JSZip from 'jszip'
 import * as XLSX from 'xlsx'
 import type { Adviser } from '@/types/database'
 import { GlassCard, StatCard } from './GlassCard'
+import { RichTextField } from '@/components/shared/RichTextField'
 
 interface AdvisersSettingsFormProps {
   initialAdvisers: Adviser[]
@@ -34,7 +35,6 @@ interface BulkPreviewRow {
   photo_preview_url: string | null
   photo_matched: boolean
 }
-  import { RichTextField } from '@/components/shared/RichTextField'
 
 const EMPTY_ADVISER: Adviser = {
   id: '',
@@ -45,14 +45,20 @@ const EMPTY_ADVISER: Adviser = {
   expertise_tags: [],
   photo_url: null,
   email: '',
-    return (
-      <RichTextField
-        label={label}
-        value={value}
-        onChange={onChange}
-        minHeight={140}
-      />
-    )
+  phone: '',
+  linkedin_url: '',
+  bio: '',
+  show_email: false,
+  show_phone: false,
+  is_visible: true,
+  is_disabled: false,
+  sort_order: 1,
+  created_at: '',
+  updated_at: '',
+}
+
+export function AdvisersSettingsForm({ initialAdvisers }: AdvisersSettingsFormProps) {
+  const router = useRouter()
   const [advisers, setAdvisers] = useState<Adviser[]>(initialAdvisers)
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState<ToastState | null>(null)
