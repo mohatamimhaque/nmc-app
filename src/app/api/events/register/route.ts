@@ -160,7 +160,7 @@ export async function POST(request: Request) {
       }
     }
 
-    const enrichedFields = [] as Array<{ id: string; label: string; type: string; value: string | null }>
+    const enrichedFields = [] as Array<{ id: string; label: string; type: string; value: string | string[] | null }>
 
     for (const field of fields as any[]) {
       if (field.is_visible === false) continue
