@@ -289,7 +289,7 @@ export async function POST(request: Request) {
 			.in('sub_committee_id', requestedSubCommitteeIds)
 			.order('sort_order', { ascending: false })
 
-		const nextSortOrderBySubCommittee: Record<string, number> = {}
+		const nextSortOrderBySubCommittee: Record<string, number> = {};
 		(existingMembers ?? []).forEach(item => {
 			const current = nextSortOrderBySubCommittee[item.sub_committee_id] ?? 0
 			nextSortOrderBySubCommittee[item.sub_committee_id] = Math.max(current, item.sort_order ?? 0)
