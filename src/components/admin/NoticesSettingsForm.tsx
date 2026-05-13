@@ -389,7 +389,7 @@ function RichTextField({
     const current = editor.getHTML()
     const next = value || '<p></p>'
     if (current !== next) {
-      editor.commands.setContent(next, false)
+      editor.commands.setContent(next, { emitUpdate: false })
     }
   }, [editor, value])
 
