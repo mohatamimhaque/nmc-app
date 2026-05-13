@@ -54,7 +54,7 @@ export async function getAllPageVisibility(): Promise<PageVisibility[]> {
 
 /** Returns true if a top-level page is visible */
 export async function isPageVisible(pageKey: string): Promise<boolean> {
-  const supabase = createServerClient()
+  const supabase = await createClient()
   const { data } = await supabase
     .from('page_visibility')
     .select('is_visible')
