@@ -191,7 +191,7 @@ export async function PATCH(request: Request) {
     }
   }
 
-  const sectionIds = new Set(sections.map(section => section.id))
+  const sectionIds = new Set(sections.map((section: { id: string }) => section.id))
 
   const fields = fieldsInput
     .filter((item: any) => item?.label)
