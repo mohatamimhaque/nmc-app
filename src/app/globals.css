@@ -1,0 +1,419 @@
+/* ─────────────────────────────────────────────
+   GOOGLE FONTS — must be first @import
+───────────────────────────────────────────── */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@400;600;700;900&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Montserrat:wght@400;500;600;700&family=Open+Sans:wght@400;500;600;700&family=Roboto:wght@400;500;700&family=Lato:wght@400;700&family=Oswald:wght@400;500;600;700&display=swap");
+
+@import "tailwindcss";
+
+/* ─────────────────────────────────────────────
+   PUBLIC SITE — LIGHT MODE TOKENS
+───────────────────────────────────────────── */
+:root {
+  /* Background & Surface */
+  --background: #f6f7fb;
+  --surface:    #ffffff;
+  --surface-2:  #eef1f8;
+  --foreground: #0b1020;
+  --foreground-muted: #5d6476;
+
+  /* Brand Palette */
+  --color-primary:   #2563eb;   /* Blue */
+  --color-secondary: #06b6d4;   /* Cyan */
+  --color-accent:    #f97316;   /* Orange */
+
+  /* Buttons */
+  --color-btn-bg:   #2563eb;
+  --color-btn-text: #ffffff;
+
+  /* Navbar & Footer */
+  --color-navbar-bg: #ffffff;
+  --color-footer-bg: #0b1020;
+
+  /* Hero */
+  --color-hero-overlay: rgba(11, 16, 32, 0.55);
+
+  /* Links */
+  --color-link: #2563eb;
+
+  /* Borders */
+  --border: #e2e8f0;
+  --border-muted: #f1f5f9;
+
+  /* Shadows */
+  --shadow-sm: 0 2px 6px rgba(15, 23, 42, 0.08);
+  --shadow-md: 0 12px 28px rgba(15, 23, 42, 0.12);
+  --shadow-lg: 0 24px 60px rgba(15, 23, 42, 0.16);
+
+  /* Countdown / Status */
+  --color-danger:  #e11d48;
+  --color-warning: #f59e0b;
+  --color-success: #16a34a;
+
+  /* Typography */
+  --font-heading: "Playfair Display", serif;
+  --font-body:    "Inter", sans-serif;
+  --font-mono:    "JetBrains Mono", monospace;
+
+  /* Radius */
+  --radius-sm: 8px;
+  --radius:    12px;
+  --radius-lg: 18px;
+  --radius-xl: 28px;
+}
+
+/* ─────────────────────────────────────────────
+   PUBLIC SITE — DARK MODE TOKENS
+───────────────────────────────────────────── */
+.dark {
+  --background: #0b1020;
+  --surface:    #11182b;
+  --surface-2:  #1a2340;
+  --foreground: #f5f7ff;
+  --foreground-muted: #a7afc2;
+
+  --color-primary:   #60a5fa;
+  --color-secondary: #22d3ee;
+  --color-accent:    #fb923c;
+
+  --color-btn-bg:   #60a5fa;
+  --color-btn-text: #0b1020;
+
+  --color-navbar-bg: #11182b;
+  --color-footer-bg: #080c18;
+
+  --color-hero-overlay: rgba(8, 12, 24, 0.7);
+  --color-link: #60a5fa;
+
+  --border: #1f2a44;
+  --border-muted: #121a2e;
+
+  --shadow-sm: 0 2px 6px rgba(3, 7, 18, 0.5);
+  --shadow-md: 0 18px 36px rgba(3, 7, 18, 0.55);
+  --shadow-lg: 0 32px 70px rgba(3, 7, 18, 0.65);
+}
+
+/* ─────────────────────────────────────────────
+   ADMIN PANEL — MATHEMATICS THEME (LIGHT)
+───────────────────────────────────────────── */
+.admin-light {
+  --admin-bg:           #eef1f8;
+  --admin-surface:      rgba(255,255,255,0.9);
+  --admin-surface-blur: rgba(255,255,255,0.7);
+  --admin-fg:           #0b1020;
+  --admin-fg-muted:     #5d6476;
+  --admin-sidebar-bg:   #141a33;
+  --admin-sidebar-fg:   #e6e9ff;
+  --admin-border:       rgba(37,99,235,0.18);
+
+  /* Maths accent palette */
+  --euler-blue:     #2563eb;   /* Euler Blue */
+  --theorem-green:  #16a34a;   /* Theorem Green */
+  --prime-purple:   #7c3aed;   /* Prime Purple */
+  --calculus-orange:#f97316;   /* Calculus Orange */
+
+  --admin-accent:   var(--euler-blue);
+}
+
+/* ─────────────────────────────────────────────
+   ADMIN PANEL — MATHEMATICS THEME (DARK)
+───────────────────────────────────────────── */
+.admin-dark,
+[data-admin-theme="dark"] {
+  --admin-bg:           #0b1020;
+  --admin-surface:      rgba(17,24,43,0.9);
+  --admin-surface-blur: rgba(17,24,43,0.7);
+  --admin-fg:           #f5f7ff;
+  --admin-fg-muted:     #a7afc2;
+  --admin-sidebar-bg:   #080c18;
+  --admin-sidebar-fg:   #cfd6ff;
+  --admin-border:       rgba(96,165,250,0.2);
+
+  --euler-blue:     #60a5fa;
+  --theorem-green:  #22c55e;
+  --prime-purple:   #a78bfa;
+  --calculus-orange:#fb923c;
+
+  --admin-accent:   var(--euler-blue);
+}
+
+/* ─────────────────────────────────────────────
+   TAILWIND THEME BRIDGE
+───────────────────────────────────────────── */
+@theme inline {
+  --color-background:  var(--background);
+  --color-foreground:  var(--foreground);
+  --color-surface:     var(--surface);
+  --color-primary:     var(--color-primary);
+  --color-secondary:   var(--color-secondary);
+  --color-accent:      var(--color-accent);
+  --font-sans:         var(--font-body);
+  --font-mono:         var(--font-mono);
+  --font-heading:      var(--font-heading);
+}
+
+/* ─────────────────────────────────────────────
+   GLOBAL BASE
+───────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-body);
+  line-height: 1.6;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* ─────────────────────────────────────────────
+   PUBLIC SITE LAYOUT HELPERS
+───────────────────────────────────────────── */
+.public-shell {
+  position: relative;
+  min-height: 100vh;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.public-content {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+}
+
+/* ─────────────────────────────────────────────
+   TYPOGRAPHY
+───────────────────────────────────────────── */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  line-height: 1.2;
+  font-weight: 700;
+  color: var(--foreground);
+}
+
+a {
+  color: var(--color-link);
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+a:hover { opacity: 0.8; }
+
+/* ─────────────────────────────────────────────
+   TIPTAP / PROSEMIRROR BASE STYLES
+───────────────────────────────────────────── */
+.ProseMirror {
+  outline: none;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.ProseMirror p {
+  margin: 0 0 0.6rem;
+}
+
+.ProseMirror ul,
+.ProseMirror ol {
+  padding-left: 1.25rem;
+  margin: 0 0 0.6rem;
+}
+
+.ProseMirror ul {
+  list-style: disc;
+}
+
+.ProseMirror ol {
+  list-style: decimal;
+}
+
+.ProseMirror strong {
+  font-weight: 700;
+}
+
+.ProseMirror em {
+  font-style: italic;
+}
+
+.ProseMirror u {
+  text-decoration: underline;
+}
+
+.ProseMirror a {
+  color: var(--color-link);
+  text-decoration: underline;
+}
+
+/* ─────────────────────────────────────────────
+   GALLERY MASONRY RESPONSIVENESS
+───────────────────────────────────────────── */
+.gallery-masonry {
+  column-count: 3;
+}
+
+/* ─────────────────────────────────────────────
+   PUBLIC — GALLERY INTERACTIONS
+───────────────────────────────────────────── */
+.gallery-card {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.gallery-card:hover {
+  transform: translateY(-4px);
+}
+
+.gallery-card:hover .gallery-image {
+  transform: scale(1.05);
+}
+
+.gallery-card:hover .gallery-overlay {
+  opacity: 1;
+}
+
+@media (max-width: 1024px) {
+  .gallery-masonry {
+    column-count: 2;
+  }
+}
+
+@media (max-width: 640px) {
+  .gallery-masonry {
+    column-count: 1;
+  }
+}
+
+/* ─────────────────────────────────────────────
+   PUBLIC NAVBAR RESPONSIVE
+───────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .desktop-nav { display: none !important; }
+  .mobile-hamburger { display: grid !important; }
+  .cta-desktop { display: none !important; }
+}
+@media (min-width: 769px) {
+  .mobile-hamburger { display: none !important; }
+}
+
+/* ─────────────────────────────────────────────
+   ADMIN — MATH PATTERN BACKGROUND
+   Low-opacity SVG embedded as data URI
+───────────────────────────────────────────── */
+.math-bg {
+  background-color: var(--admin-bg);
+  background-image:
+    radial-gradient(circle at 15% 25%, rgba(59,91,219,0.06) 0%, transparent 50%),
+    radial-gradient(circle at 85% 75%, rgba(112,72,232,0.06) 0%, transparent 50%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Ctext x='4' y='20' font-size='11' fill='%234f46e5' opacity='0.07' font-family='serif'%3E∑%3C/text%3E%3Ctext x='40' y='40' font-size='10' fill='%237048e8' opacity='0.07' font-family='serif'%3Eπ%3C/text%3E%3Ctext x='10' y='60' font-size='9' fill='%230ca678' opacity='0.06' font-family='serif'%3E∫%3C/text%3E%3Ctext x='55' y='18' font-size='8' fill='%23f76707' opacity='0.06' font-family='serif'%3Ee%3C/text%3E%3Ctext x='62' y='65' font-size='9' fill='%234f46e5' opacity='0.06' font-family='serif'%3E√2%3C/text%3E%3Cline x1='0' y1='79' x2='80' y2='79' stroke='%234f46e5' stroke-width='0.3' opacity='0.06'/%3E%3Cline x1='0' y1='39' x2='80' y2='39' stroke='%234f46e5' stroke-width='0.3' opacity='0.04'/%3E%3C/svg%3E");
+  background-size: auto, auto, 80px 80px;
+}
+
+/* ─────────────────────────────────────────────
+   ADMIN — FROSTED GLASS CARD
+───────────────────────────────────────────── */
+.glass-card {
+  background: var(--admin-surface);
+  backdrop-filter: blur(16px) saturate(1.6);
+  -webkit-backdrop-filter: blur(16px) saturate(1.6);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+/* ─────────────────────────────────────────────
+   ADMIN — SIDEBAR
+───────────────────────────────────────────── */
+.admin-sidebar {
+  background: var(--admin-sidebar-bg);
+  color: var(--admin-sidebar-fg);
+}
+
+/* ─────────────────────────────────────────────
+   BUTTONS — PUBLIC SITE
+───────────────────────────────────────────── */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: var(--color-btn-bg);
+  color: var(--color-btn-text);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.9375rem;
+  padding: 0.65rem 1.5rem;
+  border-radius: var(--radius);
+  border: none;
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+  box-shadow: 0 4px 14px rgba(79,70,229,0.35);
+}
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(79,70,229,0.45);
+}
+.btn-primary:active { transform: translateY(0); }
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: transparent;
+  color: var(--color-primary);
+  border: 2px solid var(--color-primary);
+  font-weight: 600;
+  font-size: 0.9375rem;
+  padding: 0.6rem 1.4rem;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s, transform 0.18s;
+}
+.btn-secondary:hover {
+  background: var(--color-primary);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+/* ─────────────────────────────────────────────
+   COUNTDOWN — STATUS COLOURS
+───────────────────────────────────────────── */
+.countdown-urgent { color: var(--color-danger); }
+.countdown-normal  { color: var(--color-primary); }
+
+/* ─────────────────────────────────────────────
+   SCROLLBAR
+───────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--color-primary);
+  border-radius: 3px;
+  opacity: 0.5;
+}
+
+/* ─────────────────────────────────────────────
+   FOCUS RINGS — ACCESSIBILITY
+───────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+  border-radius: var(--radius-sm);
+}
+
+/* ─────────────────────────────────────────────
+   REDUCED MOTION
+───────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

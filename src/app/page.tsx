@@ -1,0 +1,139 @@
+import type { Metadata } from 'next'
+import { createClient } from '@/lib/supabase/server'
+import { PublicMathDivider } from '@/components/public/PublicMathDivider'
+import {
+  HeroSection,
+} from '@/components/home/HeroSections'
+import {
+  CTAStripSection,
+  EventHighlightsSection,
+  GalleryPreviewSection,
+  CommitteePreviewSection,
+  NoticesPreviewSection,
+  SponsorsSection,
+  StatsSection,
+} from '@/components/home/ContentSections'
+import type {
+  CommitteeMember,
+  Event,
+  GalleryImage,
+  Notice,
+  SiteSettings,
+  Sponsor,
+  SponsorCategory,
+  PageSection,
+} from '@/types/database'
+import { DEFAULT_SITE_SETTINGS } from '@/lib/siteSettings'
+
+export const metadata: Metadata = {
+  title: 'National Mathematics Carnival 2026 — Math Club, DUET',
+  description:
+    'Join the premier mathematics competition in Bangladesh. Register for NMC 2026 organised by Math Club, DUET.',
+}
+
+const DEFAULT_SECTIONS: PageSection[] = [
+  { id: 'home_hero', page: 'home', section_key: 'home_hero', label: 'Hero Banner', is_visible: true, sort_order: 1 },
+  { id: 'home_event_highlights', page: 'home', section_key: 'home_event_highlights', label: 'Event Highlights Cards', is_visible: true, sort_order: 2 },
+  { id: 'home_notices_preview', page: 'home', section_key: 'home_notices_preview', label: 'Notices Preview', is_visible: true, sort_order: 3 },
+  { id: 'home_gallery_preview', page: 'home', section_key: 'home_gallery_preview', label: 'Gallery Preview Strip', is_visible: true, sort_order: 4 },
+  { id: 'home_committee_preview', page: 'home', section_key: 'home_committee_preview', label: 'Committee Preview Strip', is_visible: true, sort_order: 5 },
+  { id: 'home_sponsors', page: 'home', section_key: 'home_sponsors', label: 'Proud Sponsors', is_visible: true, sort_order: 6 },
+  { id: 'home_media_partners', page: 'home', section_key: 'home_media_partners', label: 'Media Partners', is_visible: true, sort_order: 7 },
+  { id: 'home_stats', page: 'home', section_key: 'home_stats', label: 'Statistics Bar', is_visible: true, sort_order: 8 },
+  { id: 'home_cta', page: 'home', section_key: 'home_cta', label: 'Call-To-Action Strip', is_visible: true, sort_order: 9 },
+]
+
+export default async function HomePage() {
+  const supabase = await createClient()
+
+  const now = new Date().toISOString()
+
+  const [
+    settingsRes,
+    eventsRes,
+    noticesRes,
+    galleryRes,
+    committeeRes,
+    sponsorCatsRes,
+    sponsorsRes,
+    sectionsRes,
+  ] = await Promise.all([
+    supabase.from('site_settings').select('*').single(),
+    supabase.from('events').select('*').eq('status', 'published').order('sort_order', { ascending: true }),
+    supabase.from('notices')
+      .select('*')
+      .eq('is_visible', true)
+      .lte('publish_at', now)
+      .or(`expires_at.is.null,expires_at.gt.${now}`)
+      .order('is_pinned', { ascending: false })
+      .order('sort_order', { ascending: true })
+      .order('publish_at', { ascending: false }),
+    supabase.from('gallery_images').select('*').eq('is_visible', true).order('sort_order', { ascending: true }),
+    supabase.from('committee_members').select('*').eq('is_visible', true).order('sort_order', { ascending: true }),
+    supabase.from('sponsor_categories').select('*').eq('is_visible', true).order('sort_order', { ascending: true }),
+    supabase.from('sponsors').select('*').eq('is_visible', true).order('sort_order', { ascending: true }),
+    supabase.from('page_sections').select('*').eq('page', 'home').order('sort_order', { ascending: true }),
+  ])
+
+  const settings = (settingsRes.data ?? DEFAULT_SITE_SETTINGS) as SiteSettings
+  const events = (eventsRes.data ?? []) as Event[]
+  const notices = (noticesRes.data ?? []) as Notice[]
+  const gallery = (galleryRes.data ?? []) as GalleryImage[]
+  const committee = (committeeRes.data ?? []) as CommitteeMember[]
+  const sponsorCategories = (sponsorCatsRes.data ?? []) as SponsorCategory[]
+  const sponsors = (sponsorsRes.data ?? []) as Sponsor[]
+  const sections = ((sectionsRes.data ?? []) as PageSection[])
+    .sort((a, b) => a.sort_order - b.sort_order)
+  const orderedSections = sections.length ? sections : DEFAULT_SECTIONS
+
+  const mediaCategoryIds = sponsorCategories
+    .filter(cat => /media/i.test(cat.name))
+    .map(cat => cat.id)
+  const mediaSponsors = sponsors.filter(s => s.category_id && mediaCategoryIds.includes(s.category_id))
+  const regularSponsors = sponsors.filter(s => !s.category_id || !mediaCategoryIds.includes(s.category_id))
+
+  const hasEvents = events.length > 0
+  const hasNotices = notices.length > 0
+  const hasGallery = gallery.length > 0
+  const hasCommittee = committee.length > 0
+  const hasSponsors = regularSponsors.length > 0
+  const hasMediaSponsors = mediaSponsors.length > 0
+
+  const sectionMap: Record<string, React.ReactNode | null> = {
+    home_hero: <HeroSection settings={settings} />,
+    home_event_highlights: hasEvents ? <EventHighlightsSection events={events} /> : null,
+    home_notices_preview: hasNotices ? <NoticesPreviewSection notices={notices} /> : null,
+    home_gallery_preview: hasGallery ? <GalleryPreviewSection images={gallery} /> : null,
+    home_committee_preview: hasCommittee ? <CommitteePreviewSection members={committee} /> : null,
+    home_sponsors: hasSponsors ? <SponsorsSection categories={sponsorCategories} sponsors={regularSponsors} /> : null,
+    home_media_partners: hasMediaSponsors ? <SponsorsSection categories={sponsorCategories} sponsors={mediaSponsors} isMediaPartners /> : null,
+    home_stats: (
+      <StatsSection
+        stats={[
+          { value: '40+', label: 'Universities' },
+          { value: '1200+', label: 'Participants' },
+          { value: '25', label: 'Events' },
+          { value: '1.8M', label: 'Prize Pool' },
+        ]}
+      />
+    ),
+    home_cta: <CTAStripSection settings={settings} />,
+  }
+
+  const visibleSections = orderedSections.filter(
+    section => section.is_visible && sectionMap[section.section_key]
+  )
+
+  return (
+    <main style={{ position: 'relative', zIndex: 1 }}>
+      {visibleSections.map((section, index) => (
+        <div key={section.section_key}>
+          {sectionMap[section.section_key]}
+          {index < visibleSections.length - 1 && (
+            <PublicMathDivider formula="sum(n=1..inf) 1/n^2 = pi^2/6" />
+          )}
+        </div>
+      ))}
+    </main>
+  )
+}
