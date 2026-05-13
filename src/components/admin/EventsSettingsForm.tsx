@@ -365,7 +365,7 @@ export function EventsSettingsForm({
 
   const cloneEvent = (event: Event) => {
     const newId = crypto.randomUUID()
-    const cloned = {
+    const cloned: Event = {
       ...event,
       id: newId,
       title: `${event.title} (Copy)`,
