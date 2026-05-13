@@ -152,8 +152,8 @@ export function ClubPartnersSettingsForm({
                     logo_url: null,
                     website_url: null,
                     category_id: null,
-                    display_mode: 'both',
-                    logo_size: 'medium',
+                    display_mode: 'both' as ClubPartner['display_mode'],
+                    logo_size: 'medium' as ClubPartner['logo_size'],
                     is_visible: true,
                     sort_order: prev.length + 1,
                   }]
