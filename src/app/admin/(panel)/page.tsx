@@ -278,7 +278,13 @@ export default async function AdminDashboardPage() {
                     color: 'var(--admin-fg)',
                     fontWeight: 500,
                   }}>
-                    {reg.events?.title || 'Unknown Event'}
+                    {(() => {
+                      const eventsValue = reg.events
+                      const title = Array.isArray(eventsValue)
+                        ? eventsValue[0]?.title
+                        : eventsValue?.title
+                      return title || 'Unknown Event'
+                    })()}
                   </div>
                   <div style={{
                     fontFamily: 'var(--font-mono)',
