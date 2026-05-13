@@ -15,7 +15,6 @@ const CATEGORY_COLORS: Record<Event['category'], string> = {
   university: '#6366f1',
   college: '#14b8a6',
   school: '#f59e0b',
-  all: '#0ea5e9',
 }
 
 export function EventDetailView({ event, faqs, relatedEvents }: EventDetailViewProps) {
