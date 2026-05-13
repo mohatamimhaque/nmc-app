@@ -103,7 +103,12 @@ export default async function AdminDashboardPage() {
         <StatCard label="Events" value={eventsCount?.toString() || '0'} sub="Total events created" icon={<TriangleIcon size={22} />} />
         <StatCard label="Registrations" value={registrationsCount?.toString() || '0'} sub="Total submissions" trend="up" icon={<HexagonIcon size={22} />} />
         <StatCard label="Notices" value={noticesCount?.toString() || '0'} sub="Active notices" icon={<InfinityIcon size={22} />} />
-        <StatCard label="Team Members" value={(advisersCount + committeeCount + ambassadorsCount)?.toString() || '0'} sub="Advisers + Committee + Ambassadors" icon={<GridIcon size={22} />} />
+        <StatCard
+          label="Team Members"
+          value={((advisersCount ?? 0) + (committeeCount ?? 0) + (ambassadorsCount ?? 0)).toString()}
+          sub="Advisers + Committee + Ambassadors"
+          icon={<GridIcon size={22} />}
+        />
       </div>
 
       <MathDivider formula="f(x) = ax² + bx + c" />
