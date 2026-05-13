@@ -29,7 +29,7 @@ export function ContactSettingsForm({
     setPage(prev => ({ ...prev, [key]: value }))
   }
 
-  const updatePerson = (index: number, field: keyof ContactPerson, value: string | boolean) => {
+  const updatePerson = (index: number, field: keyof ContactPerson, value: string | boolean | null) => {
     setPersons(prev => prev.map((item, idx) => (
       idx === index ? { ...item, [field]: value } : item
     )))
