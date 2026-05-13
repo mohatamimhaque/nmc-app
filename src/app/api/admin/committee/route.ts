@@ -289,10 +289,10 @@ export async function POST(request: Request) {
 			.in('sub_committee_id', requestedSubCommitteeIds)
 			.order('sort_order', { ascending: false })
 
-		const nextSortOrderBySubCommittee = new globalThis.Map<string, number>()
+		const nextSortOrderBySubCommittee: Record<string, number> = {}
 		(existingMembers ?? []).forEach(item => {
-			const current = nextSortOrderBySubCommittee.get(item.sub_committee_id) ?? 0
-			nextSortOrderBySubCommittee.set(item.sub_committee_id, Math.max(current, item.sort_order ?? 0))
+			const current = nextSortOrderBySubCommittee[item.sub_committee_id] ?? 0
+			nextSortOrderBySubCommittee[item.sub_committee_id] = Math.max(current, item.sort_order ?? 0)
 		})
 
 		const rows = await Promise.all(normalizedRows.map(async row => {
@@ -325,8 +325,8 @@ export async function POST(request: Request) {
 				return null
 			}
 
-			const currentSortOrder = nextSortOrderBySubCommittee.get(subCommittee.id) ?? 0
-			nextSortOrderBySubCommittee.set(subCommittee.id, currentSortOrder + 1)
+			const currentSortOrder = nextSortOrderBySubCommittee[subCommittee.id] ?? 0
+			nextSortOrderBySubCommittee[subCommittee.id] = currentSortOrder + 1
 
 			return {
 				id: randomUUID(),
