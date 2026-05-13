@@ -348,7 +348,7 @@ export async function POST(request: Request) {
 			}
 		}))
 
-		const insertRows = rows.filter(Boolean)
+		const insertRows = rows.filter((row): row is NonNullable<typeof row> => Boolean(row))
 		if (!insertRows.length) {
 			return NextResponse.json({ error: 'No valid rows to import.' }, { status: 400 })
 		}
