@@ -374,7 +374,7 @@ export interface ClubPartner {
   name: string
   logo_url: string | null
   website_url: string | null
-  category_id: string
+  category_id: string | null
   display_mode: 'logo' | 'name' | 'both'
   logo_size: 'small' | 'medium' | 'large'
   is_visible: boolean
