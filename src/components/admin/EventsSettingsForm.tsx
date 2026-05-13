@@ -3,7 +3,7 @@
 import type { CSSProperties } from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import type { Event, EventFaq, InternalFormField, InternalFormSection } from '@/types/database'
+import type { Event, EventFaq, InternalFormField, InternalFormSection, Json } from '@/types/database'
 import { GlassCard } from './GlassCard'
 import { RichTextField } from '@/components/shared/RichTextField'
 
@@ -211,19 +211,23 @@ export function EventsSettingsForm({
     )))
   }
 
-  const updateFieldConfig = (index: number, patch: Record<string, unknown>) => {
+  const updateFieldConfig = (index: number, patch: Record<string, Json>) => {
     setDraftFields(prev => prev.map((item, idx) => {
       if (idx !== index) return item
-      const config = typeof item.config === 'object' && item.config ? item.config as Record<string, unknown> : {}
-      return { ...item, config: { ...config, ...patch } }
+      const config = (item.config && typeof item.config === 'object' && !Array.isArray(item.config))
+        ? item.config as Record<string, Json>
+        : {}
+      return { ...item, config: { ...config, ...patch } as Json }
     }))
   }
 
-  const updateFieldValidation = (index: number, patch: Record<string, unknown>) => {
+  const updateFieldValidation = (index: number, patch: Record<string, Json>) => {
     setDraftFields(prev => prev.map((item, idx) => {
       if (idx !== index) return item
-      const validation = typeof item.validation === 'object' && item.validation ? item.validation as Record<string, unknown> : {}
-      return { ...item, validation: { ...validation, ...patch } }
+      const validation = (item.validation && typeof item.validation === 'object' && !Array.isArray(item.validation))
+        ? item.validation as Record<string, Json>
+        : {}
+      return { ...item, validation: { ...validation, ...patch } as Json }
     }))
   }
 
