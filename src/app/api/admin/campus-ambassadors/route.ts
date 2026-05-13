@@ -42,7 +42,7 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: upsertError.message }, { status: 400 })
     }
 
-    const idsList = ambassadors.map(item => `"${item.id}"`).join(',')
+    const idsList = ambassadors.map((item: { id: string }) => `"${item.id}"`).join(',')
     const { error: pruneError } = await service
       .from('campus_ambassadors')
       .delete()
