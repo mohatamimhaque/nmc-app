@@ -119,7 +119,6 @@ export function EventsPublicView({ events }: EventsPublicViewProps) {
         .event-cover img {
           width: 100%;
           height: 100%;
-          object-fit: cover;
         }
         .event-cover::after {
           content: '';

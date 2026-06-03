@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import type { Event, EventFaq, InternalFormField, InternalFormSection, Json } from '@/types/database'
 import { GlassCard } from './GlassCard'
 import { RichTextField } from '@/components/shared/RichTextField'
+import { RichHtml } from '@/components/public/RichHtml'
 
 interface RegistrationCounts {
   total: number
@@ -614,7 +615,6 @@ export function EventsSettingsForm({
         .event-cover img {
           width: 100%;
           height: 100%;
-          object-fit: cover;
         }
         .event-cover::after {
           content: '';
@@ -879,7 +879,13 @@ export function EventsSettingsForm({
               </div>
               <div className="event-body">
                 <div className="event-title">{event.title}</div>
-                <div className="event-desc">{event.short_description ?? 'No description yet.'}</div>
+                <div className="event-desc">
+                  {event.short_description ? (
+                    <RichHtml html={event.short_description} />
+                  ) : (
+                    'No description yet.'
+                  )}
+                </div>
                 <div className="event-meta">
                   <span>🕒 {event.registration_deadline ? formatDate(event.registration_deadline) : 'No deadline set'}</span>
                   <span>🧾 {REGISTRATION_TYPE_LABEL[event.registration_type]}</span>

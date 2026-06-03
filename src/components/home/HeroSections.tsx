@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { SiteSettings } from '@/types/database'
 import { DEFAULT_SITE_SETTINGS } from '@/lib/siteSettings'
+import { RichHtml } from '@/components/public/RichHtml'
 
 type HeroMode = 'text' | 'image' | 'image_only' | 'banner' | 'countdown'
 
@@ -81,14 +82,21 @@ export function HeroSection({ settings }: { settings: SiteSettings | null }) {
 
   return (
     <section style={{
-      minHeight: sectionMinHeight, display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center', textAlign: 'center',
-      padding: '6rem 1.5rem 4rem', position: 'relative',
+      width: '100%',
+      aspectRatio: '16 / 9',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      textAlign: 'center',
+      padding: '6rem 1.5rem 4rem',
+      position: 'relative',
       ...(useImage ? {
         backgroundImage,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
       } : {}),
+      backgroundRepeat: 'no-repeat',
     }}>
       {showText && (
         <>
@@ -99,9 +107,9 @@ export function HeroSection({ settings }: { settings: SiteSettings | null }) {
             {heroSettings.hero_title ?? fallbackTitle}
           </h1>
           {heroSettings.hero_subtitle && (
-            <p style={{ fontFamily: 'var(--font-body)', fontSize: 'clamp(1rem,2.5vw,1.2rem)', color: textColor, maxWidth: 560, lineHeight: 1.65, marginBottom: '2.5rem' }}>
-              {heroSettings.hero_subtitle}
-            </p>
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 'clamp(1rem,2.5vw,1.2rem)', color: textColor, maxWidth: 560, lineHeight: 1.65, marginBottom: '2.5rem' }}>
+              <RichHtml html={heroSettings.hero_subtitle} />
+            </div>
           )}
         </>
       )}
