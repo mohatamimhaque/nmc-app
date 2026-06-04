@@ -7,6 +7,7 @@ import { PublicNavbar } from './PublicNavbar'
 import { PublicFooter } from './PublicFooter'
 import { PublicAnalyticsTracker } from './PublicAnalyticsTracker'
 import { PublicSymbolsProvider } from './PublicSymbolsContext'
+import { PointerGlow } from './PointerGlow'
 
 interface PublicChromeProps {
   children: React.ReactNode
@@ -39,6 +40,7 @@ export function PublicChrome({
   return (
     <>
       <PublicAnalyticsTracker />
+      <PointerGlow />
       <PublicSymbolsProvider category={competitionCategory}>
         <PublicMathBackground
           theme={themeMode}

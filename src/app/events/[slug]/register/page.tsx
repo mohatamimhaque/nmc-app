@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import type { Event, InternalFormField, InternalFormSection } from '@/types/database'
 import { EventRegistrationForm } from '@/components/public/EventRegistrationForm'
@@ -60,18 +60,7 @@ export default async function EventRegistrationPage({ params }: Props) {
   const showGoogleForm = event.registration_type === 'google_form' && !!event.registration_url
 
   if (showGoogleForm) {
-    return (
-      <main style={{ position: 'relative', zIndex: 1 }}>
-        <section style={{ padding: 0, margin: 0 }}>
-          <iframe
-            title={`${event.title} registration form`}
-            src={event.registration_url!}
-            style={{ width: '100%', height: '100vh', border: 'none' }}
-            loading="lazy"
-          />
-        </section>
-      </main>
-    )
+    redirect(event.registration_url!)
   }
 
   return (

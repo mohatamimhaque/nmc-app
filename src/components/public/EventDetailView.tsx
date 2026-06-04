@@ -203,9 +203,21 @@ export function EventDetailView({ event, faqs, relatedEvents }: EventDetailViewP
                     Registration Closed
                   </div>
                 ) : (
-                  <Link href={`/events/${event.slug}/register`} style={primaryButtonStyle}>
-                    {event.registration_button_label || 'Register Now'}
-                  </Link>
+                  event.registration_type === 'google_form' && event.registration_url ? (
+                    <a
+                      href={event.registration_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={primaryButtonStyle}
+                    >
+                      {event.registration_button_label || 'Register Now'}
+                      <span style={{ marginLeft: 6 }} aria-hidden>↗</span>
+                    </a>
+                  ) : (
+                    <Link href={`/events/${event.slug}/register`} style={primaryButtonStyle}>
+                      {event.registration_button_label || 'Register Now'}
+                    </Link>
+                  )
                 )}
               </div>
             </div>

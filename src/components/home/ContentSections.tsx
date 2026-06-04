@@ -21,9 +21,21 @@ export function EventHighlightsSection({ events }: { events: any[] }) {
                 <RichHtml html={ev.short_description} />
               </div>
             )}
-            <Link href={`/events/${ev.slug}`} style={{ marginTop: 'auto', display: 'inline-flex', alignItems: 'center', background: 'var(--color-primary)', color: '#fff', fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: '0.8rem', padding: '0.5rem 1.1rem', borderRadius: 8, textDecoration: 'none' }}>
-              {ev.registration_button_label ?? 'Register'} →
-            </Link>
+            {ev.registration_type === 'google_form' && ev.registration_url ? (
+              <a
+                href={ev.registration_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ marginTop: 'auto', display: 'inline-flex', alignItems: 'center', background: 'var(--color-primary)', color: '#fff', fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: '0.8rem', padding: '0.5rem 1.1rem', borderRadius: 8, textDecoration: 'none' }}
+              >
+                {ev.registration_button_label ?? 'Register'}
+                <span style={{ marginLeft: 6 }} aria-hidden>↗</span>
+              </a>
+            ) : (
+              <Link href={`/events/${ev.slug}/register`} style={{ marginTop: 'auto', display: 'inline-flex', alignItems: 'center', background: 'var(--color-primary)', color: '#fff', fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: '0.8rem', padding: '0.5rem 1.1rem', borderRadius: 8, textDecoration: 'none' }}>
+                {ev.registration_button_label ?? 'Register'} →
+              </Link>
+            )}
           </div>
         ))}
       </div>

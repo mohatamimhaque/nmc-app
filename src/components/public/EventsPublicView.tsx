@@ -287,16 +287,32 @@ export function EventsPublicView({ events }: EventsPublicViewProps) {
                   <Link href={`/events/${event.slug}`} style={secondaryButtonStyle}>
                     Details
                   </Link>
-                  <Link
-                    href={`/events/${event.slug}/register`}
-                    style={{
-                      ...primaryButtonStyle,
-                      pointerEvents: isClosed ? 'none' : 'auto',
-                      opacity: isClosed ? 0.6 : 1,
-                    }}
-                  >
-                    {isClosed ? 'Closed' : event.registration_button_label || 'Register'}
-                  </Link>
+                  {event.registration_type === 'google_form' && event.registration_url ? (
+                    <a
+                      href={event.registration_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        ...primaryButtonStyle,
+                        pointerEvents: isClosed ? 'none' : 'auto',
+                        opacity: isClosed ? 0.6 : 1,
+                      }}
+                    >
+                      {isClosed ? 'Closed' : event.registration_button_label || 'Register'}
+                      {!isClosed && <span style={{ marginLeft: 6 }} aria-hidden>↗</span>}
+                    </a>
+                  ) : (
+                    <Link
+                      href={`/events/${event.slug}/register`}
+                      style={{
+                        ...primaryButtonStyle,
+                        pointerEvents: isClosed ? 'none' : 'auto',
+                        opacity: isClosed ? 0.6 : 1,
+                      }}
+                    >
+                      {isClosed ? 'Closed' : event.registration_button_label || 'Register'}
+                    </Link>
+                  )}
                 </div>
               </div>
             </div>
