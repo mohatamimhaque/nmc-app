@@ -14,7 +14,9 @@ type HeroSettings = Pick<
   | 'hero_cta_label'
   | 'hero_cta_url'
   | 'hero_image_url'
+  | 'hero_carousel_images'
   | 'hero_countdown_date'
+  | 'hero_show_countdown'
   | 'hero_overlay_color'
   | 'hero_overlay_enabled'
   | 'hero_overlay_opacity'
@@ -24,19 +26,23 @@ interface HeroSettingsFormProps {
   initialSettings: SiteSettings
 }
 
-const toDateInput = (value: string | null) => {
+const toDateTimeInput = (value: string | null) => {
   if (!value) return ''
   const date = new Date(value)
   if (Number.isNaN(date.valueOf())) return ''
-  const year = date.getUTCFullYear()
-  const month = String(date.getUTCMonth() + 1).padStart(2, '0')
-  const day = String(date.getUTCDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  return `${year}-${month}-${day}T${hours}:${minutes}`
 }
 
-const fromDateInput = (value: string) => {
+const fromDateTimeInput = (value: string) => {
   if (!value) return null
-  return new Date(`${value}T00:00:00Z`).toISOString()
+  const date = new Date(value)
+  if (Number.isNaN(date.valueOf())) return null
+  return date.toISOString()
 }
 
 const pickHeroSettings = (settings: SiteSettings): HeroSettings => ({
@@ -46,7 +52,9 @@ const pickHeroSettings = (settings: SiteSettings): HeroSettings => ({
   hero_cta_label: settings.hero_cta_label,
   hero_cta_url: settings.hero_cta_url,
   hero_image_url: settings.hero_image_url,
+  hero_carousel_images: settings.hero_carousel_images ?? [],
   hero_countdown_date: settings.hero_countdown_date,
+  hero_show_countdown: settings.hero_show_countdown ?? true,
   hero_overlay_color: settings.hero_overlay_color ?? '#0f1117',
   hero_overlay_enabled: settings.hero_overlay_enabled ?? true,
   hero_overlay_opacity: settings.hero_overlay_opacity ?? 55,
@@ -60,12 +68,15 @@ export function HeroSettingsForm({ initialSettings }: HeroSettingsFormProps) {
   const [settings, setSettings] = useState<HeroSettings>(() => pickHeroSettings(initialSettings))
 
   const heroMode = settings.hero_mode
-  const heroUsesImage = ['image', 'image_only', 'banner', 'countdown'].includes(heroMode)
+  const heroUsesImage = ['image', 'image_only', 'banner', 'countdown', 'carousel'].includes(heroMode)
   const heroShowsText = heroMode !== 'image_only'
+  const heroUsesCarousel = heroMode === 'carousel'
+  const heroShowCountdown = settings.hero_show_countdown ?? true
   const overlayOpacity = Math.min(100, Math.max(0, Math.round(settings.hero_overlay_opacity ?? 55)))
+  const carouselImages = settings.hero_carousel_images ?? []
 
   const countdownDateValue = useMemo(
-    () => toDateInput(settings.hero_countdown_date),
+    () => toDateTimeInput(settings.hero_countdown_date),
     [settings.hero_countdown_date]
   )
 
@@ -94,6 +105,54 @@ export function HeroSettingsForm({ initialSettings }: HeroSettingsFormProps) {
     updateField('hero_image_url', data.url)
   }
 
+  const handleCarouselUpload = async (file: File, index: number) => {
+    setError('')
+    setSuccess('')
+
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const response = await fetch('/api/admin/upload', {
+      method: 'POST',
+      body: formData,
+    })
+
+    const data = await response.json()
+    if (!response.ok) {
+      setError(data?.error ?? 'Upload failed.')
+      return
+    }
+
+    setSettings(prev => {
+      const nextImages = [...(prev.hero_carousel_images ?? [])]
+      nextImages[index] = data.url
+      return { ...prev, hero_carousel_images: nextImages }
+    })
+  }
+
+  const addCarouselImage = () => {
+    setSettings(prev => ({
+      ...prev,
+      hero_carousel_images: [...(prev.hero_carousel_images ?? []), ''],
+    }))
+  }
+
+  const updateCarouselImage = (index: number, value: string) => {
+    setSettings(prev => {
+      const nextImages = [...(prev.hero_carousel_images ?? [])]
+      nextImages[index] = value
+      return { ...prev, hero_carousel_images: nextImages }
+    })
+  }
+
+  const removeCarouselImage = (index: number) => {
+    setSettings(prev => {
+      const nextImages = [...(prev.hero_carousel_images ?? [])]
+      nextImages.splice(index, 1)
+      return { ...prev, hero_carousel_images: nextImages }
+    })
+  }
+
   const handleSave = async () => {
     setSaving(true)
     setError('')
@@ -101,7 +160,9 @@ export function HeroSettingsForm({ initialSettings }: HeroSettingsFormProps) {
 
     const payload = {
       ...settings,
-      hero_countdown_date: fromDateInput(countdownDateValue),
+      hero_carousel_images: (settings.hero_carousel_images ?? []).map(image => image.trim()).filter(Boolean),
+      hero_show_countdown: settings.hero_show_countdown ?? true,
+      hero_countdown_date: fromDateTimeInput(countdownDateValue),
     }
 
     const response = await fetch('/api/admin/site-settings', {
@@ -224,7 +285,7 @@ export function HeroSettingsForm({ initialSettings }: HeroSettingsFormProps) {
               value={overlayOpacity}
               onChange={event => updateField('hero_overlay_opacity', Number(event.target.value))}
               disabled={!settings.hero_overlay_enabled}
-              style={{ flex: 1 }}
+              style={{ flex: 1, cursor: 'pointer' }}
             />
             <div style={{ minWidth: 48, textAlign: 'right', color: 'var(--admin-fg-muted)', fontSize: '0.75rem' }}>
               {overlayOpacity}%
@@ -238,19 +299,125 @@ export function HeroSettingsForm({ initialSettings }: HeroSettingsFormProps) {
           onChange={value => updateField('hero_image_url', value || null)}
           onFile={handleUpload}
         />
+        {heroUsesCarousel && (
+          <div style={{ marginTop: '1rem', marginBottom: '0.75rem' }}>
+            <SectionTitle title="Carousel" subtitle="Add one or more background images that auto-rotate on the public hero." />
+            <div style={{ display: 'grid', gap: '0.75rem' }}>
+              {(carouselImages.length ? carouselImages : ['']).map((image, index) => (
+                <div
+                  key={`${index}-${image}`}
+                  style={{
+                    border: '1px solid var(--admin-border)',
+                    borderRadius: 14,
+                    padding: '0.85rem',
+                    background: 'rgba(255,255,255,0.03)',
+                    display: 'grid',
+                    gap: '0.65rem',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem' }}>
+                    <div style={labelStyle}>Carousel image {index + 1}</div>
+                    <button
+                      type="button"
+                      onClick={() => removeCarouselImage(index)}
+                      style={{
+                        border: '1px solid var(--admin-border)',
+                        background: 'transparent',
+                        color: 'var(--admin-fg-muted)',
+                        borderRadius: 999,
+                        padding: '0.35rem 0.7rem',
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '0.6rem',
+                        letterSpacing: '0.08em',
+                        textTransform: 'uppercase',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                  <label style={{ display: 'grid', gap: '0.35rem' }}>
+                    <span style={labelStyle}>Image URL</span>
+                    <input
+                      type="text"
+                      value={image}
+                      onChange={event => updateCarouselImage(index, event.target.value)}
+                      style={inputStyle}
+                      placeholder="https://..."
+                    />
+                  </label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center' }}>
+                    <div
+                      style={{
+                        width: 92,
+                        height: 56,
+                        borderRadius: 12,
+                        overflow: 'hidden',
+                        border: '1px solid var(--admin-border)',
+                      }}
+                    >
+                      {image ? (
+                        <img src={image} alt={`Carousel preview ${index + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', color: 'var(--admin-fg-muted)', fontSize: '0.7rem', background: 'rgba(255,255,255,0.04)' }}>
+                          Empty
+                        </div>
+                      )}
+                    </div>
+                    <label style={{ display: 'grid', gap: '0.25rem' }}>
+                      <span style={labelStyle}>Upload image</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={event => {
+                          const file = event.target.files?.[0]
+                          if (file) void handleCarouselUpload(file, index)
+                        }}
+                      />
+                    </label>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={addCarouselImage}
+              style={{
+                marginTop: '0.75rem',
+                padding: '0.5rem 0.85rem',
+                borderRadius: 10,
+                border: '1px solid var(--admin-border)',
+                background: 'rgba(255,255,255,0.03)',
+                color: 'var(--admin-fg)',
+                fontFamily: 'var(--font-mono)',
+                fontSize: '0.65rem',
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                cursor: 'pointer',
+              }}
+            >
+              Add carousel image
+            </button>
+          </div>
+        )}
         {!heroUsesImage && (
           <div style={{ fontSize: '0.75rem', color: 'var(--admin-fg-muted)', marginTop: '-0.25rem' }}>
             Image is used in Image/Banner/Countdown modes.
           </div>
         )}
         <LabeledInput
-          label="Hero countdown date"
-          type="date"
+          label="Hero countdown date and time"
+          type="datetime-local"
           value={countdownDateValue}
-          onChange={value => updateField('hero_countdown_date', value ? fromDateInput(value) : null)}
+          onChange={value => updateField('hero_countdown_date', value ? fromDateTimeInput(value) : null)}
+        />
+        <CheckboxField
+          label="Show hero countdown"
+          checked={heroShowCountdown}
+          onChange={checked => updateField('hero_show_countdown', checked)}
         />
         <div style={{ fontSize: '0.75rem', color: 'var(--admin-fg-muted)', marginTop: '-0.25rem' }}>
-          Countdown is used when Hero mode is set to Countdown. If empty, it uses the Event Date.
+          Countdown is used when Hero mode is set to Countdown or Carousel. If empty, it uses the Event Date.
         </div>
 
         <div style={{ marginTop: '1.1rem', display: 'flex', gap: '0.75rem' }}>
@@ -466,6 +633,7 @@ function HeroModeToggle({
     { value: 'image_only', label: 'Image Only', hint: 'No text' },
     { value: 'banner', label: 'Banner', hint: 'Short hero' },
     { value: 'countdown', label: 'Countdown', hint: 'Timer + CTA' },
+    { value: 'carousel', label: 'Carousel', hint: 'Rotate images' },
   ]
 
   return (

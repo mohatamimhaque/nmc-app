@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { unstable_noStore as noStore } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { PublicMathDivider } from '@/components/public/PublicMathDivider'
 import {
@@ -16,6 +17,7 @@ import {
 import type {
   CommitteeMember,
   Event,
+  GalleryCategory,
   GalleryImage,
   Notice,
   SiteSettings,
@@ -44,6 +46,8 @@ const DEFAULT_SECTIONS: PageSection[] = [
 ]
 
 export default async function HomePage() {
+  noStore()
+
   const supabase = await createClient()
 
   const now = new Date().toISOString()
@@ -53,6 +57,7 @@ export default async function HomePage() {
     eventsRes,
     noticesRes,
     galleryRes,
+    galleryCatsRes,
     committeeRes,
     sponsorCatsRes,
     sponsorsRes,
@@ -69,6 +74,7 @@ export default async function HomePage() {
       .order('sort_order', { ascending: true })
       .order('publish_at', { ascending: false }),
     supabase.from('gallery_images').select('*').eq('is_visible', true).order('sort_order', { ascending: true }),
+    supabase.from('gallery_categories').select('*').order('sort_order', { ascending: true }),
     supabase.from('committee_members').select('*').eq('is_visible', true).order('sort_order', { ascending: true }),
     supabase.from('sponsor_categories').select('*').eq('is_visible', true).order('sort_order', { ascending: true }),
     supabase.from('sponsors').select('*').eq('is_visible', true).order('sort_order', { ascending: true }),
@@ -79,6 +85,7 @@ export default async function HomePage() {
   const events = (eventsRes.data ?? []) as Event[]
   const notices = (noticesRes.data ?? []) as Notice[]
   const gallery = (galleryRes.data ?? []) as GalleryImage[]
+  const galleryCategories = (galleryCatsRes.data ?? []) as GalleryCategory[]
   const committee = (committeeRes.data ?? []) as CommitteeMember[]
   const sponsorCategories = (sponsorCatsRes.data ?? []) as SponsorCategory[]
   const sponsors = (sponsorsRes.data ?? []) as Sponsor[]
@@ -99,11 +106,18 @@ export default async function HomePage() {
   const hasSponsors = regularSponsors.length > 0
   const hasMediaSponsors = mediaSponsors.length > 0
 
+  const galleryPreviewImages = gallery.map(image => ({
+    ...image,
+    category_name: image.category_id
+      ? galleryCategories.find(category => category.id === image.category_id)?.name ?? null
+      : null,
+  }))
+
   const sectionMap: Record<string, React.ReactNode | null> = {
     home_hero: <HeroSection settings={settings} />,
     home_event_highlights: hasEvents ? <EventHighlightsSection events={events} /> : null,
     home_notices_preview: hasNotices ? <NoticesPreviewSection notices={notices} /> : null,
-    home_gallery_preview: hasGallery ? <GalleryPreviewSection images={gallery} /> : null,
+    home_gallery_preview: hasGallery ? <GalleryPreviewSection images={galleryPreviewImages} /> : null,
     home_committee_preview: hasCommittee ? <CommitteePreviewSection members={committee} /> : null,
     home_sponsors: hasSponsors ? <SponsorsSection categories={sponsorCategories} sponsors={regularSponsors} /> : null,
     home_media_partners: hasMediaSponsors ? <SponsorsSection categories={sponsorCategories} sponsors={mediaSponsors} isMediaPartners /> : null,

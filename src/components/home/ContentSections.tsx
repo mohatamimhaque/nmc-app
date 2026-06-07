@@ -75,12 +75,39 @@ export function GalleryPreviewSection({ images }: { images: any[] }) {
       <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 1.5rem' }}>
         <SectionHeader eyebrow="Gallery" title="Photo Highlights" />
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,240px))', gap: 12, marginBottom: '2rem', justifyContent: 'center', padding: '0 1.5rem' }}>
-        {images.slice(0,9).map(img => (
-          <div key={img.id} style={{ aspectRatio: '4/3', overflow: 'hidden' }}>
-            <img src={img.url} alt={img.alt_text || img.caption || ''} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s' }} />
-          </div>
-        ))}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(210px,250px))', gap: 16, marginBottom: '2rem', justifyContent: 'center', padding: '0 1.5rem' }}>
+        {images.slice(0,9).map((img, index) => {
+          const title = img.caption || img.alt_text || 'Gallery image'
+          const category = img.category_name || 'Uncategorized'
+          const tilt = index % 2 === 0 ? -2.2 : 1.7
+          return (
+          <Link
+            key={img.id}
+            href={`/gallery?image=${encodeURIComponent(img.id)}`}
+            className="gallery-preview-card"
+            style={{ textDecoration: 'none', transform: `rotate(${tilt}deg)` }}
+          >
+            <div className="gallery-preview-shell" style={{ position: 'relative', borderRadius: 28, overflow: 'hidden', background: 'linear-gradient(180deg, color-mix(in srgb, var(--surface) 94%, #fff 6%), var(--surface))', border: '1px solid color-mix(in srgb, var(--border) 80%, transparent)', boxShadow: 'var(--shadow-lg)', padding: '0.85rem 0.85rem 1rem', transformOrigin: 'center bottom' }}>
+              <div className="gallery-preview-frame" style={{ aspectRatio: '4/5', overflow: 'hidden', position: 'relative', borderRadius: 20 }}>
+                <img src={img.url} alt={img.alt_text || img.caption || ''} className="gallery-preview-image" style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.35s ease' }} />
+                <div className="gallery-preview-overlay" style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(15,17,23,0) 35%, rgba(15,17,23,0.55) 100%)', opacity: 0, transition: 'opacity 0.25s ease' }}>
+                  <span className="gallery-preview-expand" style={{ position: 'absolute', top: '0.85rem', right: '0.85rem', width: 42, height: 42, borderRadius: 999, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(195, 152, 98, 0.92)', color: '#fff', boxShadow: '0 10px 24px rgba(0,0,0,0.15)', border: '1px solid rgba(255,255,255,0.15)', transform: 'scale(0.94)', transition: 'transform 0.25s ease' }} aria-hidden="true">
+                    ↗
+                  </span>
+                </div>
+              </div>
+              <div style={{ padding: '0.95rem 0.45rem 0.2rem', textAlign: 'center' }}>
+                <div style={{ fontFamily: 'var(--font-heading)', fontSize: '1.45rem', fontWeight: 700, fontStyle: 'italic', color: 'var(--color-primary)', lineHeight: 1.15 }}>{title}</div>
+                <div style={{ marginTop: '0.55rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontFamily: 'var(--font-mono)', fontSize: '0.58rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--foreground-muted)' }}>
+                  <span style={{ width: 24, height: 1, background: 'currentColor', opacity: 0.35 }} />
+                  {category}
+                  <span style={{ width: 24, height: 1, background: 'currentColor', opacity: 0.35 }} />
+                </div>
+              </div>
+            </div>
+          </Link>
+          )
+        })}
       </div>
       <div style={{ textAlign: 'center' }}><Link href="/gallery" style={{ fontFamily: 'var(--font-body)', fontWeight: 600, color: 'var(--color-primary)', textDecoration: 'none', border: '1.5px solid var(--color-primary)', padding: '0.6rem 1.5rem', borderRadius: 8 }}>View Full Gallery</Link></div>
     </section>

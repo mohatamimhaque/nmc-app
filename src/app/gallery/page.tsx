@@ -11,8 +11,9 @@ export const metadata: Metadata = {
 
 export const dynamic = 'force-dynamic'
 
-export default async function GalleryPage() {
+export default async function GalleryPage({ searchParams }: { searchParams?: Promise<{ image?: string }> }) {
 	const supabase = await createClient()
+	const params = await searchParams
 
 	const [categoriesRes, imagesRes] = await Promise.all([
 		supabase.from('gallery_categories').select('*').order('sort_order', { ascending: true }),
@@ -33,7 +34,7 @@ export default async function GalleryPage() {
 			</section>
 
 			<section style={{ maxWidth: 1100, margin: '0 auto' }}>
-				<GalleryGrid categories={categories} images={images} />
+				<GalleryGrid categories={categories} images={images} initialImageId={params?.image ?? null} />
 			</section>
 		</main>
 	)

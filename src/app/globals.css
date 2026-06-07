@@ -331,6 +331,32 @@ a:hover { opacity: 0.8; }
   opacity: 1;
 }
 
+.gallery-preview-card {
+  display: block;
+  transition: transform 0.3s ease, filter 0.3s ease;
+  transform-origin: center bottom;
+}
+
+.gallery-preview-card:hover {
+  transform: translateY(-8px) rotate(0deg) !important;
+}
+
+.gallery-preview-card:hover .gallery-preview-image {
+  transform: scale(1.05);
+}
+
+.gallery-preview-card:hover .gallery-preview-overlay {
+  opacity: 1;
+}
+
+.gallery-preview-card:hover .gallery-preview-expand {
+  transform: scale(1.06);
+}
+
+.gallery-preview-card:hover .gallery-preview-shell {
+  box-shadow: 0 20px 44px rgba(15, 23, 42, 0.18);
+}
+
 @media (max-width: 1024px) {
   .gallery-masonry {
     column-count: 2;

@@ -46,6 +46,7 @@ export function PublicChrome({
           theme={themeMode}
           showSymbols={showThemeSymbols}
           category={competitionCategory}
+          settings={settings}
         />
         <div className="public-shell" style={themeVars}>
           <PublicNavbar settings={settings} links={navLinks} />

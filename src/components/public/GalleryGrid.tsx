@@ -1,15 +1,16 @@
 'use client'
 
 import type { CSSProperties } from 'react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { GalleryCategory, GalleryImage } from '@/types/database'
 
 interface GalleryGridProps {
   categories: GalleryCategory[]
   images: GalleryImage[]
+  initialImageId?: string | null
 }
 
-export function GalleryGrid({ categories, images }: GalleryGridProps) {
+export function GalleryGrid({ categories, images, initialImageId }: GalleryGridProps) {
   const [activeCategory, setActiveCategory] = useState('All')
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
 
@@ -52,6 +53,14 @@ export function GalleryGrid({ categories, images }: GalleryGridProps) {
   }
 
   const activeImage = lightboxIndex !== null ? filteredImages[lightboxIndex] : null
+
+  useEffect(() => {
+    if (!initialImageId) return
+    const nextIndex = filteredImages.findIndex(image => image.id === initialImageId)
+    if (nextIndex >= 0) {
+      setLightboxIndex(nextIndex)
+    }
+  }, [filteredImages, initialImageId])
 
   return (
     <div>

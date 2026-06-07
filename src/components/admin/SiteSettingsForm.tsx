@@ -144,6 +144,9 @@ export function SiteSettingsForm({ initialSettings }: SiteSettingsFormProps) {
     () => toDateInput(settings.event_date),
     [settings.event_date]
   )
+  const competitionTypeValue = COMPETITION_TYPES.includes(settings.competition_category as (typeof COMPETITION_TYPES)[number])
+    ? settings.competition_category
+    : 'Mathematics'
 
   const updateField = <K extends keyof SiteSettings>(key: K, value: SiteSettings[K]) => {
     setSettings(prev => ({ ...prev, [key]: value }))
@@ -287,9 +290,7 @@ export function SiteSettingsForm({ initialSettings }: SiteSettingsFormProps) {
           />
           <SelectField
             label="Competition type"
-            value={COMPETITION_TYPES.includes(settings.competition_category as any)
-              ? settings.competition_category
-              : 'Mathematics'}
+            value={competitionTypeValue}
             options={[...COMPETITION_TYPES]}
             onChange={value => {
               updateField('competition_category', value)
@@ -440,6 +441,49 @@ export function SiteSettingsForm({ initialSettings }: SiteSettingsFormProps) {
             checked={settings.animations_enabled}
             onChange={checked => updateField('animations_enabled', checked)}
           />
+          <div style={{ marginTop: '1rem' }}>
+            <SectionTitle title="Math rain" subtitle="Animated math symbols that drift down behind public pages." />
+            <CheckboxField
+              label="Enable symbol rain"
+              checked={settings.math_rain_enabled}
+              onChange={checked => updateField('math_rain_enabled', checked)}
+            />
+            <ColorField
+              label="Rain color"
+              value={settings.math_rain_color}
+              onChange={value => updateField('math_rain_color', value)}
+              allowAlpha
+            />
+            <div style={{ display: 'grid', gap: '0.75rem', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}>
+              <LabeledInput
+                label="Rain speed (seconds)"
+                type="number"
+                value={String(settings.math_rain_speed)}
+                onChange={value => updateField('math_rain_speed', Number(value) || 12)}
+                min={4}
+                max={40}
+                step={0.5}
+              />
+              <LabeledInput
+                label="Symbol size (px)"
+                type="number"
+                value={String(settings.math_rain_size)}
+                onChange={value => updateField('math_rain_size', Number(value) || 20)}
+                min={10}
+                max={48}
+                step={1}
+              />
+            </div>
+            <LabeledInput
+              label="How many symbols"
+              type="number"
+              value={String(settings.math_rain_count)}
+              onChange={value => updateField('math_rain_count', Number(value) || 24)}
+              min={0}
+              max={80}
+              step={1}
+            />
+          </div>
         </GlassCard>
       </div>
 
@@ -496,17 +540,26 @@ function LabeledInput({
   value,
   onChange,
   type = 'text',
+  min,
+  max,
+  step,
 }: {
   label: string
   value: string
   onChange: (value: string) => void
   type?: string
+  min?: number
+  max?: number
+  step?: number
 }) {
   return (
     <label style={{ display: 'grid', gap: '0.35rem', marginBottom: '0.75rem' }}>
       <span style={labelStyle}>{label}</span>
       <input
         type={type}
+        min={min}
+        max={max}
+        step={step}
         value={value}
         onChange={event => onChange(event.target.value)}
         style={inputStyle}

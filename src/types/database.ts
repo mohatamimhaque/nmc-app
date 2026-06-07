@@ -211,13 +211,20 @@ export interface SiteSettings {
   font_heading: string
   font_body: string
   animations_enabled: boolean
-  hero_mode: 'image' | 'text' | 'image_only' | 'banner' | 'countdown'
+  math_rain_enabled: boolean
+  math_rain_speed: number
+  math_rain_color: string
+  math_rain_size: number
+  math_rain_count: number
+  hero_mode: 'image' | 'text' | 'image_only' | 'banner' | 'countdown' | 'carousel'
   hero_title: string
   hero_subtitle: string
   hero_cta_label: string
   hero_cta_url: string
   hero_image_url: string | null
+  hero_carousel_images: string[]
   hero_countdown_date: string | null
+  hero_show_countdown: boolean
   hero_overlay_color: string
   hero_overlay_enabled: boolean
   hero_overlay_opacity: number

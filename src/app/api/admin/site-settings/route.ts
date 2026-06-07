@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import { requireAdminRole } from '@/lib/admin-auth'
 import { DEFAULT_SITE_SETTINGS, SITE_SETTINGS_ID } from '@/lib/siteSettings'
 
@@ -28,13 +29,20 @@ const ALLOWED_KEYS = new Set([
   'font_heading',
   'font_body',
   'animations_enabled',
+  'math_rain_enabled',
+  'math_rain_speed',
+  'math_rain_color',
+  'math_rain_size',
+  'math_rain_count',
   'hero_mode',
   'hero_title',
   'hero_subtitle',
   'hero_cta_label',
   'hero_cta_url',
   'hero_image_url',
+  'hero_carousel_images',
   'hero_countdown_date',
+  'hero_show_countdown',
   'hero_overlay_color',
   'hero_overlay_enabled',
   'hero_overlay_opacity',
@@ -54,6 +62,11 @@ const THEME_KEYS = new Set([
   'font_heading',
   'font_body',
   'animations_enabled',
+  'math_rain_enabled',
+  'math_rain_speed',
+  'math_rain_color',
+  'math_rain_size',
+  'math_rain_count',
 ])
 
 export async function PATCH(request: Request) {
@@ -89,6 +102,9 @@ export async function PATCH(request: Request) {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 })
   }
+
+  revalidatePath('/')
+  revalidatePath('/admin/home')
 
   return NextResponse.json({ data: data ?? DEFAULT_SITE_SETTINGS })
 }

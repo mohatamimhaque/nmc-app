@@ -1,8 +1,11 @@
+ 'use client'
+
+import type { CSSProperties } from 'react'
+import type { SiteSettings } from '@/types/database'
+
 /**
  * PublicMathBackground
- * Simple, elegant mathematical watermark for public pages.
- * A clean coordinate grid + a tiled pattern of symbols,
- * placed with generous whitespace so content stays the focus.
+ * Static mathematical watermark plus optional animated symbol rain.
  */
 type SymbolTheme = {
   tilePrimary: string
@@ -54,6 +57,38 @@ const PROGRAMMING_SYMBOLS: SymbolTheme = {
 
 const normalizeCategory = (value?: string) => value?.trim().toLowerCase() ?? ''
 
+const MATH_RAIN_SYMBOLS = ['π', '∑', '∫', '∞', '√', '±', '×', '÷', '∂', '∇', '∈', '∉', '≡', '≈', '≤', '≥', '∝', 'α', 'β', 'γ', 'θ', 'λ', 'μ', 'σ', 'φ', 'ψ', 'ω']
+
+const hashString = (value: string) => {
+  let hash = 2166136261
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index)
+    hash = Math.imul(hash, 16777619)
+  }
+  return hash >>> 0
+}
+
+const createRandom = (seed: number) => {
+  let state = seed || 1
+  return () => {
+    state += 0x6d2b79f5
+    let value = state
+    value = Math.imul(value ^ (value >>> 15), value | 1)
+    value ^= value + Math.imul(value ^ (value >>> 7), value | 61)
+    return ((value ^ (value >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+const clampInteger = (value: number | null | undefined, fallback: number, min: number, max: number) => {
+  if (typeof value !== 'number' || Number.isNaN(value)) return fallback
+  return Math.min(max, Math.max(min, Math.round(value)))
+}
+
+const clampNumber = (value: number | null | undefined, fallback: number, min: number, max: number) => {
+  if (typeof value !== 'number' || Number.isNaN(value)) return fallback
+  return Math.min(max, Math.max(min, value))
+}
+
 const selectSymbolTheme = (category: string | undefined, theme: 'light' | 'dark'): SymbolTheme => {
   const normalized = normalizeCategory(category)
   if (normalized === 'programming contest' || normalized === 'iupc') {
@@ -66,12 +101,33 @@ export function PublicMathBackground({
   theme = 'light',
   showSymbols = true,
   category,
+  settings,
 }: {
   theme?: 'light' | 'dark'
   showSymbols?: boolean
   category?: string
+  settings: SiteSettings
 }) {
   const symbols = selectSymbolTheme(category, theme)
+  const rainEnabled = (settings.animations_enabled ?? true) && (settings.math_rain_enabled ?? false)
+  const rainCount = clampInteger(settings.math_rain_count, 24, 0, 80)
+  const rainSpeed = clampNumber(settings.math_rain_speed, 12, 4, 40)
+  const rainColor = settings.math_rain_color?.trim() || 'rgba(79,70,229,0.18)'
+  const rainSize = clampInteger(settings.math_rain_size, 20, 10, 48)
+  const seed = hashString(`${theme}|${category ?? ''}|${rainCount}|${rainSpeed}|${rainSize}|${rainColor}|${settings.updated_at}`)
+  const rainDrops = rainEnabled
+    ? Array.from({ length: rainCount }, (_, index) => {
+        const dropRandom = createRandom(hashString(`${seed}:${index}`))
+        const symbol = MATH_RAIN_SYMBOLS[Math.floor(dropRandom() * MATH_RAIN_SYMBOLS.length)] ?? 'π'
+        const left = Math.round(dropRandom() * 1000) / 10
+        const duration = Math.max(4, rainSpeed + (dropRandom() * 4 - 2))
+        const delay = -(dropRandom() * duration)
+        const drift = Math.round((dropRandom() * 2 - 1) * 48)
+        const size = Math.round(rainSize + (dropRandom() * 10 - 5))
+        const opacity = 0.08 + dropRandom() * 0.1
+        return { symbol, left, duration, delay, drift, size, opacity }
+      })
+    : []
   return (
     <div
       aria-hidden="true"
@@ -284,6 +340,56 @@ export function PublicMathBackground({
           </>
         ) : null}
       </svg>
+
+      {rainDrops.length > 0 ? (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 1,
+            overflow: 'hidden',
+            pointerEvents: 'none',
+          }}
+        >
+          <style>{`
+            @keyframes math-rain-fall {
+              0% {
+                transform: translate3d(0, -18vh, 0) rotate(0deg);
+                opacity: 0;
+              }
+              10% {
+                opacity: 1;
+              }
+              100% {
+                transform: translate3d(var(--rain-drift), 118vh, 0) rotate(360deg);
+                opacity: 0;
+              }
+            }
+          `}</style>
+          {rainDrops.map((drop, index) => (
+            <span
+              key={`${index}-${drop.symbol}`}
+              style={{
+                position: 'absolute',
+                left: `${drop.left}%`,
+                top: '-18vh',
+                color: rainColor,
+                fontSize: `${drop.size}px`,
+                lineHeight: 1,
+                fontFamily: "'JetBrains Mono','Courier New', monospace",
+                textShadow: '0 0 12px rgba(255,255,255,0.12)',
+                opacity: drop.opacity,
+                userSelect: 'none',
+                whiteSpace: 'nowrap',
+                animation: `math-rain-fall ${drop.duration}s linear ${drop.delay}s infinite`,
+                ['--rain-drift' as string]: `${drop.drift}px`,
+              } as CSSProperties}
+            >
+              {drop.symbol}
+            </span>
+          ))}
+        </div>
+      ) : null}
     </div>
   )
 }
