@@ -298,6 +298,7 @@ export interface Event {
   registration_limit_total: number | null
   registration_limit_per_email: boolean
   registration_limit_per_phone: boolean
+  rulebook_url: string | null
   organiser_name: string | null
   organiser_email: string | null
   status: 'published' | 'hidden' | 'disabled'

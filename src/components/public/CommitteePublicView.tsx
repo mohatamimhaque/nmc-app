@@ -293,7 +293,7 @@ export function CommitteePublicView({ subCommittees, members }: CommitteePublicV
                   {member.photo_url ? (
                     <img
                       src={member.photo_url}
-                      alt={member.name ? `Photo of ${member.name}` : 'Avatar placeholder'}
+                      alt={member.name || 'NMC 2026'}
                       style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }}
                     />
                   ) : (

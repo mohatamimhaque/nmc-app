@@ -63,7 +63,7 @@
   --color-success: #16a34a;
 
   /* Typography */
-  --font-heading: "Playfair Display", serif;
+  --font-heading:  'Orbitron', sans-serif;;
   --font-body:    "Inter", sans-serif;
   --font-mono:    "JetBrains Mono", monospace;
 

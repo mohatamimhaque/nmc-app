@@ -104,7 +104,7 @@ export function AdvisersPublicView({ advisers }: AdvisersPublicViewProps) {
                   {adviser.photo_url ? (
                     <img
                       src={adviser.photo_url}
-                      alt={adviser.name ? `Photo of ${adviser.name}` : 'Avatar placeholder'}
+                      alt={adviser.name || 'NMC 2026'}
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     />
                   ) : (

@@ -83,7 +83,7 @@ export function PublicNavbar({ settings, links }: PublicNavbarProps) {
           {settings.logo_url ? (
             <img
               src={settings.logo_url}
-              alt={settings.site_title}
+              alt={settings.site_title || 'NMC 2026'}
               style={{ width: 40, height: 40, borderRadius: 10, objectFit: 'cover' }}
             />
           ) : (

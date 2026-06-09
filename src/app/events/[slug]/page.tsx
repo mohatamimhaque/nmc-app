@@ -64,6 +64,36 @@ export default async function EventDetailPage({ params }: Props) {
           relatedEvents={relatedEvents}
         />
       </section>
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Event",
+            "name": event.title,
+            "description": event.short_description || event.title,
+            "url": `https://www.nmcbd.app/events/${event.slug}`,
+            "organizer": {
+              "@type": "Organization",
+              "name": event.organiser_name || "Math Club, DUET",
+              "url": "https://www.nmcbd.app"
+            },
+            "eventStatus": event.status === 'published' ? "https://schema.org/EventScheduled" : "https://schema.org/EventCancelled",
+            "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+            "location": {
+              "@type": "Place",
+              "name": "DUET Campus",
+              "address": {
+                "@type": "PostalAddress",
+                "addressLocality": "Gazipur",
+                "addressCountry": "BD"
+              }
+            },
+            "image": event.cover_image_url ? [event.cover_image_url] : []
+          })
+        }}
+      />
     </main>
   )
 }

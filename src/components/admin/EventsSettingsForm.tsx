@@ -72,6 +72,7 @@ const DEFAULT_EVENT: Event = {
   registration_limit_total: null,
   registration_limit_per_email: false,
   registration_limit_per_phone: false,
+  rulebook_url: null,
   organiser_name: null,
   organiser_email: null,
   status: 'hidden',
@@ -1044,6 +1045,11 @@ export function EventsSettingsForm({
                   value={draftEvent.prize_details ?? ''}
                   onChange={value => updateDraftEvent({ prize_details: value })}
                   rows={3}
+                />
+                <LabeledInput
+                  label="Rulebook URL"
+                  value={draftEvent.rulebook_url ?? ''}
+                  onChange={value => updateDraftEvent({ rulebook_url: value })}
                 />
                 <LabeledInput
                   label="Organiser Contact Name"

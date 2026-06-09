@@ -23,8 +23,10 @@ export function EventsPublicView({ events }: EventsPublicViewProps) {
   const [categoryFilter, setCategoryFilter] = useState<'all' | Event['category']>('all')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [now, setNow] = useState(() => new Date())
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
+    setMounted(true)
     const timer = setInterval(() => setNow(new Date()), 1000)
     return () => clearInterval(timer)
   }, [])
@@ -241,7 +243,7 @@ export function EventsPublicView({ events }: EventsPublicViewProps) {
             <div key={event.id} className="event-card">
               <div className="event-cover">
                 {event.cover_image_url ? (
-                  <img src={event.cover_image_url} alt={event.title} />
+                  <img src={event.cover_image_url} alt={event.title || 'NMC 2026'} />
                 ) : (
                   <div style={{ display: 'grid', placeItems: 'center', height: '100%', color: '#fff' }}>
                     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -278,8 +280,8 @@ export function EventsPublicView({ events }: EventsPublicViewProps) {
                   )}
                 </div>
                 <div className="event-meta">
-                  <span style={{ color: isSoon ? '#ef4444' : 'var(--foreground-muted)' }}>
-                    {deadline ? (isClosed ? 'Registration Closed' : countdown) : 'Deadline TBA'}
+                  <span style={{ color: mounted && isSoon ? '#ef4444' : 'var(--foreground-muted)' }}>
+                    {deadline ? (isClosed ? 'Registration Closed' : (mounted ? countdown : '-- : -- : -- : --')) : 'Deadline TBA'}
                   </span>
                   {event.registration_type === 'google_form' ? 'Google Form' : 'Internal Form'}
                 </div>
@@ -287,6 +289,16 @@ export function EventsPublicView({ events }: EventsPublicViewProps) {
                   <Link href={`/events/${event.slug}`} style={secondaryButtonStyle}>
                     Details
                   </Link>
+                  {event.rulebook_url && (
+                    <a
+                      href={event.rulebook_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ ...secondaryButtonStyle, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    >
+                      Rulebook <span style={{ marginLeft: 6, fontSize: '0.9em' }} aria-hidden>↗</span>
+                    </a>
+                  )}
                   {event.registration_type === 'google_form' && event.registration_url ? (
                     <a
                       href={event.registration_url}

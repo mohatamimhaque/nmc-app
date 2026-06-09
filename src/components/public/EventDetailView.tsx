@@ -19,10 +19,12 @@ const CATEGORY_COLORS: Record<Event['category'], string> = {
 
 export function EventDetailView({ event, faqs, relatedEvents }: EventDetailViewProps) {
   const [now, setNow] = useState(() => new Date())
+  const [mounted, setMounted] = useState(false)
   const [openFaqIds, setOpenFaqIds] = useState<string[]>([])
   const carouselRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
+    setMounted(true)
     const timer = setInterval(() => setNow(new Date()), 1000)
     return () => clearInterval(timer)
   }, [])
@@ -86,7 +88,7 @@ export function EventDetailView({ event, faqs, relatedEvents }: EventDetailViewP
       {event.cover_image_url && (
         <section style={{ padding: '0 1.5rem 2rem' }}>
           <div style={{ maxWidth: 1100, margin: '0 auto', borderRadius: 20, overflow: 'hidden' }}>
-            <img src={event.cover_image_url} alt={event.title} style={{ width: '100%', height: 360, objectFit: 'cover' }} />
+            <img src={event.cover_image_url} alt={event.title || 'NMC 2026'} style={{ width: '100%', height: 360, objectFit: 'cover' }} />
           </div>
         </section>
       )}
@@ -152,25 +154,27 @@ export function EventDetailView({ event, faqs, relatedEvents }: EventDetailViewP
                 </div>
                 <div ref={carouselRef} style={{ display: 'grid', gridAutoFlow: 'column', gridAutoColumns: 'minmax(240px, 1fr)', gap: '1rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
                   {relatedEvents.map(item => (
-                    <Link
+                    <div
                       key={item.id}
-                      href={`/events/${item.slug}`}
-                      style={{ textDecoration: 'none', color: 'inherit' }}
+                      style={{ border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden', background: 'var(--surface)', position: 'relative' }}
                     >
-                      <div style={{ border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden', background: 'var(--surface)' }}>
-                        {item.cover_image_url ? (
-                          <img src={item.cover_image_url} alt={item.title} style={{ width: '100%', height: 140, objectFit: 'cover' }} />
-                        ) : (
-                          <div style={{ height: 140, background: 'linear-gradient(135deg, #4f46e5, #8b5cf6)' }} />
-                        )}
-                        <div style={{ padding: '0.75rem 0.9rem' }}>
-                          <div style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '0.95rem' }}>{item.title}</div>
-                          <div style={{ fontSize: '0.8rem', color: 'var(--foreground-muted)', marginTop: '0.35rem' }}>
-                            {item.short_description ? <RichHtml html={item.short_description} /> : ''}
-                          </div>
+                      {item.cover_image_url ? (
+                        <img src={item.cover_image_url} alt={item.title} style={{ width: '100%', height: 140, objectFit: 'cover' }} />
+                      ) : (
+                        <div style={{ height: 140, background: 'linear-gradient(135deg, #4f46e5, #8b5cf6)' }} />
+                      )}
+                      <div style={{ padding: '0.75rem 0.9rem' }}>
+                        <div style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '0.95rem' }}>
+                          <Link href={`/events/${item.slug}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                            <span style={{ position: 'absolute', inset: 0 }} aria-hidden="true" />
+                            {item.title}
+                          </Link>
+                        </div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--foreground-muted)', marginTop: '0.35rem', position: 'relative', zIndex: 2 }}>
+                          {item.short_description ? <RichHtml html={item.short_description} /> : ''}
                         </div>
                       </div>
-                    </Link>
+                    </div>
                   ))}
                 </div>
               </section>
@@ -183,8 +187,8 @@ export function EventDetailView({ event, faqs, relatedEvents }: EventDetailViewP
               <div style={{ marginTop: '0.6rem', display: 'grid', gap: '0.35rem' }}>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--foreground-muted)' }}>Deadline</div>
                 {deadline && !isClosed ? (
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: '1.4rem', color: isSoon ? '#ef4444' : 'var(--foreground)' }} aria-live="polite">
-                    {countdown}
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: '1.4rem', color: mounted && isSoon ? '#ef4444' : 'var(--foreground)' }} aria-live="polite">
+                    {mounted ? countdown : '-- : -- : -- : --'}
                   </div>
                 ) : (
                   <div style={{ color: isClosed ? '#ef4444' : 'var(--foreground-muted)' }}>
@@ -208,18 +212,30 @@ export function EventDetailView({ event, faqs, relatedEvents }: EventDetailViewP
                       href={event.registration_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      style={primaryButtonStyle}
+                      style={{ ...primaryButtonStyle, width: '100%', textAlign: 'center', display: 'flex', justifyContent: 'center', alignItems: 'center', boxSizing: 'border-box' }}
                     >
                       {event.registration_button_label || 'Register Now'}
-                      <span style={{ marginLeft: 6 }} aria-hidden>↗</span>
+                      <span style={{ marginLeft: 6, fontSize: '0.9em' }} aria-hidden>↗</span>
                     </a>
                   ) : (
-                    <Link href={`/events/${event.slug}/register`} style={primaryButtonStyle}>
+                    <Link href={`/events/${event.slug}/register`} style={{ ...primaryButtonStyle, width: '100%', textAlign: 'center', display: 'flex', justifyContent: 'center', alignItems: 'center', boxSizing: 'border-box' }}>
                       {event.registration_button_label || 'Register Now'}
                     </Link>
                   )
                 )}
               </div>
+              {event.rulebook_url && (
+                <div style={{ marginTop: '0.75rem' }}>
+                  <a
+                    href={event.rulebook_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ ...ghostButtonStyle, width: '100%', textAlign: 'center', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '0.6rem', boxSizing: 'border-box' }}
+                  >
+                    View Rulebook <span style={{ marginLeft: 6, fontSize: '0.9em' }} aria-hidden>↗</span>
+                  </a>
+                </div>
+              )}
             </div>
 
             <div style={{ border: '1px solid var(--border)', borderRadius: 18, padding: '1.25rem', background: 'var(--surface)' }}>

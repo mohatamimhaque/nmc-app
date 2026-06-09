@@ -11,7 +11,7 @@ export function EventHighlightsSection({ events }: { events: any[] }) {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,320px))', gap: '1.25rem', marginBottom: '2rem', justifyContent: 'center' }}>
         {events.map(ev => (
           <div key={ev.id} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.5rem', boxShadow: 'var(--shadow-sm)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            {ev.cover_image_url && <img src={ev.cover_image_url} alt={ev.title} style={{ width: '100%', height: 140, objectFit: 'cover', borderRadius: 8 }} />}
+            {ev.cover_image_url && <img src={ev.cover_image_url} alt={ev.title || 'NMC 2026'} style={{ width: '100%', height: 140, objectFit: 'cover', borderRadius: 8 }} />}
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: catColour[ev.category] ?? '#4f46e5', background: `${catColour[ev.category] ?? '#4f46e5'}18`, border: `1px solid ${catColour[ev.category] ?? '#4f46e5'}40`, padding: '0.2rem 0.6rem', borderRadius: 999, alignSelf: 'flex-start' }}>
               {ev.category}
             </span>
@@ -77,7 +77,7 @@ export function GalleryPreviewSection({ images }: { images: any[] }) {
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(210px,250px))', gap: 16, marginBottom: '2rem', justifyContent: 'center', padding: '0 1.5rem' }}>
         {images.slice(0,9).map((img, index) => {
-          const title = img.caption || img.alt_text || 'Gallery image'
+          const title = img.caption || img.alt_text || 'NMC 2026'
           const category = img.category_name || 'Uncategorized'
           const tilt = index % 2 === 0 ? -2.2 : 1.7
           return (
@@ -89,7 +89,7 @@ export function GalleryPreviewSection({ images }: { images: any[] }) {
           >
             <div className="gallery-preview-shell" style={{ position: 'relative', borderRadius: 28, overflow: 'hidden', background: 'linear-gradient(180deg, color-mix(in srgb, var(--surface) 94%, #fff 6%), var(--surface))', border: '1px solid color-mix(in srgb, var(--border) 80%, transparent)', boxShadow: 'var(--shadow-lg)', padding: '0.85rem 0.85rem 1rem', transformOrigin: 'center bottom' }}>
               <div className="gallery-preview-frame" style={{ aspectRatio: '4/5', overflow: 'hidden', position: 'relative', borderRadius: 20 }}>
-                <img src={img.url} alt={img.alt_text || img.caption || ''} className="gallery-preview-image" style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.35s ease' }} />
+                <img src={img.url} alt={img.alt_text || img.caption || 'NMC 2026'} className="gallery-preview-image" style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.35s ease' }} />
                 <div className="gallery-preview-overlay" style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(15,17,23,0) 35%, rgba(15,17,23,0.55) 100%)', opacity: 0, transition: 'opacity 0.25s ease' }}>
                   <span className="gallery-preview-expand" style={{ position: 'absolute', top: '0.85rem', right: '0.85rem', width: 42, height: 42, borderRadius: 999, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(195, 152, 98, 0.92)', color: '#fff', boxShadow: '0 10px 24px rgba(0,0,0,0.15)', border: '1px solid rgba(255,255,255,0.15)', transform: 'scale(0.94)', transition: 'transform 0.25s ease' }} aria-hidden="true">
                     ↗
@@ -124,7 +124,7 @@ export function CommitteePreviewSection({ members }: { members: any[] }) {
         {members.slice(0,8).map(m => (
           <div key={m.id} style={{ flexShrink: 0, textAlign: 'center', width: 140 }}>
             <div style={{ width: 80, height: 80, borderRadius: '50%', overflow: 'hidden', margin: '0 auto 0.6rem', background: 'var(--border)', border: '2px solid var(--color-primary)' }}>
-              {m.photo_url ? <img src={m.photo_url} alt={m.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-heading)', fontSize: '1.5rem', color: 'var(--color-primary)' }}>{m.name?.[0]}</div>}
+              {m.photo_url ? <img src={m.photo_url} alt={m.name || 'NMC 2026'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-heading)', fontSize: '1.5rem', color: 'var(--color-primary)' }}>{m.name?.[0]}</div>}
             </div>
             <div style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: '0.8125rem', color: 'var(--foreground)' }}>{m.name}</div>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6rem', color: 'var(--foreground-muted)', marginTop: 2 }}>{m.role}</div>
@@ -153,7 +153,7 @@ export function SponsorsSection({ categories, sponsors, isMediaPartners = false 
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.5rem', justifyContent: 'center', alignItems: 'center' }}>
               {catSponsors.map(s => (
                 <a key={s.id} href={s.website_url || '#'} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', opacity: 0.85, transition: 'opacity 0.15s' }}>
-                  {(s.display_mode === 'logo' || s.display_mode === 'both') && s.logo_url && <img src={s.logo_url} alt={s.name} style={{ height: s.logo_size === 'large' ? 64 : s.logo_size === 'small' ? 32 : 48, objectFit: 'contain' }} />}
+                  {(s.display_mode === 'logo' || s.display_mode === 'both') && s.logo_url && <img src={s.logo_url} alt={s.name || 'NMC 2026'} style={{ height: s.logo_size === 'large' ? 64 : s.logo_size === 'small' ? 32 : 48, objectFit: 'contain' }} />}
                   {(s.display_mode === 'name' || s.display_mode === 'both') && <div style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '1rem', color: 'var(--foreground)' }}>{s.name}</div>}
                 </a>
               ))}
@@ -208,8 +208,6 @@ function SectionHeader({ eyebrow, title, sub }: { eyebrow?: string, title: strin
   return (
     <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
       {eyebrow && <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--color-accent)', marginBottom: '0.5rem' }}>{eyebrow}</div>}
-      <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: 'clamp(1.75rem,4vw,2.5rem)', fontWeight: 700, color: 'var(--foreground)', margin: 0 }}>{title}</h2>
-      {sub && <p style={{ fontFamily: 'var(--font-body)', color: 'var(--foreground-muted)', marginTop: '0.5rem', fontSize: '0.9375rem' }}>{sub}</p>}
-    </div>
+      <h2 style={{ fontFamily: '"Orbitron", sans-serif', fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', fontWeight: 700, color: 'var(--foreground)', margin: 0, textTransform: 'uppercase' }}>{title}</h2>    </div>
   )
 }

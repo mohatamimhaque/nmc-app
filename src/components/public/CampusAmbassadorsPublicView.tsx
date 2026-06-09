@@ -100,7 +100,7 @@ export function CampusAmbassadorsPublicView({ ambassadors }: CampusAmbassadorsPu
                   {ambassador.photo_url ? (
                     <img
                       src={ambassador.photo_url}
-                      alt={ambassador.name ? `Photo of ${ambassador.name}` : 'Ambassador'}
+                      alt={ambassador.name || 'NMC 2026'}
                       style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }}
                     />
                   ) : (

@@ -1,7 +1,7 @@
 'use client'
 
 import type { CSSProperties } from 'react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useCallback } from 'react'
 import type { GalleryCategory, GalleryImage } from '@/types/database'
 
 interface GalleryGridProps {
@@ -38,19 +38,33 @@ export function GalleryGrid({ categories, images, initialImageId }: GalleryGridP
     setLightboxIndex(null)
   }
 
-  const showPrev = () => {
+  const showPrev = useCallback((e?: React.MouseEvent) => {
+    if (e) e.stopPropagation()
     setLightboxIndex(prev => {
       if (prev === null) return prev
       return prev === 0 ? filteredImages.length - 1 : prev - 1
     })
-  }
+  }, [filteredImages.length])
 
-  const showNext = () => {
+  const showNext = useCallback((e?: React.MouseEvent) => {
+    if (e) e.stopPropagation()
     setLightboxIndex(prev => {
       if (prev === null) return prev
       return prev === filteredImages.length - 1 ? 0 : prev + 1
     })
-  }
+  }, [filteredImages.length])
+
+  // Keyboard navigation
+  useEffect(() => {
+    if (lightboxIndex === null) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeLightbox()
+      if (e.key === 'ArrowLeft') showPrev()
+      if (e.key === 'ArrowRight') showNext()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [lightboxIndex, showPrev, showNext])
 
   const activeImage = lightboxIndex !== null ? filteredImages[lightboxIndex] : null
 
@@ -89,69 +103,93 @@ export function GalleryGrid({ categories, images, initialImageId }: GalleryGridP
       )}
 
       <div style={gridStyle}>
-        {filteredImages.map((image, index) => (
-          <button
-            key={image.id}
-            type="button"
-            onClick={() => openLightbox(index)}
-            style={imageButtonStyle}
-            className="gallery-card"
-          >
-            <div style={imageFrameStyle}>
-              <img
-                src={image.url}
-                alt={image.alt_text || image.caption || 'Gallery image'}
-                loading="lazy"
-                style={imageStyle}
-                className="gallery-image"
-              />
-              <div className="gallery-overlay" style={overlayStyle}>
-                <div style={overlayContentStyle}>
-                  <span style={overlayBadgeStyle}>
-                    {image.category_id ? categoryById.get(image.category_id) ?? 'Uncategorized' : 'Uncategorized'}
-                  </span>
-                  <span style={overlayCtaStyle}>View Photo</span>
+        {filteredImages.map((img, index) => {
+          const title = img.caption || img.alt_text || 'NMC 2026'
+          const category = img.category_id ? categoryById.get(img.category_id) ?? 'Uncategorized' : 'Uncategorized'
+          const tilt = index % 2 === 0 ? -2.2 : 1.7
+
+          return (
+            <button
+              key={img.id}
+              type="button"
+              onClick={() => openLightbox(index)}
+              className="gallery-preview-card"
+              style={{
+                ...imageButtonStyle,
+                transform: `rotate(${tilt}deg)`,
+              }}
+            >
+              <div className="gallery-preview-shell" style={shellStyle}>
+                <div className="gallery-preview-frame" style={frameStyle}>
+                  <img
+                    src={img.url}
+                    alt={title}
+                    loading="lazy"
+                    style={imageStyle}
+                    className="gallery-preview-image"
+                  />
+                  <div className="gallery-preview-overlay" style={overlayStyle}>
+                    <span className="gallery-preview-expand" style={expandIconStyle} aria-hidden="true">
+                      ↗
+                    </span>
+                  </div>
+                </div>
+                <div style={cardFooterStyle}>
+                  <div style={cardTitleStyle}>{title}</div>
+                  <div style={cardCategoryStyle}>
+                    <span style={dividerLineStyle} />
+                    {category}
+                    <span style={dividerLineStyle} />
+                  </div>
                 </div>
               </div>
-            </div>
-            {image.caption && (
-              <div style={captionStyle}>{image.caption}</div>
-            )}
-          </button>
-        ))}
+            </button>
+          )
+        })}
       </div>
 
       {activeImage && (
         <div style={lightboxOverlayStyle} onClick={closeLightbox}>
-          <div style={lightboxContentStyle} onClick={event => event.stopPropagation()}>
-            <button type="button" style={lightboxCloseStyle} onClick={closeLightbox}>×</button>
-            <button type="button" style={lightboxNavStyle} onClick={showPrev}>‹</button>
-            <div style={lightboxImageShellStyle}>
-              <img
-                src={activeImage.url}
-                alt={activeImage.alt_text || activeImage.caption || 'Gallery image'}
-                style={lightboxImageStyle}
-              />
-            </div>
-            <button type="button" style={lightboxNavStyle} onClick={showNext}>›</button>
-            {(activeImage.caption || activeImage.alt_text) && (
-              <div style={lightboxCaptionStyle}>
-                {activeImage.caption || activeImage.alt_text}
+          {/* Top Toolbar */}
+          <div style={lightboxToolbarStyle} onClick={e => e.stopPropagation()}>
+            <div style={lightboxTitleStyle}>
+              {activeImage.caption || activeImage.alt_text || 'NMC 2026'}
+              <div style={lightboxCategoryStyle}>
+                {activeImage.category_id ? categoryById.get(activeImage.category_id) ?? 'Uncategorized' : 'Uncategorized'}
               </div>
-            )}
+            </div>
+            <button type="button" style={lightboxCloseStyle} onClick={closeLightbox} aria-label="Close">✕</button>
           </div>
+
+          {/* Nav Areas */}
+          <div style={{ ...lightboxNavAreaStyle, left: 0 }} onClick={showPrev}>
+            <button type="button" style={lightboxChevronStyle} aria-label="Previous">‹</button>
+          </div>
+          <div style={{ ...lightboxNavAreaStyle, right: 0 }} onClick={showNext}>
+            <button type="button" style={lightboxChevronStyle} aria-label="Next">›</button>
+          </div>
+
+          {/* Main Image */}
+          <img
+            src={activeImage.url}
+            alt={activeImage.alt_text || activeImage.caption || 'NMC 2026'}
+            style={lightboxImageStyle}
+            onClick={e => e.stopPropagation()} // Prevent closing when clicking the image itself
+          />
         </div>
       )}
     </div>
   )
 }
 
+// ─── Styles ─────────────────────────────────────────────────────────────────
+
 const tabsStyle: CSSProperties = {
   display: 'flex',
   flexWrap: 'wrap',
   justifyContent: 'center',
   gap: '0.6rem',
-  marginBottom: '2rem',
+  marginBottom: '3rem',
 }
 
 const tabStyle: CSSProperties = {
@@ -163,13 +201,15 @@ const tabStyle: CSSProperties = {
   letterSpacing: '0.08em',
   textTransform: 'uppercase',
   cursor: 'pointer',
+  transition: 'all 0.2s ease',
 }
 
 const gridStyle: CSSProperties = {
   display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 280px))',
-  gap: '1.25rem',
+  gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+  gap: '2rem',
   justifyContent: 'center',
+  padding: '0 1rem',
 }
 
 const imageButtonStyle: CSSProperties = {
@@ -179,19 +219,26 @@ const imageButtonStyle: CSSProperties = {
   cursor: 'pointer',
   textAlign: 'left',
   width: '100%',
+  transition: 'transform 0.35s ease',
+  outline: 'none',
 }
 
-const imageFrameStyle: CSSProperties = {
-  borderRadius: 14,
-  overflow: 'hidden',
-  background: 'linear-gradient(140deg, color-mix(in srgb, var(--surface) 80%, transparent), var(--surface))',
-  border: '1px solid color-mix(in srgb, var(--border) 80%, transparent)',
-  boxShadow: 'var(--shadow-md)',
-  aspectRatio: '4 / 3',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
+const shellStyle: CSSProperties = {
   position: 'relative',
+  borderRadius: 28,
+  overflow: 'hidden',
+  background: 'linear-gradient(180deg, color-mix(in srgb, var(--surface) 94%, #fff 6%), var(--surface))',
+  border: '1px solid color-mix(in srgb, var(--border) 80%, transparent)',
+  boxShadow: 'var(--shadow-lg)',
+  padding: '0.85rem 0.85rem 1rem',
+  transformOrigin: 'center bottom',
+}
+
+const frameStyle: CSSProperties = {
+  aspectRatio: '4/5',
+  overflow: 'hidden',
+  position: 'relative',
+  borderRadius: 20,
 }
 
 const imageStyle: CSSProperties = {
@@ -199,124 +246,163 @@ const imageStyle: CSSProperties = {
   height: '100%',
   display: 'block',
   objectFit: 'cover',
-  background: 'var(--surface-2)',
   transition: 'transform 0.35s ease',
-}
-
-const captionStyle: CSSProperties = {
-  marginTop: '0.5rem',
-  fontFamily: 'var(--font-body)',
-  fontSize: '0.85rem',
-  color: 'var(--foreground-muted)',
-  textAlign: 'left',
 }
 
 const overlayStyle: CSSProperties = {
   position: 'absolute',
   inset: 0,
-  display: 'flex',
-  alignItems: 'flex-end',
-  padding: '0.85rem',
-  background: 'linear-gradient(180deg, rgba(15,17,23,0) 35%, rgba(15,17,23,0.65) 100%)',
+  background: 'linear-gradient(180deg, rgba(15,17,23,0) 35%, rgba(15,17,23,0.55) 100%)',
   opacity: 0,
-  transition: 'opacity 0.35s ease',
+  transition: 'opacity 0.25s ease',
 }
 
-const overlayContentStyle: CSSProperties = {
-  width: '100%',
-  display: 'flex',
+const expandIconStyle: CSSProperties = {
+  position: 'absolute',
+  top: '0.85rem',
+  right: '0.85rem',
+  width: 42,
+  height: 42,
+  borderRadius: 999,
+  display: 'inline-flex',
   alignItems: 'center',
-  justifyContent: 'space-between',
-  gap: '0.5rem',
+  justifyContent: 'center',
+  background: 'rgba(195, 152, 98, 0.92)',
   color: '#fff',
+  boxShadow: '0 10px 24px rgba(0,0,0,0.15)',
+  border: '1px solid rgba(255,255,255,0.15)',
+  transform: 'scale(0.94)',
+  transition: 'transform 0.25s ease',
 }
 
-const overlayBadgeStyle: CSSProperties = {
+const cardFooterStyle: CSSProperties = {
+  padding: '0.95rem 0.45rem 0.2rem',
+  textAlign: 'center',
+}
+
+const cardTitleStyle: CSSProperties = {
+  fontFamily: 'var(--font-heading)',
+  fontSize: '1.45rem',
+  fontWeight: 700,
+  fontStyle: 'italic',
+  color: 'var(--color-primary)',
+  lineHeight: 1.15,
+}
+
+const cardCategoryStyle: CSSProperties = {
+  marginTop: '0.55rem',
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '0.5rem',
   fontFamily: 'var(--font-mono)',
-  fontSize: '0.6rem',
-  letterSpacing: '0.1em',
+  fontSize: '0.58rem',
+  letterSpacing: '0.14em',
   textTransform: 'uppercase',
-  padding: '0.2rem 0.6rem',
-  borderRadius: 999,
-  background: 'rgba(255,255,255,0.16)',
-  border: '1px solid rgba(255,255,255,0.3)',
+  color: 'var(--foreground-muted)',
 }
 
-const overlayCtaStyle: CSSProperties = {
-  fontFamily: 'var(--font-body)',
-  fontSize: '0.75rem',
-  fontWeight: 600,
-  background: 'rgba(255,255,255,0.2)',
-  borderRadius: 999,
-  padding: '0.25rem 0.7rem',
-  border: '1px solid rgba(255,255,255,0.25)',
+const dividerLineStyle: CSSProperties = {
+  width: 24,
+  height: 1,
+  background: 'currentColor',
+  opacity: 0.35,
 }
+
+// ─── Lightbox Styles (FB Messenger style) ───────────────────────────────────
 
 const lightboxOverlayStyle: CSSProperties = {
   position: 'fixed',
   inset: 0,
-  background: 'rgba(10,12,18,0.85)',
+  background: '#000', // Fully black like FB Messenger
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  zIndex: 200,
+  zIndex: 9999, // Ensure it's above everything
+}
+
+const lightboxToolbarStyle: CSSProperties = {
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
   padding: '1.5rem',
-}
-
-const lightboxContentStyle: CSSProperties = {
-  maxWidth: '1000px',
-  width: '100%',
-  display: 'grid',
-  gridTemplateColumns: 'auto 1fr auto',
-  alignItems: 'center',
-  gap: '1rem',
-  position: 'relative',
-}
-
-const lightboxImageShellStyle: CSSProperties = {
-  background: 'rgba(0,0,0,0.3)',
-  borderRadius: 16,
-  padding: '1rem',
   display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
+  alignItems: 'flex-start',
+  justifyContent: 'space-between',
+  zIndex: 10,
+  background: 'linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%)',
+  pointerEvents: 'none', // Allow clicking through to background
 }
 
-const lightboxImageStyle: CSSProperties = {
-  maxWidth: '100%',
-  maxHeight: '70vh',
-  objectFit: 'contain',
-}
-
-const lightboxNavStyle: CSSProperties = {
-  background: 'rgba(255,255,255,0.08)',
-  border: '1px solid rgba(255,255,255,0.2)',
+const lightboxTitleStyle: CSSProperties = {
   color: '#fff',
-  fontSize: '2rem',
+  fontFamily: 'var(--font-body)',
+  fontSize: '1.1rem',
+  fontWeight: 600,
+  pointerEvents: 'auto',
+  textShadow: '0 2px 8px rgba(0,0,0,0.5)',
+}
+
+const lightboxCategoryStyle: CSSProperties = {
+  fontSize: '0.8rem',
+  color: 'rgba(255,255,255,0.7)',
+  marginTop: '0.2rem',
+  fontWeight: 400,
+}
+
+const lightboxCloseStyle: CSSProperties = {
+  background: 'rgba(255,255,255,0.1)',
+  border: 'none',
+  color: '#fff',
+  fontSize: '1.5rem',
   borderRadius: 999,
   width: 44,
   height: 44,
   cursor: 'pointer',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  pointerEvents: 'auto',
+  backdropFilter: 'blur(8px)',
+  transition: 'background 0.2s',
 }
 
-const lightboxCloseStyle: CSSProperties = {
+const lightboxNavAreaStyle: CSSProperties = {
   position: 'absolute',
-  top: '-0.5rem',
-  right: 0,
-  background: 'rgba(255,255,255,0.12)',
-  border: '1px solid rgba(255,255,255,0.2)',
-  color: '#fff',
-  fontSize: '1.5rem',
-  borderRadius: 999,
-  width: 36,
-  height: 36,
+  top: '50%',
+  transform: 'translateY(-50%)',
+  height: '70%', // Large hit area
+  width: '15%',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
   cursor: 'pointer',
+  zIndex: 5,
+  WebkitTapHighlightColor: 'transparent',
 }
 
-const lightboxCaptionStyle: CSSProperties = {
-  gridColumn: '1 / -1',
-  textAlign: 'center',
-  color: 'rgba(255,255,255,0.7)',
-  fontFamily: 'var(--font-body)',
-  marginTop: '0.5rem',
+const lightboxChevronStyle: CSSProperties = {
+  background: 'rgba(255,255,255,0.1)',
+  backdropFilter: 'blur(8px)',
+  border: 'none',
+  color: '#fff',
+  fontSize: '2.5rem',
+  borderRadius: 999,
+  width: 56,
+  height: 56,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  cursor: 'pointer',
+  pointerEvents: 'none', // Let parent handle clicks
+}
+
+const lightboxImageStyle: CSSProperties = {
+  maxWidth: '100vw',
+  maxHeight: '100vh',
+  width: '100%',
+  height: '100%',
+  objectFit: 'contain',
+  userSelect: 'none',
+  WebkitUserSelect: 'none',
 }

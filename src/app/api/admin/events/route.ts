@@ -107,6 +107,7 @@ export async function PATCH(request: Request) {
       : null,
     registration_limit_per_email: eventInput.registration_limit_per_email === true,
     registration_limit_per_phone: eventInput.registration_limit_per_phone === true,
+    rulebook_url: eventInput.rulebook_url || null,
     organiser_name: eventInput.organiser_name || null,
     organiser_email: eventInput.organiser_email || null,
     status: eventInput.status,

@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import { unstable_noStore as noStore } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { PublicMathDivider } from '@/components/public/PublicMathDivider'
 import {
@@ -45,9 +44,9 @@ const DEFAULT_SECTIONS: PageSection[] = [
   { id: 'home_cta', page: 'home', section_key: 'home_cta', label: 'Call-To-Action Strip', is_visible: true, sort_order: 9 },
 ]
 
-export default async function HomePage() {
-  noStore()
+export const revalidate = 60
 
+export default async function HomePage() {
   const supabase = await createClient()
 
   const now = new Date().toISOString()
@@ -73,7 +72,7 @@ export default async function HomePage() {
       .order('is_pinned', { ascending: false })
       .order('sort_order', { ascending: true })
       .order('publish_at', { ascending: false }),
-    supabase.from('gallery_images').select('*').eq('is_visible', true).order('sort_order', { ascending: true }),
+    supabase.from('gallery_images').select('*').eq('is_visible', true).order('sort_order', { ascending: true }).limit(8),
     supabase.from('gallery_categories').select('*').order('sort_order', { ascending: true }),
     supabase.from('committee_members').select('*').eq('is_visible', true).order('sort_order', { ascending: true }),
     supabase.from('sponsor_categories').select('*').eq('is_visible', true).order('sort_order', { ascending: true }),
@@ -124,10 +123,10 @@ export default async function HomePage() {
     home_stats: (
       <StatsSection
         stats={[
-          { value: '40+', label: 'Universities' },
-          { value: '1200+', label: 'Participants' },
-          { value: '25', label: 'Events' },
-          { value: '1.8M', label: 'Prize Pool' },
+          { value: '80+', label: 'Universities' },
+          { value: '1500+', label: 'Participants' },
+          { value: '6', label: 'Events' },
+          { value: '100k', label: 'Prize Pool' },
         ]}
       />
     ),
@@ -148,6 +147,23 @@ export default async function HomePage() {
           )}
         </div>
       ))}
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Event",
+            "name": "National Mathematics Carnival 2026",
+            "organizer": {
+              "@type": "Organization",
+              "name": "Math Club, DUET",
+              "url": "https://www.nmcbd.app"
+            },
+            "url": "https://www.nmcbd.app"
+          })
+        }}
+      />
     </main>
   )
 }
