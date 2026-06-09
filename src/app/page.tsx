@@ -154,10 +154,24 @@ export default async function HomePage() {
           __html: JSON.stringify({
             "@context": "https://schema.org",
             "@type": "Event",
-            "name": "National Mathematics Carnival 2026",
+            "name": settings.site_title || "National Mathematics Carnival 2026",
+            "startDate": settings.hero_countdown_date || "2026-06-01T09:00:00+06:00",
+            "endDate": settings.hero_countdown_date || "2026-06-02T17:00:00+06:00",
+            "eventStatus": "https://schema.org/EventScheduled",
+            "location": {
+              "@type": "Place",
+              "name": settings.competition_location || "DUET Campus",
+              "address": {
+                "@type": "PostalAddress",
+                "addressLocality": "Gazipur",
+                "addressCountry": "BD"
+              }
+            },
+            "image": settings.hero_image_url ? [settings.hero_image_url] : [],
+            "description": settings.hero_subtitle || "Join the premier mathematics competition in Bangladesh.",
             "organizer": {
               "@type": "Organization",
-              "name": "Math Club, DUET",
+              "name": settings.organiser_name || "Math Club, DUET",
               "url": "https://www.nmcbd.app"
             },
             "url": "https://www.nmcbd.app"
