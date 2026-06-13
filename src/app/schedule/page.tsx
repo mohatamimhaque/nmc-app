@@ -5,8 +5,8 @@ import type { ScheduleDaySetting, ScheduleSession, SiteSettings } from '@/types/
 import { SchedulePublicView } from '@/components/public/SchedulePublicView'
 
 export const metadata: Metadata = {
-	title: 'Program Schedule',
-	description: 'Full program schedule for NMC 2026.',
+	title: 'Program Schedule — National Mathematics Carnival 2026',
+	description: 'View the official day-by-day program schedule, sessions timeline, and seminar timings for the National Mathematics Carnival 2026, hosted by Math Club DUET.',
 }
 
 export const dynamic = 'force-dynamic'

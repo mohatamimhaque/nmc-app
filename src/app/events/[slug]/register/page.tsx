@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import type { Event, InternalFormField, InternalFormSection } from '@/types/database'
 import { EventRegistrationForm } from '@/components/public/EventRegistrationForm'
 import { RichHtml } from '@/components/public/RichHtml'
+import { getSeoTitle, getSeoDescription, getEventKeywords } from '@/lib/seo'
 
 interface Props {
   params: Promise<{ slug: string }>
@@ -15,15 +16,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const supabase = await createClient()
   const { data: event } = await supabase
     .from('events')
-    .select('title, short_description')
+    .select('title, short_description, category')
     .eq('slug', slug)
     .eq('status', 'published')
     .single()
 
-  if (!event) return { title: 'Registration' }
+  if (!event) return { title: getSeoTitle('Registration') }
   return {
-    title: `${event.title} Registration`,
-    description: event.short_description ?? undefined,
+    title: getSeoTitle(`${event.title} Registration`),
+    description: getSeoDescription(event.short_description || `Registration form for the competitive event ${event.title} at NMC 2026.`),
+    keywords: getEventKeywords(`${event.title} Registration`, event.category, event.short_description || undefined),
   }
 }
 

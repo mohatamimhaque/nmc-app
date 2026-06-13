@@ -135,6 +135,11 @@ export function HeroSection({ settings }: { settings: SiteSettings | null }) {
           )}
         </>
       )}
+      {!showText && (
+        <h1 style={{ position: 'absolute', width: '1px', height: '1px', padding: '0', margin: '-1px', overflow: 'hidden', clip: 'rect(0, 0, 0, 0)', whiteSpace: 'nowrap', border: '0' }}>
+          {heroSettings.hero_title ?? fallbackTitle}
+        </h1>
+      )}
       {showText && (
         <div style={{ position: 'relative', zIndex: 2, display: 'grid', justifyItems: 'center' }}>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--color-accent)', marginBottom: '1.25rem', padding: '0.3rem 1rem', border: '1px solid var(--color-accent)', borderRadius: 999, display: 'inline-block', opacity: 0.85 }}>

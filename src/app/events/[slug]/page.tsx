@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import type { Event, EventFaq } from '@/types/database'
 import { EventDetailView } from '@/components/public/EventDetailView'
+import { getSeoTitle, getSeoDescription, getEventKeywords } from '@/lib/seo'
 
 interface Props {
   params: Promise<{ slug: string }>
@@ -13,15 +14,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const supabase = await createClient()
   const { data: event } = await supabase
     .from('events')
-    .select('title, short_description')
+    .select('title, short_description, category')
     .eq('slug', slug)
     .eq('status', 'published')
     .single()
 
-  if (!event) return { title: 'Event Not Found' }
+  if (!event) return { title: getSeoTitle('Event Not Found') }
   return {
-    title: event.title,
-    description: event.short_description ?? undefined,
+    title: getSeoTitle(event.title),
+    description: getSeoDescription(event.short_description || `Detail page for the competitive event ${event.title} at NMC 2026.`),
+    keywords: getEventKeywords(event.title, event.category, event.short_description || undefined),
   }
 }
 

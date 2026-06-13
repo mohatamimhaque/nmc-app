@@ -1,10 +1,24 @@
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import type { ClubPartner } from '@/types/database'
+import { getSeoTitle, getSeoDescription, getEventKeywords } from '@/lib/seo'
 
-export const metadata: Metadata = {
-  title: 'Club Partners',
-  description: 'Our club partners supporting NMC 2026.',
+export async function generateMetadata(): Promise<Metadata> {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('club_partners')
+    .select('name')
+    .eq('is_visible', true)
+
+  const names = (data ?? []).map(p => p.name).filter(Boolean)
+  const dynamicKeywords = names.join(', ')
+  const keywords = getEventKeywords('Club Partners', 'Partners', dynamicKeywords)
+
+  return {
+    title: getSeoTitle('Club Partners'),
+    description: getSeoDescription('Meet the collaborative partner clubs and student associations supporting and co-promoting the National Mathematics Carnival 2026 across campuses in Bangladesh.'),
+    keywords,
+  }
 }
 
 export const dynamic = 'force-dynamic'

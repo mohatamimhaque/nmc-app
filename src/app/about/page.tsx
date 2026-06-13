@@ -20,8 +20,8 @@ import type {
 } from '@/types/database'
 
 export const metadata: Metadata = {
-	title: 'About',
-	description: 'Learn about Math Club, DUET and the National Mathematics Carnival.',
+	title: 'About Us — National Mathematics Carnival 2026 | DUET',
+	description: 'Discover the history, mission, and vision of Math Club DUET and the annual National Mathematics Carnival. Meet our team driving mathematics excellence in BD.',
 }
 
 export default async function AboutPage() {

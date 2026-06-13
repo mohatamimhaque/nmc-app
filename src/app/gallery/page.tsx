@@ -5,8 +5,8 @@ import type { GalleryCategory, GalleryImage } from '@/types/database'
 import { GalleryGrid } from '@/components/public/GalleryGrid'
 
 export const metadata: Metadata = {
-	title: 'Gallery',
-	description: 'Photo gallery from NMC 2026.',
+	title: 'Gallery & Moments — National Mathematics Carnival 2026',
+	description: 'Browse the photo gallery and highlights of National Mathematics Carnival 2026. Explore captured moments of math olympiads and contests by Math Club, DUET.',
 }
 
 export const dynamic = 'force-dynamic'

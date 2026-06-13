@@ -29,7 +29,7 @@ import { DEFAULT_SITE_SETTINGS } from '@/lib/siteSettings'
 export const metadata: Metadata = {
   title: 'National Mathematics Carnival 2026 — Math Club, DUET',
   description:
-    'Join the premier mathematics competition in Bangladesh. Register for NMC 2026 organised by Math Club, DUET.',
+    'Join the premier National Mathematics Carnival 2026 in Bangladesh. Register for exciting competitions, workshops, and challenges organised by Math Club, DUET.',
 }
 
 const DEFAULT_SECTIONS: PageSection[] = [

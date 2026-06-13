@@ -1,6 +1,7 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
+import Script from 'next/script'
 import type { FooterSettings, NavLink, SiteSettings } from '../../types/database'
 import { PublicMathBackground } from './PublicMathBackground'
 import { PublicNavbar } from './PublicNavbar'
@@ -39,6 +40,19 @@ export function PublicChrome({
 
   return (
     <>
+      <Script
+        async
+        src="https://www.googletagmanager.com/gtag/js?id=G-5D70VYQWYQ"
+        strategy="afterInteractive"
+      />
+      <Script id="google-analytics" strategy="afterInteractive">
+        {`
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'G-5D70VYQWYQ');
+        `}
+      </Script>
       <PublicAnalyticsTracker />
       <PointerGlow />
       <PublicSymbolsProvider category={competitionCategory}>
