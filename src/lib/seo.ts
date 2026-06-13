@@ -91,6 +91,8 @@ export function getEventKeywords(title: string, category?: string, description?:
     'Math Fest Bangladesh',
     'Math Festival',
     'Math Olympiad BD',
+    'mohatamim',
+    'mohatamim haque',
   ]
 
   const keywordsSet = new Set<string>()

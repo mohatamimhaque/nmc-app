@@ -73,7 +73,9 @@ const fallbackMetadata = {
     'Math Contest',
     'Math Fest Bangladesh',
     'Math Festival',
-    'Math Olympiad BD'
+    'Math Olympiad BD',
+    'mohatamim',
+    'mohatamim haque'
   ],
   authors: [{ name: 'Math Club, DUET' }],
   openGraph: {
