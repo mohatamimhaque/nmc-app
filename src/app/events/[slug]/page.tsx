@@ -81,6 +81,18 @@ export default async function EventDetailPage({ params }: Props) {
               "name": event.organiser_name || "Math Club, DUET",
               "url": "https://www.nmcbd.app"
             },
+            "performer": {
+              "@type": "Organization",
+              "name": event.organiser_name || "Math Club, DUET",
+              "url": "https://www.nmcbd.app"
+            },
+            "offers": {
+              "@type": "Offer",
+              "url": `https://www.nmcbd.app/events/${event.slug}`,
+              "price": "0",
+              "priceCurrency": "BDT",
+              "availability": "https://schema.org/InStock"
+            },
             "eventStatus": event.status === 'published' ? "https://schema.org/EventScheduled" : "https://schema.org/EventCancelled",
             "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
             "location": {

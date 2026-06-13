@@ -174,6 +174,18 @@ export default async function HomePage() {
               "name": settings.organiser_name || "Math Club, DUET",
               "url": "https://www.nmcbd.app"
             },
+            "performer": {
+              "@type": "Organization",
+              "name": settings.organiser_name || "Math Club, DUET",
+              "url": "https://www.nmcbd.app"
+            },
+            "offers": {
+              "@type": "Offer",
+              "url": "https://www.nmcbd.app/events",
+              "price": "0",
+              "priceCurrency": "BDT",
+              "availability": "https://schema.org/InStock"
+            },
             "url": "https://www.nmcbd.app"
           })
         }}
