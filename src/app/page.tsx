@@ -184,7 +184,8 @@ export default async function HomePage() {
               "url": "https://www.nmcbd.app/events",
               "price": "0",
               "priceCurrency": "BDT",
-              "availability": "https://schema.org/InStock"
+              "availability": "https://schema.org/InStock",
+              "validFrom": "2026-01-01T00:00:00+06:00"
             },
             "url": "https://www.nmcbd.app"
           })

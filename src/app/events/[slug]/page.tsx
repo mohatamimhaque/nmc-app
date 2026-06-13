@@ -91,7 +91,8 @@ export default async function EventDetailPage({ params }: Props) {
               "url": `https://www.nmcbd.app/events/${event.slug}`,
               "price": "0",
               "priceCurrency": "BDT",
-              "availability": "https://schema.org/InStock"
+              "availability": "https://schema.org/InStock",
+              "validFrom": "2026-01-01T00:00:00+06:00"
             },
             "eventStatus": event.status === 'published' ? "https://schema.org/EventScheduled" : "https://schema.org/EventCancelled",
             "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
