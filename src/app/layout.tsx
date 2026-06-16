@@ -39,6 +39,11 @@ const fallbackMetadata = {
     default: 'National Mathematics Carnival 2026 — Math Club, DUET',
     template: '%s | NMC 2026',
   },
+  verification: {
+    other: {
+      'msvalidate.01': '655AC4E077C36DFFD757C246B53C70A6',
+    },
+  },
   description:
     "Official website of the National Mathematics Carnival 2026, organized by Math Club, DUET. Join Bangladesh's premier competitive mathematics event today!",
   keywords: [
