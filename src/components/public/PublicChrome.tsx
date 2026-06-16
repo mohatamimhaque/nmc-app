@@ -42,7 +42,7 @@ export function PublicChrome({
     <>
       <Script
         async
-        src="https://www.googletagmanager.com/gtag/js?id=G-5D70VYQWYQ"
+        src="https://www.googletagmanager.com/gtag/js?id=G-3KP5X990WN"
         strategy="afterInteractive"
       />
       <Script id="google-analytics" strategy="afterInteractive">
@@ -50,7 +50,7 @@ export function PublicChrome({
           window.dataLayer = window.dataLayer || [];
           function gtag(){dataLayer.push(arguments);}
           gtag('js', new Date());
-          gtag('config', 'G-5D70VYQWYQ');
+          gtag('config', 'G-3KP5X990WN');
         `}
       </Script>
       <PublicAnalyticsTracker />

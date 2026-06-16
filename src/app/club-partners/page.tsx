@@ -18,6 +18,9 @@ export async function generateMetadata(): Promise<Metadata> {
     title: getSeoTitle('Club Partners'),
     description: getSeoDescription('Meet the collaborative partner clubs and student associations supporting and co-promoting the National Mathematics Carnival 2026 across campuses in Bangladesh.'),
     keywords,
+    alternates: {
+      canonical: '/club-partners',
+    },
   }
 }
 

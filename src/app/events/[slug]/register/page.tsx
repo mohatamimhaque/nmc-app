@@ -26,6 +26,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: getSeoTitle(`${event.title} Registration`),
     description: getSeoDescription(event.short_description || `Registration form for the competitive event ${event.title} at NMC 2026.`),
     keywords: getEventKeywords(`${event.title} Registration`, event.category, event.short_description || undefined),
+    alternates: {
+      canonical: `/events/${slug}/register`,
+    },
   }
 }
 

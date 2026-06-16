@@ -22,6 +22,9 @@ import type {
 export const metadata: Metadata = {
 	title: 'About Us — National Mathematics Carnival 2026 | DUET',
 	description: 'Discover the history, mission, and vision of Math Club DUET and the annual National Mathematics Carnival. Meet our team driving mathematics excellence in BD.',
+	alternates: {
+		canonical: '/about',
+	},
 }
 
 export default async function AboutPage() {

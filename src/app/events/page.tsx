@@ -6,6 +6,9 @@ import { EventsPublicView } from '@/components/public/EventsPublicView'
 export const metadata: Metadata = {
 	title: 'Contests & Events — National Mathematics Carnival 2026',
 	description: 'Explore all competitive contests, math olympiads, workshops, and exhibitions at the National Mathematics Carnival 2026. Register today and win grand prizes!',
+	alternates: {
+		canonical: '/events',
+	},
 }
 
 export const dynamic = 'force-dynamic'

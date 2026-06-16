@@ -34,6 +34,7 @@ const getFaviconType = (value: string) => {
 }
 
 const fallbackMetadata = {
+  metadataBase: new URL('https://www.nmcbd.app'),
   title: {
     default: 'National Mathematics Carnival 2026 — Math Club, DUET',
     template: '%s | NMC 2026',

@@ -36,13 +36,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }))
 
-  const { data: notices } = await supabase.from('notices').select('id, updated_at').eq('is_visible', true)
-  const noticeRoutes: MetadataRoute.Sitemap = ((notices as any[]) || []).map((notice: any) => ({
-    url: `${baseUrl}/notices/${notice.id}`,
-    lastModified: notice.updated_at ? new Date(notice.updated_at) : new Date(),
-    changeFrequency: 'weekly',
-    priority: 0.6,
-  }))
-
-  return [...staticRoutes, ...eventRoutes, ...noticeRoutes] as MetadataRoute.Sitemap
+  return [...staticRoutes, ...eventRoutes] as MetadataRoute.Sitemap
 }

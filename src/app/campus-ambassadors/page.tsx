@@ -22,6 +22,9 @@ export async function generateMetadata(): Promise<Metadata> {
     title: getSeoTitle('Campus Ambassadors'),
     description: getSeoDescription('Connect with the passionate campus ambassadors representing the National Mathematics Carnival 2026 across various schools, colleges, and universities in BD.'),
     keywords,
+    alternates: {
+      canonical: '/campus-ambassadors',
+    },
   }
 }
 

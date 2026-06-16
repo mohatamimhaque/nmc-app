@@ -23,6 +23,9 @@ export async function generateMetadata(): Promise<Metadata> {
 		title: getSeoTitle('Advisers & Mentors'),
 		description: getSeoDescription('Meet the esteemed faculty members, industry experts, and professional advisors guiding the National Mathematics Carnival 2026, hosted by Math Club at DUET.'),
 		keywords,
+		alternates: {
+			canonical: '/advisers',
+		},
 	}
 }
 

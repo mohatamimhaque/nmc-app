@@ -11,6 +11,9 @@ import { DEFAULT_FOOTER_SETTINGS } from '@/lib/siteSettings'
 export const metadata: Metadata = {
 	title: 'Contact Us — National Mathematics Carnival 2026 | DUET',
 	description: 'Get in touch with the National Mathematics Carnival 2026 organizing team. Find email addresses, phone contacts, location maps, and the general inquiry form.',
+	alternates: {
+		canonical: '/contact',
+	},
 }
 
 export const dynamic = 'force-dynamic'

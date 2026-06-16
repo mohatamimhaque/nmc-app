@@ -22,6 +22,9 @@ export async function generateMetadata(): Promise<Metadata> {
 		title: getSeoTitle('Organizing Committee'),
 		description: getSeoDescription('Meet the dedicated team, organizers, and sub-committee members behind the National Mathematics Carnival 2026, managed and presented by Math Club at DUET.'),
 		keywords,
+		alternates: {
+			canonical: '/committee',
+		},
 	}
 }
 
