@@ -1,11 +1,11 @@
 export function getSeoTitle(pageTitle: string): string {
-  const suffix = " — National Mathematics Carnival 2026" // 41 chars
+  const suffix = " | NMC 2026" // 11 chars
   const candidate = pageTitle + suffix
   if (candidate.length >= 50 && candidate.length <= 60) {
     return candidate
   }
   if (candidate.length < 50) {
-    const longerSuffix = " — National Mathematics Carnival 2026 | Math Club DUET" // 53 chars
+    const longerSuffix = " | NMC 2026 | Math Club DUET" // 28 chars
     const candidate2 = pageTitle + longerSuffix
     if (candidate2.length >= 50 && candidate2.length <= 60) {
       return candidate2
@@ -15,7 +15,7 @@ export function getSeoTitle(pageTitle: string): string {
     }
     return (candidate2 + " - Register Now!").slice(0, 60).padEnd(50, '.').slice(0, 60)
   }
-  const shorterSuffix = " — NMC 2026" // 11 chars
+  const shorterSuffix = " | NMC 2026" // 11 chars
   const candidate3 = pageTitle + shorterSuffix
   if (candidate3.length >= 50 && candidate3.length <= 60) {
     return candidate3

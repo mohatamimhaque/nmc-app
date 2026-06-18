@@ -27,7 +27,7 @@ import type {
 import { DEFAULT_SITE_SETTINGS } from '@/lib/siteSettings'
 
 export const metadata: Metadata = {
-  title: 'National Mathematics Carnival 2026 — Math Club, DUET',
+  title: 'NMC 2026 | Math Club, DUET',
   description:
     'Join the premier National Mathematics Carnival 2026 in Bangladesh. Register for exciting competitions, workshops, and challenges organised by Math Club, DUET.',
   alternates: {

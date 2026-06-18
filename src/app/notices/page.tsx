@@ -5,7 +5,7 @@ import type { Notice } from '@/types/database'
 import { NoticesBoard } from '@/components/public/NoticesBoard'
 
 export const metadata: Metadata = {
-	title: 'Notices & Updates — National Mathematics Carnival 2026',
+	title: 'Notices & Updates | NMC 2026',
 	description: 'Stay updated with the latest announcements, notice board bulletins, schedule changes, and registration deadlines for National Mathematics Carnival 2026.',
 	alternates: {
 		canonical: '/notices',

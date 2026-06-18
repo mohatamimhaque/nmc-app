@@ -4,7 +4,7 @@ import { PublicMathDivider } from '@/components/public/PublicMathDivider'
 import type { Sponsor, SponsorCategory } from '@/types/database'
 
 export const metadata: Metadata = {
-	title: 'Sponsors & Partners — National Mathematics Carnival 2026',
+	title: 'Sponsors & Partners | NMC 2026',
 	description: 'Meet the proud sponsors, corporate partners, and media organizations supporting the National Mathematics Carnival 2026, organized by Math Club, DUET.',
 	alternates: {
 		canonical: '/sponsors',

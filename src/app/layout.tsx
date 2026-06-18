@@ -36,8 +36,7 @@ const getFaviconType = (value: string) => {
 const fallbackMetadata = {
   metadataBase: new URL('https://www.nmcbd.app'),
   title: {
-    default: 'National Mathematics Carnival 2026 — Math Club, DUET',
-    template: '%s | NMC 2026',
+    default: 'NMC 2026 | Math Club, DUET',
   },
   verification: {
     other: {
@@ -88,7 +87,7 @@ const fallbackMetadata = {
     type: 'website',
     locale: 'en_BD',
     siteName: 'National Mathematics Carnival 2026',
-    title: 'National Mathematics Carnival 2026 — Math Club, DUET',
+    title: 'NMC 2026 | Math Club, DUET',
     description:
       "Official website of the National Mathematics Carnival 2026, organized by Math Club, DUET. Join Bangladesh's premier competitive mathematics event today!",
   },
@@ -116,7 +115,6 @@ export async function generateMetadata() {
       ...fallbackMetadata,
       title: {
         default: title,
-        template: `%s | ${title}`,
       },
       openGraph: {
         ...fallbackMetadata.openGraph,

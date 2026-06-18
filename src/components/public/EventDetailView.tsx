@@ -23,11 +23,39 @@ export function EventDetailView({ event, faqs, relatedEvents }: EventDetailViewP
   const [openFaqIds, setOpenFaqIds] = useState<string[]>([])
   const carouselRef = useRef<HTMLDivElement | null>(null)
 
+  const [showButtons, setShowButtons] = useState(false)
+  const [canScrollLeft, setCanScrollLeft] = useState(false)
+  const [canScrollRight, setCanScrollRight] = useState(false)
+
+  const checkScroll = () => {
+    if (carouselRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = carouselRef.current
+      const hasOverflow = scrollWidth > clientWidth
+      setShowButtons(hasOverflow)
+      setCanScrollLeft(scrollLeft > 5)
+      setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 5)
+    }
+  }
+
   useEffect(() => {
     setMounted(true)
     const timer = setInterval(() => setNow(new Date()), 1000)
+
+    const el = carouselRef.current
+    if (el) {
+      el.addEventListener('scroll', checkScroll)
+      checkScroll()
+      const observer = new ResizeObserver(checkScroll)
+      observer.observe(el)
+      return () => {
+        clearInterval(timer)
+        el.removeEventListener('scroll', checkScroll)
+        observer.disconnect()
+      }
+    }
+
     return () => clearInterval(timer)
-  }, [])
+  }, [relatedEvents])
 
   const deadline = event.registration_deadline ? new Date(event.registration_deadline) : null
   const isClosed = deadline ? now.getTime() > deadline.getTime() : false
@@ -147,10 +175,36 @@ export function EventDetailView({ event, faqs, relatedEvents }: EventDetailViewP
               <section style={{ marginBottom: '2rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
                   <h2 style={sectionTitleStyle}>More Events</h2>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button type="button" style={ghostButtonStyle} onClick={() => carouselRef.current?.scrollBy({ left: -320, behavior: 'smooth' })}>◀</button>
-                    <button type="button" style={ghostButtonStyle} onClick={() => carouselRef.current?.scrollBy({ left: 320, behavior: 'smooth' })}>▶</button>
-                  </div>
+                  {showButtons && (
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <button
+                        type="button"
+                        style={{
+                          ...ghostButtonStyle,
+                          opacity: canScrollLeft ? 1 : 0.4,
+                          cursor: canScrollLeft ? 'pointer' : 'not-allowed',
+                          pointerEvents: canScrollLeft ? 'auto' : 'none',
+                        }}
+                        onClick={() => carouselRef.current?.scrollBy({ left: -320, behavior: 'smooth' })}
+                        aria-label="Scroll left"
+                      >
+                        ◀
+                      </button>
+                      <button
+                        type="button"
+                        style={{
+                          ...ghostButtonStyle,
+                          opacity: canScrollRight ? 1 : 0.4,
+                          cursor: canScrollRight ? 'pointer' : 'not-allowed',
+                          pointerEvents: canScrollRight ? 'auto' : 'none',
+                        }}
+                        onClick={() => carouselRef.current?.scrollBy({ left: 320, behavior: 'smooth' })}
+                        aria-label="Scroll right"
+                      >
+                        ▶
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <div ref={carouselRef} style={{ display: 'grid', gridAutoFlow: 'column', gridAutoColumns: 'minmax(240px, 1fr)', gap: '1rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
                   {relatedEvents.map(item => (

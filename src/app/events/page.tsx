@@ -4,7 +4,7 @@ import type { Event } from '@/types/database'
 import { EventsPublicView } from '@/components/public/EventsPublicView'
 
 export const metadata: Metadata = {
-	title: 'Contests & Events — National Mathematics Carnival 2026',
+	title: 'Contests & Events | NMC 2026',
 	description: 'Explore all competitive contests, math olympiads, workshops, and exhibitions at the National Mathematics Carnival 2026. Register today and win grand prizes!',
 	alternates: {
 		canonical: '/events',
