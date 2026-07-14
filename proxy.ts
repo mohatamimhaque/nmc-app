@@ -54,6 +54,23 @@ export async function proxy(request: NextRequest) {
       url.searchParams.set('error', 'unauthorized')
       return NextResponse.redirect(url)
     }
+
+    // Role-based path authorization: registration_editor can ONLY access registrations page and registrations API routes
+    if (adminRecord.role === 'registration_editor') {
+      const allowedPaths = [
+        '/admin/registrations',
+        '/api/admin/registrations',
+        '/api/admin/registrations/import-rooms'
+      ]
+      
+      const isAllowed = allowedPaths.some(path => 
+        pathname === path || pathname.startsWith(path + '/')
+      )
+
+      if (!isAllowed) {
+        return NextResponse.redirect(new URL('/admin/registrations', request.url))
+      }
+    }
   }
 
   // ── Already logged-in admin visiting login page → go to dashboard ────────

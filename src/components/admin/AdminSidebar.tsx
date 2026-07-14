@@ -27,12 +27,12 @@ interface NavItem {
   roles?: AdminRole[]
 }
 
-type AdminRole = 'super_admin' | 'admin' | 'moderator'
+type AdminRole = 'super_admin' | 'admin' | 'moderator' | 'registration_editor'
 
 const NAV: NavItem[] = [
   // Dashboard
-  { label: 'Dashboard',    href: '/admin',              icon: <HexagonIcon />,   group: 'Overview' },
-  { label: 'Analytics',   href: '/admin/analytics',     icon: <GridIcon />,      group: 'Overview' },
+  { label: 'Dashboard',    href: '/admin',              icon: <HexagonIcon />,   group: 'Overview', roles: ['super_admin', 'admin', 'moderator'] },
+  { label: 'Analytics',   href: '/admin/analytics',     icon: <GridIcon />,      group: 'Overview', roles: ['super_admin', 'admin'] },
 
   // Content
   { label: 'Home Page',   href: '/admin/home',          icon: <CircleDotIcon />, group: 'Content', roles: ['super_admin', 'admin'] },
@@ -48,14 +48,14 @@ const NAV: NavItem[] = [
   { label: 'Campus Ambassadors', href: '/admin/campus-ambassadors', icon: <CircleDotIcon />, group: 'People', roles: ['super_admin', 'admin'] },
 
   // Settings
-  { label: 'Registrations',href: '/admin/registrations',icon: <HexagonIcon />,  group: 'Manage', roles: ['super_admin', 'admin'] },
+  { label: 'Registrations',href: '/admin/registrations',icon: <HexagonIcon />,  group: 'Manage', roles: ['super_admin', 'admin', 'registration_editor'] },
   { label: 'Visibility',  href: '/admin/visibility',    icon: <InfinityIcon />, group: 'Manage', roles: ['super_admin'] },
   { label: 'Navigation',  href: '/admin/navigation',   icon: <GridIcon />,     group: 'Manage', roles: ['super_admin', 'admin'] },
   { label: 'Contact/About',href: '/admin/contact-about',icon: <DiamondIcon />,  group: 'Manage', roles: ['super_admin', 'admin'] },
   { label: 'Footer',      href: '/admin/footer',         icon: <PentagonIcon />, group: 'Manage', roles: ['super_admin', 'admin'] },
   { label: 'Theme',       href: '/admin/theme',          icon: <GridIcon />,     group: 'Manage', roles: ['super_admin'] },
   { label: 'Admins',      href: '/admin/admins',         icon: <HexagonIcon />,  group: 'Manage', roles: ['super_admin'] },
-  { label: 'Docs',        href: '/admin/docs',           icon: <SigmaIcon />,    group: 'Help' },
+  { label: 'Docs',        href: '/admin/docs',           icon: <SigmaIcon />,    group: 'Help', roles: ['super_admin', 'admin', 'moderator'] },
 ]
 
 // ── Group the nav items ───────────────────────────────────────────────────────

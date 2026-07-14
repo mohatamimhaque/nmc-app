@@ -118,6 +118,11 @@ export interface Database {
         Insert: Omit<PageVisibility, 'id'>
         Update: Partial<PageVisibility>
       }
+      processed_registrations: {
+        Row: ProcessedRegistration
+        Insert: ProcessedRegistration
+        Update: Partial<ProcessedRegistration>
+      }
       nav_links: {
         Row: NavLink
         Insert: Omit<NavLink, 'id'>
@@ -643,7 +648,7 @@ export interface AdminUser {
   id: string
   email: string
   display_name: string | null
-  role: 'super_admin' | 'admin' | 'moderator'
+  role: 'super_admin' | 'admin' | 'moderator' | 'registration_editor'
   last_login_at: string | null
   created_at: string
 }
@@ -656,4 +661,27 @@ export interface VisibilityAuditLog {
   old_value: boolean
   new_value: boolean
   changed_at: string
+}
+
+export interface ProcessedRegistration {
+  serial: string
+  full_name: string | null
+  email_address: string | null
+  phone_number: string | null
+  gender: string | null
+  t_shirt_size: string | null
+  photos: string | null
+  level: string | null
+  institution: string | null
+  class_year_student_of: string | null
+  event: string | null
+  payment_method: string | null
+  payment_number: string | null
+  transaction_id: string | null
+  is_kit_coollect: boolean
+  is_present: boolean
+  is_collect_launch: boolean
+  allocated_room: string | null
+  updated_by: string | null
+  updated_at: string
 }

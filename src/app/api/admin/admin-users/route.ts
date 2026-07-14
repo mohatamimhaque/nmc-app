@@ -4,7 +4,7 @@ import { requireAdminRole } from '@/lib/admin-auth'
 
 export const runtime = 'nodejs'
 
-const ALLOWED_ROLES = new Set(['admin', 'moderator'])
+const ALLOWED_ROLES = new Set(['admin', 'moderator', 'registration_editor'])
 
 export async function GET() {
   const guard = await requireAdminRole(['super_admin'])

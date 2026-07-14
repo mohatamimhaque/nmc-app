@@ -10,7 +10,8 @@
     "db:push": "supabase db push",
     "db:push:ts": "npx tsx scripts/db-push.ts",
     "admin:create": "npx tsx scripts/create-admin.ts",
-    "analytics:seed": "npx tsx scripts/seed-analytics.ts"
+    "analytics:seed": "npx tsx scripts/seed-analytics.ts",
+    "registrations:migrate": "npx tsx scripts/migrate-registrations.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1044.0",

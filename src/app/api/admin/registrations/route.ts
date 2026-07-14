@@ -1,0 +1,124 @@
+import { NextResponse } from 'next/server'
+import { requireAdminRole } from '@/lib/admin-auth'
+import { createClient } from '@/lib/supabase/server'
+
+export const runtime = 'nodejs'
+
+/**
+ * GET /api/admin/registrations
+ * Fetch all processed registration records. Securely protected for super_admin & admin.
+ */
+export async function GET() {
+  const guard = await requireAdminRole(['super_admin', 'admin', 'registration_editor'])
+  if ('response' in guard) return guard.response
+
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('processed_registrations')
+    .select('*')
+    .order('serial')
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  return NextResponse.json(data)
+}
+
+/**
+ * PATCH /api/admin/registrations
+ * Bulk or individual update of status flags: is_kit_coollect, is_present, is_collect_launch, and allocated_room.
+ */
+export async function PATCH(request: Request) {
+  const guard = await requireAdminRole(['super_admin', 'admin', 'registration_editor'])
+  if ('response' in guard) return guard.response
+
+  try {
+    const { serials, data } = await request.json()
+
+    if (serials === undefined || data === undefined) {
+      return NextResponse.json({ error: 'Missing serials or data parameters.' }, { status: 400 })
+    }
+
+    const supabase = await createClient()
+
+    // Fetch admin name/email to track who performed the update
+    const { data: adminRecord } = await supabase
+      .from('admin_users')
+      .select('display_name, email')
+      .eq('id', guard.user.id)
+      .single()
+    const adminName = adminRecord?.display_name || guard.user.email || 'Admin'
+
+    // Filter valid updates to avoid modifying unintended fields
+    const updatePayload: Record<string, any> = {
+      updated_by: adminName,
+      updated_at: new Date().toISOString()
+    }
+    if (data.is_kit_coollect !== undefined) updatePayload.is_kit_coollect = !!data.is_kit_coollect
+    if (data.is_present !== undefined) updatePayload.is_present = !!data.is_present
+    if (data.is_collect_launch !== undefined) updatePayload.is_collect_launch = !!data.is_collect_launch
+    if (data.allocated_room !== undefined) {
+      updatePayload.allocated_room = data.allocated_room === null || String(data.allocated_room).trim() === ''
+        ? null
+        : String(data.allocated_room).trim()
+    }
+    if (data.full_name !== undefined) updatePayload.full_name = data.full_name === null ? null : String(data.full_name).trim()
+    if (data.email_address !== undefined) updatePayload.email_address = data.email_address === null ? null : String(data.email_address).trim()
+    if (data.phone_number !== undefined) updatePayload.phone_number = data.phone_number === null ? null : String(data.phone_number).trim()
+    if (data.gender !== undefined) updatePayload.gender = data.gender === null ? null : String(data.gender).trim()
+    if (data.t_shirt_size !== undefined) updatePayload.t_shirt_size = data.t_shirt_size === null ? null : String(data.t_shirt_size).trim()
+    if (data.institution !== undefined) updatePayload.institution = data.institution === null ? null : String(data.institution).trim()
+    if (data.class_year_student_of !== undefined) updatePayload.class_year_student_of = data.class_year_student_of === null ? null : String(data.class_year_student_of).trim()
+    if (data.event !== undefined) updatePayload.event = data.event === null ? null : String(data.event).trim()
+    if (data.payment_method !== undefined) updatePayload.payment_method = data.payment_method === null ? null : String(data.payment_method).trim()
+    if (data.payment_number !== undefined) updatePayload.payment_number = data.payment_number === null ? null : String(data.payment_number).trim()
+    if (data.transaction_id !== undefined) updatePayload.transaction_id = data.transaction_id === null ? null : String(data.transaction_id).trim()
+
+    // Ensure we are updating at least one field other than updated_by
+    if (Object.keys(updatePayload).length <= 1) {
+      return NextResponse.json({ error: 'No fields to update.' }, { status: 400 })
+    }
+
+    if (serials === 'all') {
+      // Update all rows
+      const { error } = await supabase
+        .from('processed_registrations')
+        .update(updatePayload)
+        .neq('serial', '')
+
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 })
+      }
+    } else if (Array.isArray(serials)) {
+      if (serials.length === 0) {
+        return NextResponse.json({ success: true, updatedCount: 0 })
+      }
+      // Update list of specific serials
+      const { error } = await supabase
+        .from('processed_registrations')
+        .update(updatePayload)
+        .in('serial', serials)
+
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 })
+      }
+    } else if (typeof serials === 'string') {
+      // Update a single registration
+      const { error } = await supabase
+        .from('processed_registrations')
+        .update(updatePayload)
+        .eq('serial', serials)
+
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 })
+      }
+    } else {
+      return NextResponse.json({ error: 'Invalid serials parameter format.' }, { status: 400 })
+    }
+
+    return NextResponse.json({ success: true, updatedBy: adminName, updatedAt: updatePayload.updated_at })
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 })
+  }
+}

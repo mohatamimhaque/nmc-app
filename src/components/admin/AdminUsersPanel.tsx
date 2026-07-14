@@ -7,7 +7,7 @@ export type AdminUserRow = {
   id: string
   email: string
   display_name: string | null
-  role: 'super_admin' | 'admin' | 'moderator'
+  role: 'super_admin' | 'admin' | 'moderator' | 'registration_editor'
   last_login_at: string | null
   created_at: string
 }
@@ -120,6 +120,7 @@ export function AdminUsersPanel({ initialUsers }: { initialUsers: AdminUserRow[]
           >
             <option value="admin">Admin</option>
             <option value="moderator">Moderator</option>
+            <option value="registration_editor">Registration Editor</option>
           </select>
           <button
             onClick={submit}
