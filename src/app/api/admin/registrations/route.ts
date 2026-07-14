@@ -63,6 +63,11 @@ export async function PATCH(request: Request) {
         ? null
         : String(data.allocated_room).trim()
     }
+    if (data.admit_card_url !== undefined) {
+      updatePayload.admit_card_url = data.admit_card_url === null || String(data.admit_card_url).trim() === ''
+        ? null
+        : String(data.admit_card_url).trim()
+    }
     if (data.full_name !== undefined) updatePayload.full_name = data.full_name === null ? null : String(data.full_name).trim()
     if (data.email_address !== undefined) updatePayload.email_address = data.email_address === null ? null : String(data.email_address).trim()
     if (data.phone_number !== undefined) updatePayload.phone_number = data.phone_number === null ? null : String(data.phone_number).trim()

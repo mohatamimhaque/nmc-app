@@ -684,4 +684,5 @@ export interface ProcessedRegistration {
   allocated_room: string | null
   updated_by: string | null
   updated_at: string
+  admit_card_url: string | null
 }

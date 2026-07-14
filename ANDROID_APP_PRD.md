@@ -48,6 +48,7 @@ The application will be built using **Flutter** to leverage modern Material 3 de
 *   **Networking**: `dio` (for robust HTTP client requests, base config, headers, and error interceptors).
 *   **Local Storage**: `flutter_secure_storage` (for encrypted token persistence like JWTs and admin records).
 *   **Barcode Scanning**: `mobile_scanner` (high-performance camera barcode and QR-code scanner).
+*   **PDF Viewer**: `syncfusion_flutter_pdfviewer` (for rendering the PDF format admit cards natively within the Android layout).
 *   **UI Components**: Material 3 icons, Google Fonts (`Inter`, `Outfit`), and custom animations with `lottie`.
 
 ---
@@ -129,7 +130,22 @@ To match the premium dashboard aesthetics, implement a unified dark-mode-first s
     2.  **Profile**: Scanned participant Name, Serial, Institution, Class/Level, Event, and T-shirt size.
     3.  **Audit**: Last updated time stamp and the admin name who conducted the scan.
     4.  **Toggles**: Inline manual status toggle switch fallback options.
-*   **Controls**: Large, primary neon **Rescan** button. Tapping the button returns the coordinator instantly to the scanner viewport to scan the next participant ticket.
+    5.  **Admit Card Link**: Shows the participant's admit card URL if available.
+*   **Controls**: 
+    - Large, primary neon **Rescan** button (returns coordinator to the scanner viewport).
+    - **Show Admit Card** action button: When clicked, opens the PDF file natively inside a dedicated PDF view screen (e.g. using `syncfusion_flutter_pdfviewer`) to avoid standard Android webview rendering issues. The screen should feature a floating action button to download/save the PDF file directly to the device's local storage directory.
+
+### E. Participant Search View
+*   **Layout**: Clean search dashboard with input filters at the top and a list table at the bottom.
+*   **Filters**:
+    1.  `Level Select Dropdown`: School, Intermediate, University level, or All.
+    2.  `Event Select Dropdown`: Math Olympiad, Math Game, Article Writing, Poster Presentation, or All.
+    3.  `Name or Phone Input`: Text box matching part of participant's name or phone.
+*   **Results Table**:
+    - Displays matched results (Serial, Name, Event, and Level).
+    - Clicking a matched participant row navigates the coordinator directly to their **Participant Detail & Update View** page.
+*   **Action Floating Button**:
+    - Floating Action Button (FAB) at the bottom-right corner to open the scanner view quickly.
 
 ---
 

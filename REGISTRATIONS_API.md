@@ -191,3 +191,65 @@ Requests without valid auth headers or session cookies will return `401 Unauthor
       "updatedAt": "2026-07-14T16:00:00.000Z"
     }
     ```
+
+---
+
+## 5. Bulk Import Admit Cards
+*   **Route**: `POST /api/admin/registrations/import-admit-cards`
+*   **Description**: Bulk updates admit card URLs (`admit_card_url`) for multiple registrations in a single query. Sets the `updated_by` audit column.
+*   **Request Format**:
+    *   Content-Type: `application/json`
+    *   Body Parameters:
+        -   `updates`: `object[]` (array of updates)
+            *   `serial`: `string` (unique ID)
+            *   `admit_card_url`: `string | null` (HTTP URL to admit card PDF)
+    ```json
+    {
+      "updates": [
+        { "serial": "NMC26-S-MG-001", "admit_card_url": "https://www.nmcbd.app/files/NMC26-S-MG-001.pdf" },
+        { "serial": "NMC26-S-MG-002", "admit_card_url": "https://www.nmcbd.app/files/NMC26-S-MG-002.pdf" }
+      ]
+    }
+    ```
+*   **Response Format**:
+    *   `200 OK`:
+    ```json
+    {
+      "success": true,
+      "count": 2
+    }
+    ```
+
+---
+
+## 6. Public Search & Lookup Admit Cards
+*   **Route**: `GET /api/registrations/admit-card`
+*   **Description**: Public endpoint to search and retrieve matching registration details and admit card URLs. Requires search values to protect data from scanning.
+*   **Request Format**:
+    *   Query Parameters:
+        -   `level`: `string` (e.g. `School level`, `Intermediate level`, `University level`, or `all`)
+        -   `event`: `string` (e.g. `Math Olympiad`, `Math Game`, etc., or `all`)
+        -   `query`: `string` (Name or Phone number to search, min 3 characters)
+*   **Response Format**:
+    *   `200 OK`: Returns up to 10 matching registration details.
+    ```json
+    {
+      "success": true,
+      "registrations": [
+        {
+          "serial": "NMC26-S-MG-001",
+          "full_name": "MD.SIFATULLAH",
+          "level": "School level",
+          "event": "Math Game",
+          "phone_number": "01716608477",
+          "admit_card_url": "https://www.nmcbd.app/files/NMC26-S-MG-001.pdf"
+        }
+      ]
+    }
+    ```
+    *   `400 Bad Request` (Missing search terms or short queries):
+    ```json
+    {
+      "error": "Search query must be at least 3 characters long."
+    }
+    ```

@@ -37,6 +37,10 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
   const [editingReg, setEditingReg] = useState<ProcessedRegistration | null>(null)
   const [showExcelModal, setShowExcelModal] = useState(false)
   const [excelPreview, setExcelPreview] = useState<{ serial: string; allocated_room: string }[]>([])
+  const [showAdmitExcelModal, setShowAdmitExcelModal] = useState(false)
+  const [admitExcelPreview, setAdmitExcelPreview] = useState<{ serial: string; admit_card_url: string }[]>([])
+  const [adminPreviewUrl, setAdminPreviewUrl] = useState<string | null>(null)
+  const [adminPreviewName, setAdminPreviewName] = useState('')
   
   const [isUpdating, startUpdateTransition] = useTransition()
   const tableRef = useRef<HTMLTableElement | null>(null)
@@ -136,8 +140,8 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
       stateSave: true,
       destroy: true,
       columnDefs: [
-        { orderable: false, targets: [0, 6, 7, 8, 9, 12] }, // Disable sorting on checkboxes, statuses, actions (now index 12)
-        { searchable: false, targets: [0, 7, 8, 9, 12] }
+        { orderable: false, targets: [0, 6, 7, 8, 9, 12, 13] },
+        { searchable: false, targets: [0, 7, 8, 9, 12, 13] }
       ],
       pageLength: 25,
       lengthMenu: [10, 25, 50, 100, 250],
@@ -275,6 +279,83 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
     })
   }
 
+  // Parse Excel admit card URL allocations on client
+  const handleAdmitExcelFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = async (evt) => {
+      try {
+        const data = evt.target?.result
+        const workbook = XLSX.read(data, { type: 'binary' })
+        const sheetName = workbook.SheetNames[0]
+        const worksheet = workbook.Sheets[sheetName]
+        const rawJson = XLSX.utils.sheet_to_json<any>(worksheet, { defval: '' })
+
+        const updates: { serial: string; admit_card_url: string }[] = []
+
+        rawJson.forEach((row: any) => {
+          // Fuzzy key matching for robust column handling
+          const keys = Object.keys(row)
+          const serialKey = keys.find(k => k.toLowerCase().trim() === 'serial')
+          const urlKey = keys.find(k => k.toLowerCase().trim() === 'admit_card_url' || k.toLowerCase().trim() === 'admit card url' || k.toLowerCase().trim() === 'admit_card' || k.toLowerCase().trim() === 'url')
+
+          if (serialKey && row[serialKey]) {
+            const serial = String(row[serialKey]).trim()
+            const url = urlKey ? String(row[urlKey]).trim() : ''
+            updates.push({ serial, admit_card_url: url })
+          }
+        })
+
+        if (updates.length === 0) {
+          showToast('No rows found containing "serial" and "admit_card_url" column headers.', 'error')
+          return
+        }
+
+        setAdmitExcelPreview(updates)
+        setShowAdmitExcelModal(true)
+        e.target.value = ''
+      } catch (err: any) {
+        showToast(`Failed to read Excel file: ${err.message}`, 'error')
+      }
+    }
+    reader.readAsBinaryString(file)
+  }
+
+  // Execute Admit Card updates from Excel modal
+  const confirmAdmitExcelImport = () => {
+    startUpdateTransition(async () => {
+      try {
+        const res = await fetch('/api/admin/registrations/import-admit-cards', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ updates: admitExcelPreview })
+        })
+
+        const result = await res.json()
+        if (!res.ok) throw new Error(result.error || 'Failed to import admit cards.')
+
+        // Update local state
+        const urlMap = new Map(admitExcelPreview.map(item => [item.serial, item.admit_card_url]))
+        setRegistrations(prev =>
+          prev.map(r => {
+            if (urlMap.has(r.serial)) {
+              return { ...r, admit_card_url: urlMap.get(r.serial) || null }
+            }
+            return r
+          })
+        )
+
+        showToast(`Successfully updated admit card URLs for ${result.count} registrations!`)
+        setShowAdmitExcelModal(false)
+        setAdmitExcelPreview([])
+      } catch (err: any) {
+        showToast(err.message, 'error')
+      }
+    })
+  }
+
   // Trigger individual toggles
   const handleToggleField = (serial: string, field: 'is_kit_coollect' | 'is_present' | 'is_collect_launch', currentValue: boolean) => {
     startUpdateTransition(async () => {
@@ -313,6 +394,7 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
     const is_present = formData.get('is_present') === 'true'
     const is_collect_launch = formData.get('is_collect_launch') === 'true'
     const allocated_room = formData.get('allocated_room') as string
+    const admit_card_url = formData.get('admit_card_url') as string
     
     const full_name = formData.get('full_name') as string
     const email_address = formData.get('email_address') as string
@@ -338,6 +420,7 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
               is_present,
               is_collect_launch,
               allocated_room: allocated_room.trim() || null,
+              admit_card_url: admit_card_url.trim() || null,
               full_name: full_name.trim() || null,
               email_address: email_address.trim() || null,
               phone_number: phone_number.trim() || null,
@@ -365,6 +448,7 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
                   is_present,
                   is_collect_launch,
                   allocated_room: allocated_room.trim() || null,
+                  admit_card_url: admit_card_url.trim() || null,
                   full_name: full_name.trim() || null,
                   email_address: email_address.trim() || null,
                   phone_number: phone_number.trim() || null,
@@ -779,6 +863,7 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
                 <th style={{ textAlign: 'center' }}>Launch</th>
                 <th>Room</th>
                 <th>Updated By</th>
+                <th style={{ textAlign: 'center' }}>Admit Card</th>
                 <th style={{ width: '60px', textAlign: 'center' }}>Actions</th>
               </tr>
             </thead>
@@ -880,6 +965,42 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
                       <span style={{ color: 'var(--admin-accent)' }}>{reg.updated_by}</span>
                     ) : (
                       <span style={{ color: 'var(--admin-fg-muted)', fontStyle: 'italic' }}>Never</span>
+                    )}
+                  </td>
+
+                  {/* Admit Card preview/link */}
+                  <td style={{ textAlign: 'center' }}>
+                    {reg.admit_card_url ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAdminPreviewUrl(reg.admit_card_url)
+                          setAdminPreviewName(reg.full_name || reg.serial)
+                        }}
+                        style={{
+                          borderRadius: 6,
+                          border: '1px solid rgba(99, 102, 241, 0.3)',
+                          background: 'rgba(99, 102, 241, 0.15)',
+                          color: 'var(--admin-accent)',
+                          padding: '0.35rem 0.75rem',
+                          fontFamily: 'var(--font-mono)',
+                          fontSize: '0.65rem',
+                          letterSpacing: '0.05em',
+                          textTransform: 'uppercase',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease'
+                        }}
+                        onMouseEnter={e => {
+                          e.currentTarget.style.background = 'rgba(99, 102, 241, 0.3)'
+                        }}
+                        onMouseLeave={e => {
+                          e.currentTarget.style.background = 'rgba(99, 102, 241, 0.15)'
+                        }}
+                      >
+                        View
+                      </button>
+                    ) : (
+                      <span style={{ color: 'var(--admin-fg-muted)', fontStyle: 'italic', fontSize: '0.75rem' }}>None</span>
                     )}
                   </td>
 
@@ -1127,6 +1248,36 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
                 </div>
               </div>
 
+              {/* Row 7.5: Admit Card URL */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '1.25rem' }}>
+                <label style={fieldLabelStyle}>Admit Card URL</label>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <input
+                    type="text"
+                    name="admit_card_url"
+                    defaultValue={editingReg.admit_card_url || ''}
+                    placeholder="E.g. https://.../admit-card.pdf"
+                    style={inputStyle}
+                  />
+                  {editingReg.admit_card_url && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAdminPreviewUrl(editingReg.admit_card_url || null)
+                        setAdminPreviewName(editingReg.full_name || editingReg.serial)
+                      }}
+                      style={{
+                        ...actionBtnStyle,
+                        whiteSpace: 'nowrap',
+                        padding: '0.6rem 1rem'
+                      }}
+                    >
+                      Preview Admit
+                    </button>
+                  )}
+                </div>
+              </div>
+
               <hr style={{ border: 'none', borderTop: '1px solid var(--admin-border)', margin: '1.25rem 0' }} />
 
               {/* Row 8: Status Flags (Kit, Present, Launch) */}
@@ -1226,6 +1377,229 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
               <button type="button" onClick={confirmExcelImport} disabled={isUpdating} style={submitBtnStyle}>
                 {isUpdating ? 'Importing...' : `Confirm Import (${excelPreview.length} rows)`}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Excel Upload Verification Modal for Admit Cards ── */}
+      {showAdmitExcelModal && (
+        <div style={modalOverlayStyle}>
+          <div style={modalContainerStyle}>
+            <div style={modalHeaderStyle}>
+              <h3 style={{ margin: 0, fontFamily: 'var(--font-heading)', fontSize: '1.25rem' }}>Verify Admit Card Import</h3>
+              <button type="button" onClick={() => { setShowAdmitExcelModal(false); setAdmitExcelPreview([]); }} style={closeBtnStyle}>✕</button>
+            </div>
+            <div style={modalBodyStyle}>
+              <p style={{ margin: '0 0 1rem', fontSize: '0.875rem', color: 'var(--admin-fg-muted)' }}>
+                We parsed the Excel file and found <strong style={{ color: 'var(--admin-accent)' }}>{admitExcelPreview.length}</strong> admit card row(s).
+                Please inspect a sample preview of the updates below.
+              </p>
+
+              {/* Preview table */}
+              <div style={{ maxHeight: '250px', overflowY: 'auto', border: '1px solid var(--admin-border)', borderRadius: 6, background: 'rgba(0,0,0,0.2)' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', textAlign: 'left' }}>
+                  <thead style={{ background: 'var(--admin-surface)', position: 'sticky', top: 0 }}>
+                    <tr>
+                      <th style={{ padding: '8px', borderBottom: '1px solid var(--admin-border)' }}>Serial</th>
+                      <th style={{ padding: '8px', borderBottom: '1px solid var(--admin-border)' }}>Proposed Admit Card URL</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {admitExcelPreview.slice(0, 10).map((row, index) => (
+                      <tr key={index} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+                        <td style={{ padding: '8px', fontFamily: 'var(--font-mono)' }}>{row.serial}</td>
+                        <td style={{ padding: '8px', wordBreak: 'break-all' }}>
+                          {row.admit_card_url ? (
+                            <span style={{ color: 'var(--admin-accent)' }}>{row.admit_card_url}</span>
+                          ) : (
+                            <span style={{ color: 'var(--admin-fg-muted)', fontStyle: 'italic' }}>Remove Url (Set Null)</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                    {admitExcelPreview.length > 10 && (
+                      <tr>
+                        <td colSpan={2} style={{ padding: '8px', textAlign: 'center', color: 'var(--admin-fg-muted)', fontStyle: 'italic' }}>
+                          ... and {admitExcelPreview.length - 10} more rows
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              <div style={{ marginTop: '1rem', padding: '0.75rem', background: 'rgba(99, 102, 241, 0.05)', border: '1px solid rgba(99, 102, 241, 0.2)', borderRadius: 6, display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
+                <span style={{ fontSize: '1.1rem', marginTop: '-2px' }}>💡</span>
+                <span style={{ fontSize: '0.75rem', color: 'var(--admin-fg-muted)', lineHeight: '1.3' }}>
+                  Clicking "Confirm Import" will update admit card URLs in the database matching these serials. Rows that don't match any registered serials in the DB will be ignored.
+                </span>
+              </div>
+            </div>
+            <div style={modalFooterStyle}>
+              <button type="button" onClick={() => { setShowAdmitExcelModal(false); setAdmitExcelPreview([]); }} style={cancelBtnStyle}>Cancel</button>
+              <button type="button" onClick={confirmAdmitExcelImport} disabled={isUpdating} style={submitBtnStyle}>
+                {isUpdating ? 'Importing...' : `Confirm Import (${admitExcelPreview.length} rows)`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Admin PDF Preview Modal ── */}
+      {adminPreviewUrl && (
+        <div
+          style={modalOverlayStyle}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setAdminPreviewUrl(null)
+            }
+          }}
+        >
+          <div
+            style={{
+              ...modalContainerStyle,
+              maxWidth: '850px',
+              height: '85vh',
+            }}
+          >
+            {/* Modal Header */}
+            <div style={modalHeaderStyle}>
+              <div>
+                <h3 style={{ margin: 0, fontFamily: 'var(--font-heading)', fontSize: '1.2rem', fontWeight: 700 }}>
+                  Admit Card Viewer
+                </h3>
+                <p style={{ margin: '2px 0 0', fontSize: '0.75rem', color: 'var(--admin-fg-muted)' }}>
+                  Participant: {adminPreviewName}
+                </p>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => setAdminPreviewUrl(null)} 
+                style={closeBtnStyle}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Body: PDF Container */}
+            <div style={{ flex: 1, background: 'rgba(0,0,0,0.15)', position: 'relative' }}>
+              <object
+                data={`${adminPreviewUrl}#toolbar=1&navpanes=0&scrollbar=1`}
+                type="application/pdf"
+                style={{ width: '100%', height: '100%', border: 'none' }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    height: '100%',
+                    padding: '2rem',
+                    textAlign: 'center',
+                    background: 'var(--admin-sidebar-bg)',
+                    color: 'var(--admin-fg)'
+                  }}
+                >
+                  <span style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>📄</span>
+                  <h4 style={{ margin: '0 0 0.5rem', fontFamily: 'var(--font-heading)', fontWeight: 700 }}>
+                    PDF Preview Not Supported
+                  </h4>
+                  <p style={{ margin: '0 0 1.5rem', fontSize: '0.85rem', color: 'var(--admin-fg-muted)', maxWidth: '320px', lineHeight: '1.4' }}>
+                    Your device or browser doesn't support rendering PDF files inline. Please use the button below to view it directly.
+                  </p>
+                  <a
+                    href={adminPreviewUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      borderRadius: 8,
+                      background: 'var(--admin-accent)',
+                      color: '#fff',
+                      padding: '0.6rem 1.5rem',
+                      fontFamily: 'var(--font-mono)',
+                      fontWeight: 600,
+                      fontSize: '0.75rem',
+                      letterSpacing: '0.05em',
+                      textTransform: 'uppercase',
+                      textDecoration: 'none',
+                      boxShadow: '0 4px 12px var(--admin-accent-glow)'
+                    }}
+                  >
+                    Open PDF directly
+                  </a>
+                </div>
+              </object>
+            </div>
+
+            {/* Modal Footer */}
+            <div style={modalFooterStyle}>
+              <button
+                type="button"
+                onClick={() => setAdminPreviewUrl(null)}
+                style={cancelBtnStyle}
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const iframe = document.querySelector('iframe[title="Admit Card Preview"]') as HTMLIFrameElement;
+                  if (iframe && iframe.contentWindow) {
+                    try {
+                      iframe.contentWindow.focus();
+                      iframe.contentWindow.print();
+                    } catch {
+                      const w = window.open(adminPreviewUrl, '_blank');
+                      if (w) {
+                        w.focus();
+                        w.print();
+                      }
+                    }
+                  } else {
+                    const w = window.open(adminPreviewUrl, '_blank');
+                    if (w) {
+                      w.focus();
+                      w.print();
+                    }
+                  }
+                }}
+                style={{
+                  ...submitBtnStyle,
+                  background: 'transparent',
+                  border: '1px solid var(--admin-accent)',
+                  color: 'var(--admin-accent)'
+                }}
+              >
+                Print Admit
+              </button>
+              <a
+                href={adminPreviewUrl}
+                download
+                target="_blank"
+                rel="noreferrer"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  borderRadius: 8,
+                  background: 'var(--admin-accent)',
+                  color: '#fff',
+                  padding: '0.6rem 1.4rem',
+                  fontFamily: 'var(--font-mono)',
+                  fontWeight: 600,
+                  fontSize: '0.7rem',
+                  letterSpacing: '0.05em',
+                  textTransform: 'uppercase',
+                  textDecoration: 'none',
+                  textAlign: 'center',
+                  cursor: 'pointer'
+                }}
+              >
+                Download PDF
+              </a>
             </div>
           </div>
         </div>
