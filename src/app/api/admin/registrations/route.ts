@@ -12,7 +12,7 @@ export async function GET() {
   const guard = await requireAdminRole(['super_admin', 'admin', 'registration_editor'])
   if ('response' in guard) return guard.response
 
-  const supabase = await createClient()
+  const supabase = guard.supabase
   const { data, error } = await supabase
     .from('processed_registrations')
     .select('*')
@@ -40,7 +40,7 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: 'Missing serials or data parameters.' }, { status: 400 })
     }
 
-    const supabase = await createClient()
+    const supabase = guard.supabase
 
     // Fetch admin name/email to track who performed the update
     const { data: adminRecord } = await supabase

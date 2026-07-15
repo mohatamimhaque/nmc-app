@@ -20,7 +20,7 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: 'Missing or invalid serial or is_kit_coollect parameters.' }, { status: 400 })
     }
 
-    const supabase = await createClient()
+    const supabase = guard.supabase
 
     // Fetch active admin name
     const { data: adminRecord } = await supabase

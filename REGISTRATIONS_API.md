@@ -1,6 +1,6 @@
 # Processed Registrations Management - API Documentation
 
-This document describes the 4 secure backend API endpoints created for managing participant registration records for the National Mathematics Carnival 2026.
+This document describes the 6 secure backend API endpoints created for managing participant registration records for the National Mathematics Carnival 2026 Android Admin Application.
 
 ## Authentication & Authorization
 
@@ -21,7 +21,7 @@ Requests without valid auth headers or session cookies will return `401 Unauthor
 
 ---
 
-## 0. Authentication Gateway (Secure Login)
+## Authentication Gateway (Secure Login)
 *   **Route**: `POST /api/admin/login`
 *   **Description**: Authenticates admin email and password. Verifies the user has a valid active record in the database `admin_users` table, and returns JWT session tokens.
 *   **Request Format**:
@@ -138,7 +138,7 @@ Requests without valid auth headers or session cookies will return `401 Unauthor
 
 ---
 
-## 3. Update Launch Collection
+## 3. Update Launch Status
 *   **Route**: `PATCH /api/admin/registrations/launch`
 *   **Description**: Updates the launch collection status (`is_collect_launch`) for a single registration using its serial number. Sets the `updated_by` column to the logged-in editor's name and `updated_at` to the current timestamp.
 *   **Request Format**:
@@ -194,62 +194,92 @@ Requests without valid auth headers or session cookies will return `401 Unauthor
 
 ---
 
-## 5. Bulk Import Admit Cards
-*   **Route**: `POST /api/admin/registrations/import-admit-cards`
-*   **Description**: Bulk updates admit card URLs (`admit_card_url`) for multiple registrations in a single query. Sets the `updated_by` audit column.
+## 5. Get Registrations Summary & Statistics
+*   **Route**: `GET /api/admin/registrations/summary`
+*   **Description**: Retrieves the full registrations summary and statistics breakdown (e.g. kit distribution, attendance, launch served, levels, and events).
 *   **Request Format**:
-    *   Content-Type: `application/json`
-    *   Body Parameters:
-        -   `updates`: `object[]` (array of updates)
-            *   `serial`: `string` (unique ID)
-            *   `admit_card_url`: `string | null` (HTTP URL to admit card PDF)
-    ```json
-    {
-      "updates": [
-        { "serial": "NMC26-S-MG-001", "admit_card_url": "https://www.nmcbd.app/files/NMC26-S-MG-001.pdf" },
-        { "serial": "NMC26-S-MG-002", "admit_card_url": "https://www.nmcbd.app/files/NMC26-S-MG-002.pdf" }
-      ]
-    }
-    ```
+    *   No body parameters required.
 *   **Response Format**:
-    *   `200 OK`:
+    *   `200 OK`: Returns a JSON object containing registration statistics:
     ```json
     {
       "success": true,
-      "count": 2
+      "total": 773,
+      "kit_collection": {
+        "collected": 60,
+        "pending": 713
+      },
+      "attendance": {
+        "present": 80,
+        "absent": 693
+      },
+      "launch_status": {
+        "served": 50,
+        "pending": 723
+      },
+      "by_level": {
+        "School level": 365,
+        "Intermediate level": 144,
+        "University level": 264
+      },
+      "by_event": {
+        "Math Olympiad": 662,
+        "Math Game": 72,
+        "Article Writing": 16,
+        "Poster Presentation": 23
+      }
     }
     ```
 
 ---
 
-## 6. Public Search & Lookup Admit Cards
-*   **Route**: `GET /api/registrations/admit-card`
-*   **Description**: Public endpoint to search and retrieve matching registration details and admit card URLs. Requires search values to protect data from scanning.
+## 6. Get Single Registration Details
+*   **Route**: `GET /api/admin/registrations/single`
+*   **Description**: Retrieves the full record of a single participant using their serial number.
 *   **Request Format**:
     *   Query Parameters:
-        -   `level`: `string` (e.g. `School level`, `Intermediate level`, `University level`, or `all`)
-        -   `event`: `string` (e.g. `Math Olympiad`, `Math Game`, etc., or `all`)
-        -   `query`: `string` (Name or Phone number to search, min 3 characters)
+        -   `serial`: `string` (required, e.g. `"260001"`)
 *   **Response Format**:
-    *   `200 OK`: Returns up to 10 matching registration details.
+    *   `200 OK`: Returns a JSON object containing registration details:
     ```json
     {
       "success": true,
-      "registrations": [
-        {
-          "serial": "NMC26-S-MG-001",
-          "full_name": "MD.SIFATULLAH",
-          "level": "School level",
-          "event": "Math Game",
-          "phone_number": "01716608477",
-          "admit_card_url": "https://www.nmcbd.app/files/NMC26-S-MG-001.pdf"
-        }
-      ]
+      "registration": {
+        "serial": "260001",
+        "full_name": "MD. SIFATULLAH",
+        "email_address": "sifat@example.com",
+        "phone_number": "01712345678",
+        "gender": "Male",
+        "t_shirt_size": "L",
+        "institution": "Dhaka College",
+        "class_year_student_of": "HSC 2nd Year",
+        "event": "Math Game",
+        "payment_method": "Bkash",
+        "payment_number": "01712345678",
+        "transaction_id": "TxN82B19A",
+        "is_kit_coollect": true,
+        "is_present": true,
+        "is_collect_launch": false,
+        "allocated_room": "Room 302B",
+        "updated_by": "mohatamimhaque@outlook.com",
+        "updated_at": "2026-07-14T16:00:00.000Z",
+        "created_at": "2026-07-14T12:00:00Z",
+        "admit_card_url": "https://pub-99e7fad4ec9f4d2dafa1e77c8558eee0.r2.dev/NMC26-S-MG-001.pdf"
+      }
     }
     ```
-    *   `400 Bad Request` (Missing search terms or short queries):
+    *   `400 Bad Request` (Missing serial parameter):
     ```json
     {
-      "error": "Search query must be at least 3 characters long."
+      "error": "Missing or empty serial parameter."
     }
     ```
+    *   `404 Not Found` (Serial not found):
+    ```json
+    {
+      "error": "Registration with serial \"260001\" not found."
+    }
+    ```
+
+
+
