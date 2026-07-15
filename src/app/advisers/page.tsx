@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import type { Adviser } from '@/types/database'
 import { AdvisersPublicView } from '@/components/public/AdvisersPublicView'
@@ -33,13 +34,16 @@ export const dynamic = 'force-dynamic'
 
 export default async function AdvisersPage() {
 	const supabase = await createClient()
-	const { data } = await supabase
-		.from('advisers')
-		.select('*')
-		.eq('is_visible', true)
-		.order('sort_order', { ascending: true })
+	const [visibilityRes, dataRes] = await Promise.all([
+		supabase.from('page_visibility').select('is_visible').eq('page_key', 'advisers').single(),
+		supabase.from('advisers').select('*').eq('is_visible', true).order('sort_order', { ascending: true })
+	])
 
-	const advisers = (data ?? []) as Adviser[]
+	if (visibilityRes.data?.is_visible === false) {
+		notFound()
+	}
+
+	const advisers = (dataRes.data ?? []) as Adviser[]
 
 	return <AdvisersPublicView advisers={advisers} />
 }

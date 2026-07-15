@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import type { ClubPartner } from '@/types/database'
 import { getSeoTitle, getSeoDescription, getEventKeywords } from '@/lib/seo'
@@ -29,13 +30,16 @@ export const dynamic = 'force-dynamic'
 export default async function ClubPartnersPage() {
   const supabase = await createClient()
 
-  const { data } = await supabase
-    .from('club_partners')
-    .select('*')
-    .eq('is_visible', true)
-    .order('sort_order', { ascending: true })
+  const [visibilityRes, dataRes] = await Promise.all([
+    supabase.from('page_visibility').select('is_visible').eq('page_key', 'club_partners').single(),
+    supabase.from('club_partners').select('*').eq('is_visible', true).order('sort_order', { ascending: true })
+  ])
 
-  const partners = (data ?? []) as ClubPartner[]
+  if (visibilityRes.data?.is_visible === false) {
+    notFound()
+  }
+
+  const partners = (dataRes.data ?? []) as ClubPartner[]
 
   return (
     <main style={{ position: 'relative', zIndex: 1, paddingTop: '2rem' }}>

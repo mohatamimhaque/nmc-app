@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import type { CommitteeMember, SubCommittee } from '@/types/database'
 import { CommitteePublicView } from '@/components/public/CommitteePublicView'
@@ -32,10 +33,15 @@ export const dynamic = 'force-dynamic'
 
 export default async function CommitteePage() {
 	const supabase = await createClient()
-	const [subCommitteesRes, membersRes] = await Promise.all([
+	const [visibilityRes, subCommitteesRes, membersRes] = await Promise.all([
+		supabase.from('page_visibility').select('is_visible').eq('page_key', 'committee').single(),
 		supabase.from('sub_committees').select('*').order('sort_order', { ascending: true }),
 		supabase.from('committee_members').select('*').order('sort_order', { ascending: true }),
 	])
+
+	if (visibilityRes.data?.is_visible === false) {
+		notFound()
+	}
 
 	const subCommittees = (subCommitteesRes.data ?? []) as SubCommittee[]
 	const members = (membersRes.data ?? []) as CommitteeMember[]

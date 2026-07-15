@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { PublicMathDivider } from '@/components/public/PublicMathDivider'
 import type { Sponsor, SponsorCategory } from '@/types/database'
@@ -16,10 +17,15 @@ export const dynamic = 'force-dynamic'
 export default async function SponsorsPage() {
 	const supabase = await createClient()
 
-	const [categoriesRes, sponsorsRes] = await Promise.all([
+	const [visibilityRes, categoriesRes, sponsorsRes] = await Promise.all([
+		supabase.from('page_visibility').select('is_visible').eq('page_key', 'sponsors').single(),
 		supabase.from('sponsor_categories').select('*').eq('is_visible', true).order('sort_order', { ascending: true }),
 		supabase.from('sponsors').select('*').eq('is_visible', true).order('sort_order', { ascending: true }),
 	])
+
+	if (visibilityRes.data?.is_visible === false) {
+		notFound()
+	}
 
 	const categories = (categoriesRes.data ?? []) as SponsorCategory[]
 	const sponsors = (sponsorsRes.data ?? []) as Sponsor[]

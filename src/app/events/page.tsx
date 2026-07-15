@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import type { Event } from '@/types/database'
 import { EventsPublicView } from '@/components/public/EventsPublicView'
@@ -16,9 +17,14 @@ export const dynamic = 'force-dynamic'
 export default async function EventsPage() {
 	const supabase = await createClient()
 
-	const [eventsRes] = await Promise.all([
+	const [visibilityRes, eventsRes] = await Promise.all([
+		supabase.from('page_visibility').select('is_visible').eq('page_key', 'events').single(),
 		supabase.from('events').select('*').eq('status', 'published').order('sort_order', { ascending: true }),
 	])
+
+	if (visibilityRes.data?.is_visible === false) {
+		notFound()
+	}
 
 	const events = (eventsRes.data ?? []) as Event[]
 	return (

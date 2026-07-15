@@ -154,15 +154,22 @@ export default async function RootLayout({
   let footerSettings: FooterSettings = DEFAULT_FOOTER_SETTINGS
 
   try {
-    const [settingsRes, navRes, footerRes] = await Promise.all([
+    const [settingsRes, navRes, footerRes, visibilityRes] = await Promise.all([
       supabase.from('site_settings').select('*').single(),
       supabase.from('nav_links').select('*').eq('is_visible', true).order('sort_order', { ascending: true }),
       supabase.from('footer_settings').select('*').single(),
+      supabase.from('page_visibility').select('route, is_visible'),
     ])
 
     if (settingsRes.data) settings = settingsRes.data as SiteSettings
-    if (navRes.data) navLinks = navRes.data as NavLink[]
     if (footerRes.data) footerSettings = footerRes.data as FooterSettings
+    if (navRes.data) {
+      const visibilityMap = new Map((visibilityRes.data ?? []).map(item => [item.route, item.is_visible]))
+      navLinks = (navRes.data as NavLink[]).filter(link => {
+        const isPageVisible = visibilityMap.get(link.url)
+        return isPageVisible !== false
+      })
+    }
   } catch {
     // Fallback to defaults on fetch errors
   }

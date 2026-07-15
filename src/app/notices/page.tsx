@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react'
 import type { Metadata } from 'next'
+import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import type { Notice } from '@/types/database'
 import { NoticesBoard } from '@/components/public/NoticesBoard'
@@ -18,17 +19,23 @@ export default async function NoticesPage() {
 	const supabase = await createClient()
 	const now = new Date().toISOString()
 
-	const { data } = await supabase
-		.from('notices')
-		.select('*')
-		.eq('is_visible', true)
-		.lte('publish_at', now)
-		.or(`expires_at.is.null,expires_at.gt.${now}`)
-		.order('is_pinned', { ascending: false })
-		.order('sort_order', { ascending: true })
-		.order('publish_at', { ascending: false })
+	const [visibilityRes, dataRes] = await Promise.all([
+		supabase.from('page_visibility').select('is_visible').eq('page_key', 'notices').single(),
+		supabase.from('notices')
+			.select('*')
+			.eq('is_visible', true)
+			.lte('publish_at', now)
+			.or(`expires_at.is.null,expires_at.gt.${now}`)
+			.order('is_pinned', { ascending: false })
+			.order('sort_order', { ascending: true })
+			.order('publish_at', { ascending: false })
+	])
 
-	const notices = (data ?? []) as Notice[]
+	if (visibilityRes.data?.is_visible === false) {
+		notFound()
+	}
+
+	const notices = (dataRes.data ?? []) as Notice[]
 
 	return (
 		<main style={{ position: 'relative', zIndex: 1, padding: '2rem 1.5rem 4rem' }}>

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { PublicMathDivider } from '@/components/public/PublicMathDivider'
 import { RichHtml } from '@/components/public/RichHtml'
@@ -38,6 +39,7 @@ export default async function AboutPage() {
 		milestonesRes,
 		highlightsRes,
 		sectionsRes,
+		visibilityRes,
 	] = await Promise.all([
 		supabase.from('about_page').select('*').single(),
 		supabase.from('committee_members').select('*').eq('is_visible', true).order('sort_order', { ascending: true }),
@@ -46,7 +48,12 @@ export default async function AboutPage() {
 		supabase.from('about_milestones').select('*').order('sort_order', { ascending: true }),
 		supabase.from('about_highlights').select('*').order('sort_order', { ascending: true }),
 		supabase.from('page_sections').select('*').eq('page', 'about').order('sort_order', { ascending: true }),
+		supabase.from('page_visibility').select('is_visible').eq('page_key', 'about').single(),
 	])
+
+	if (visibilityRes.data?.is_visible === false) {
+		notFound()
+	}
 
 	const aboutPage = (aboutRes.data ?? DEFAULT_ABOUT_PAGE) as AboutPage
 	const committee = (committeeRes.data ?? []) as CommitteeMember[]

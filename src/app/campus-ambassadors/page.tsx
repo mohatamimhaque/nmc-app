@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import type { CampusAmbassador } from '@/types/database'
 import { CampusAmbassadorsPublicView } from '@/components/public/CampusAmbassadorsPublicView'
@@ -32,11 +33,15 @@ export const dynamic = 'force-dynamic'
 
 export default async function CampusAmbassadorsPage() {
   const supabase = await createClient()
-  const { data } = await supabase
-    .from('campus_ambassadors')
-    .select('*')
-    .order('sort_order', { ascending: true })
+  const [visibilityRes, dataRes] = await Promise.all([
+    supabase.from('page_visibility').select('is_visible').eq('page_key', 'campus_ambassadors').single(),
+    supabase.from('campus_ambassadors').select('*').order('sort_order', { ascending: true })
+  ])
 
-  const ambassadors = (data ?? []) as CampusAmbassador[]
+  if (visibilityRes.data?.is_visible === false) {
+    notFound()
+  }
+
+  const ambassadors = (dataRes.data ?? []) as CampusAmbassador[]
   return <CampusAmbassadorsPublicView ambassadors={ambassadors} />
 }

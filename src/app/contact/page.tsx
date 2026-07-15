@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { PublicMathDivider } from '@/components/public/PublicMathDivider'
 import { ContactForm } from '@/components/public/ContactForm'
@@ -21,12 +22,17 @@ export const dynamic = 'force-dynamic'
 export default async function ContactPage() {
 	const supabase = await createClient()
 
-	const [pageRes, personsRes, sectionsRes, footerRes] = await Promise.all([
+	const [visibilityRes, pageRes, personsRes, sectionsRes, footerRes] = await Promise.all([
+		supabase.from('page_visibility').select('is_visible').eq('page_key', 'contact').single(),
 		supabase.from('contact_page').select('*').single(),
 		supabase.from('contact_persons').select('*').eq('is_visible', true).order('sort_order', { ascending: true }),
 		supabase.from('page_sections').select('*').eq('page', 'contact').order('sort_order', { ascending: true }),
 		supabase.from('footer_settings').select('*').single(),
 	])
+
+	if (visibilityRes.data?.is_visible === false) {
+		notFound()
+	}
 
 	const page = (pageRes.data ?? DEFAULT_CONTACT_PAGE) as ContactPage
 	const persons = (personsRes.data ?? []) as ContactPerson[]

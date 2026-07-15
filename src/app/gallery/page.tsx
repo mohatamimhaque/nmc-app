@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react'
 import type { Metadata } from 'next'
+import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import type { GalleryCategory, GalleryImage } from '@/types/database'
 import { GalleryGrid } from '@/components/public/GalleryGrid'
@@ -18,10 +19,15 @@ export default async function GalleryPage({ searchParams }: { searchParams?: Pro
 	const supabase = await createClient()
 	const params = await searchParams
 
-	const [categoriesRes, imagesRes] = await Promise.all([
+	const [visibilityRes, categoriesRes, imagesRes] = await Promise.all([
+		supabase.from('page_visibility').select('is_visible').eq('page_key', 'gallery').single(),
 		supabase.from('gallery_categories').select('*').order('sort_order', { ascending: true }),
 		supabase.from('gallery_images').select('*').eq('is_visible', true).order('sort_order', { ascending: true }),
 	])
+
+	if (visibilityRes.data?.is_visible === false) {
+		notFound()
+	}
 
 	const categories = (categoriesRes.data ?? []) as GalleryCategory[]
 	const images = (imagesRes.data ?? []) as GalleryImage[]
