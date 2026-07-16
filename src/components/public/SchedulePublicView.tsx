@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import type { ScheduleDaySetting, ScheduleSession } from '@/types/database'
 
 interface SchedulePublicViewProps {
@@ -11,6 +12,8 @@ interface SchedulePublicViewProps {
 }
 
 export function SchedulePublicView({ sessions, days, pdfUrl, eventDate }: SchedulePublicViewProps) {
+	const searchParams = useSearchParams()
+	const isPreview = searchParams?.get('preview') === 'true' || searchParams?.has('preview')
 	const [now, setNow] = useState(() => new Date())
 
 	useEffect(() => {
@@ -221,7 +224,7 @@ export function SchedulePublicView({ sessions, days, pdfUrl, eventDate }: Schedu
 			`}</style>
 
 
-      {pdfUrl && (
+      {!isPreview && pdfUrl && (
         <div style={{ marginBottom: '2rem' }}>
           <a
             href={pdfUrl}
@@ -247,35 +250,37 @@ export function SchedulePublicView({ sessions, days, pdfUrl, eventDate }: Schedu
         </div>
       )}
 
-      <div style={{ marginBottom: '2rem' }}>
-        <div
-          style={{
-            border: '1px solid var(--color-accent)',
-            borderRadius: 18,
-            padding: '1.2rem 1.5rem',
-            background: 'var(--surface)',
-            color: 'var(--foreground)',
-          }}
-          aria-live="polite"
-        >
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--foreground-muted)' }}>
-            Next Session Countdown
-          </div>
-          {nextSessionInfo.next ? (
-            <div style={{ marginTop: '0.6rem' }}>
-              <div style={{ fontFamily: 'var(--font-heading)', fontSize: '1.5rem', fontWeight: 700 }}>
-                {countdown ?? '00 : 00 : 00'}
-              </div>
-              <div style={{ marginTop: '0.5rem', fontFamily: 'var(--font-body)', fontSize: '0.95rem' }}>
-                {nextSessionInfo.next.title}
-                {nextSessionInfo.next.venue ? ` · ${nextSessionInfo.next.venue}` : ''}
-              </div>
+      {!isPreview && (
+        <div style={{ marginBottom: '2rem' }}>
+          <div
+            style={{
+              border: '1px solid var(--color-accent)',
+              borderRadius: 18,
+              padding: '1.2rem 1.5rem',
+              background: 'var(--surface)',
+              color: 'var(--foreground)',
+            }}
+            aria-live="polite"
+          >
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--foreground-muted)' }}>
+              Next Session Countdown
             </div>
-          ) : (
-            <div style={{ marginTop: '0.6rem', fontFamily: 'var(--font-body)' }}>{nextSessionInfo.message}</div>
-          )}
+            {nextSessionInfo.next ? (
+              <div style={{ marginTop: '0.6rem' }}>
+                <div style={{ fontFamily: 'var(--font-heading)', fontSize: '1.5rem', fontWeight: 700 }}>
+                  {countdown ?? '00 : 00 : 00'}
+                </div>
+                <div style={{ marginTop: '0.5rem', fontFamily: 'var(--font-body)', fontSize: '0.95rem' }}>
+                  {nextSessionInfo.next.title}
+                  {nextSessionInfo.next.venue ? ` · ${nextSessionInfo.next.venue}` : ''}
+                </div>
+              </div>
+            ) : (
+              <div style={{ marginTop: '0.6rem', fontFamily: 'var(--font-body)' }}>{nextSessionInfo.message}</div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
 			{visibleDays.length > 0 && (
 				<div className="schedule-tab-bar">
@@ -409,7 +414,15 @@ function formatCountdown(diffMs: number) {
 
 function formatTime(value: string | null) {
 	if (!value) return '--:--'
-	return value.slice(0, 5)
+	const parts = value.split(':')
+	let hours = parseInt(parts[0], 10)
+	const minutes = (parts[1] || '00').padStart(2, '0')
+	if (isNaN(hours)) return value.slice(0, 5)
+	const ampm = hours >= 12 ? 'PM' : 'AM'
+	hours = hours % 12
+	hours = hours ? hours : 12 // the hour '0' should be '12'
+	const strHours = String(hours).padStart(2, '0')
+	return `${strHours}:${minutes} ${ampm}`
 }
 
 function getSessionStatus(startDate: Date, endDate: Date | null, now: Date) {

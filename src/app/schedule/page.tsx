@@ -14,7 +14,13 @@ export const metadata: Metadata = {
 
 export const dynamic = 'force-dynamic'
 
-export default async function SchedulePage() {
+interface PageProps {
+	searchParams?: Promise<{ [key: string]: string | string[] | undefined }>
+}
+
+export default async function SchedulePage({ searchParams }: PageProps) {
+	const params = await searchParams
+	const isPreview = params ? ('preview' in params) : false
 	const supabase = await createClient()
 
 	const [pageRes, sessionsRes, daysRes, settingsRes] = await Promise.all([
@@ -34,13 +40,15 @@ export default async function SchedulePage() {
 
 	return (
 		<main style={{ position: 'relative', zIndex: 1, padding: '2rem 1.5rem 4rem' }}>
-			<section style={{ maxWidth: 1000, margin: '0 auto 3rem' }}>
-				<div style={heroCardStyle}>
-					<div style={eyebrowStyle}>Schedule</div>
-					<h1 style={titleStyle}>Program Schedule</h1>
-					<p style={subtitleStyle}>National Mathematics Carnival 2026 — full program timeline.</p>
-				</div>
-			</section>
+			{!isPreview && (
+				<section style={{ maxWidth: 1000, margin: '0 auto 3rem' }}>
+					<div style={heroCardStyle}>
+						<div style={eyebrowStyle}>Schedule</div>
+						<h1 style={titleStyle}>Program Schedule</h1>
+						<p style={subtitleStyle}>National Mathematics Carnival 2026 — full program timeline.</p>
+					</div>
+				</section>
+			)}
 			<section style={{ maxWidth: 1100, margin: '0 auto' }}>
 				<SchedulePublicView
 					sessions={sessions}

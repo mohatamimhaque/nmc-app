@@ -1,6 +1,6 @@
 'use client'
 
-import { usePathname } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import Script from 'next/script'
 import type { FooterSettings, NavLink, SiteSettings } from '../../types/database'
 import { PublicMathBackground } from './PublicMathBackground'
@@ -32,7 +32,9 @@ export function PublicChrome({
   competitionCategory,
 }: PublicChromeProps) {
   const pathname = usePathname()
+  const searchParams = useSearchParams()
   const isAdmin = pathname?.startsWith('/admin')
+  const isPreview = pathname === '/schedule' && (searchParams?.get('preview') === 'true' || searchParams?.has('preview'))
 
   if (isAdmin) {
     return <>{children}</>
@@ -63,13 +65,15 @@ export function PublicChrome({
           settings={settings}
         />
         <div className="public-shell" style={themeVars}>
-          <PublicNavbar settings={settings} links={navLinks} />
+          {!isPreview && <PublicNavbar settings={settings} links={navLinks} />}
           <div className="public-content">{children}</div>
-          <PublicFooter
-            settings={footerSettings}
-            competition={settings}
-            footerPattern={settings.footer_pattern}
-          />
+          {!isPreview && (
+            <PublicFooter
+              settings={footerSettings}
+              competition={settings}
+              footerPattern={settings.footer_pattern}
+            />
+          )}
         </div>
       </PublicSymbolsProvider>
     </>
