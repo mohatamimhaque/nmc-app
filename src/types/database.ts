@@ -8,6 +8,11 @@ export type Json = string | number | boolean | null | { [key: string]: Json } | 
 export interface Database {
   public: {
     Tables: {
+      location_config: {
+        Row: LocationConfig
+        Insert: Partial<LocationConfig>
+        Update: Partial<LocationConfig>
+      }
       site_settings: {
         Row: SiteSettings
         Insert: Partial<SiteSettings>
@@ -711,4 +716,14 @@ export interface Volunteer {
   updated_at: string
   updated_by: string | null
 }
+
+export interface LocationConfig {
+  id: number
+  supabase_url: string
+  supabase_anon_key: string
+  live_map_enabled: boolean
+  updated_by: string | null
+  updated_at: string
+}
+
 

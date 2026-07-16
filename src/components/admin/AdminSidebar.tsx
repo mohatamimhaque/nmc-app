@@ -55,6 +55,7 @@ const NAV: NavItem[] = [
   { label: 'Contact/About',href: '/admin/contact-about',icon: <DiamondIcon />,  group: 'Manage', roles: ['super_admin', 'admin'] },
   { label: 'Footer',      href: '/admin/footer',         icon: <PentagonIcon />, group: 'Manage', roles: ['super_admin', 'admin'] },
   { label: 'Theme',       href: '/admin/theme',          icon: <GridIcon />,     group: 'Manage', roles: ['super_admin'] },
+  { label: 'Location Config', href: '/admin/location-config', icon: <CircleDotIcon />, group: 'Manage', roles: ['super_admin'] },
   { label: 'Admins',      href: '/admin/admins',         icon: <HexagonIcon />,  group: 'Manage', roles: ['super_admin'] },
   { label: 'Docs',        href: '/admin/docs',           icon: <SigmaIcon />,    group: 'Help', roles: ['super_admin', 'admin', 'moderator'] },
 ]
