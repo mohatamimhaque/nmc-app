@@ -43,7 +43,7 @@ export async function proxy(request: NextRequest) {
   if (isAdminRoute && !isLoginPage && user) {
     const { data: adminRecord, error } = await supabase
       .from('admin_users')
-      .select('id, role')
+      .select('id, role, can_manage_volunteers')
       .eq('id', user.id)
       .single()
 
@@ -62,6 +62,11 @@ export async function proxy(request: NextRequest) {
         '/api/admin/registrations',
         '/api/admin/registrations/import-rooms'
       ]
+      
+      if (adminRecord.can_manage_volunteers) {
+        allowedPaths.push('/admin/volunteers')
+        allowedPaths.push('/api/admin/volunteers')
+      }
       
       const isAllowed = allowedPaths.some(path => 
         pathname === path || pathname.startsWith(path + '/')

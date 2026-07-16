@@ -49,6 +49,7 @@ const NAV: NavItem[] = [
 
   // Settings
   { label: 'Registrations',href: '/admin/registrations',icon: <HexagonIcon />,  group: 'Manage', roles: ['super_admin', 'admin', 'registration_editor'] },
+  { label: 'Volunteers',   href: '/admin/volunteers',    icon: <IntegralIcon />,  group: 'Manage', roles: ['super_admin', 'admin', 'registration_editor'] },
   { label: 'Visibility',  href: '/admin/visibility',    icon: <InfinityIcon />, group: 'Manage', roles: ['super_admin'] },
   { label: 'Navigation',  href: '/admin/navigation',   icon: <GridIcon />,     group: 'Manage', roles: ['super_admin', 'admin'] },
   { label: 'Contact/About',href: '/admin/contact-about',icon: <DiamondIcon />,  group: 'Manage', roles: ['super_admin', 'admin'] },
@@ -75,6 +76,7 @@ function groupedNav(items: NavItem[]) {
 export function AdminSidebar() {
   const pathname = usePathname()
   const [role, setRole] = useState<AdminRole | null>(null)
+  const [canManageVolunteers, setCanManageVolunteers] = useState(false)
 
   useEffect(() => {
     let isMounted = true
@@ -92,11 +94,12 @@ export function AdminSidebar() {
       }
       const { data: adminData } = await supabase
         .from('admin_users')
-        .select('role')
+        .select('role, can_manage_volunteers')
         .eq('id', userId)
         .single()
       if (isMounted) {
         setRole((adminData?.role as AdminRole) ?? null)
+        setCanManageVolunteers(!!adminData?.can_manage_volunteers)
       }
     }
 
@@ -111,8 +114,13 @@ export function AdminSidebar() {
 
   const visibleNav = useMemo(() => {
     if (!role) return NAV
-    return NAV.filter(item => !item.roles || item.roles.includes(role))
-  }, [role])
+    return NAV.filter(item => {
+      if (item.href === '/admin/volunteers') {
+        return role === 'super_admin' || role === 'admin' || (role === 'registration_editor' && canManageVolunteers)
+      }
+      return !item.roles || item.roles.includes(role)
+    })
+  }, [role, canManageVolunteers])
 
   const groups = groupedNav(visibleNav)
 

@@ -55,7 +55,7 @@ export async function PATCH(request: Request) {
     const { error: clearError } = await service
       .from('campus_ambassadors')
       .delete()
-      .neq('id', '')
+      .not('id', 'is', null)
 
     if (clearError) {
       return NextResponse.json({ error: clearError.message }, { status: 400 })

@@ -178,6 +178,11 @@ export interface Database {
         Insert: Omit<AdminUser, 'created_at'>
         Update: Partial<AdminUser>
       }
+      volunteers: {
+        Row: Volunteer
+        Insert: Volunteer
+        Update: Partial<Volunteer>
+      }
       visibility_audit_log: {
         Row: VisibilityAuditLog
         Insert: Omit<VisibilityAuditLog, 'id' | 'changed_at'>
@@ -649,6 +654,7 @@ export interface AdminUser {
   email: string
   display_name: string | null
   role: 'super_admin' | 'admin' | 'moderator' | 'registration_editor'
+  can_manage_volunteers: boolean
   last_login_at: string | null
   created_at: string
 }
@@ -686,3 +692,23 @@ export interface ProcessedRegistration {
   updated_at: string
   admit_card_url: string | null
 }
+
+export interface Volunteer {
+  unique_id: string
+  name: string
+  email: string
+  number: string | null
+  image_url: string | null
+  segment: string | null
+  department: string | null
+  student_id: string | null
+  year: string | null
+  t_shirt_size: string | null
+  is_present: boolean
+  is_gift_collected: boolean
+  is_lunch_collected: boolean
+  created_at: string
+  updated_at: string
+  updated_by: string | null
+}
+

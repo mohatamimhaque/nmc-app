@@ -9,6 +9,9 @@ import {
   InfinityIcon,
 } from '@/components/admin/GeoIcons'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 type AnalyticsEventRow = {
   id: string
   event_type: 'pageview' | 'cta_click' | 'notice_view' | 'form_submit'
@@ -46,6 +49,12 @@ function formatDate(value: string) {
   })
 }
 
+function cleanPagePath(path: string) {
+  if (!path) return ''
+  const base = path.split('?')[0]
+  return base || '/'
+}
+
 export default async function AdminAnalyticsPage({
   searchParams,
 }: {
@@ -79,7 +88,7 @@ export default async function AdminAnalyticsPage({
       .from('analytics_events')
       .select('id, event_type, page_path, created_at')
       .gte('created_at', startDate.toISOString())
-      .order('created_at', { ascending: true })
+      .order('created_at', { ascending: false })
       .limit(MAX_EVENTS),
     supabase
       .from('site_settings')
@@ -413,7 +422,7 @@ export default async function AdminAnalyticsPage({
         </GlassCard>
       </div>
 
-      <MathDivider formula="P(A|B) = P(A \u2229 B) / P(B)" dim />
+      <MathDivider formula="P(A|B) = P(A ∩ B) / P(B)" dim />
 
       <div style={{
         display: 'grid',
@@ -483,9 +492,11 @@ export default async function AdminAnalyticsPage({
                 <div style={{ fontFamily: 'var(--font-body)', fontSize: '0.8rem', color: 'var(--admin-fg)' }}>
                   {event.event_type.replace('_', ' ')}
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: '0.6rem', color: 'var(--admin-fg-muted)', marginTop: '0.25rem' }}>
-                  <span>{event.page_path}</span>
-                  <span>{formatDate(event.created_at)}</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontFamily: 'var(--font-mono)', fontSize: '0.6rem', color: 'var(--admin-fg-muted)', marginTop: '0.25rem', gap: '0.5rem' }}>
+                  <span title={event.page_path} style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '70%' }}>
+                    {cleanPagePath(event.page_path)}
+                  </span>
+                  <span style={{ flexShrink: 0 }}>{formatDate(event.created_at)}</span>
                 </div>
               </div>
             )) : (

@@ -1,5 +1,7 @@
 'use client'
 
+import { useEffect, useState } from 'react'
+
 /**
  * MathDivider
  * A decorative section separator with a LaTeX-style math snippet.
@@ -19,14 +21,20 @@ const FORMULAS = [
   '∇²φ = ρ/ε₀',
   'E = mc²',
   '∑(n=1→∞) 1/n² = π²/6',
-  'P(A|B) = P(B|A)·P(A) / P(B)',
+  'P(A|B) = P(A ∩ B) / P(B)',
   'd/dx[eˣ] = eˣ',
   'det(A) = ad − bc',
   'φ = (1 + √5) / 2',
 ]
 
 export function MathDivider({ formula, className = '', dim = false }: MathDividerProps) {
-  const text = formula ?? FORMULAS[Math.floor(Math.random() * FORMULAS.length)]
+  const [text, setText] = useState(formula ?? FORMULAS[0])
+
+  useEffect(() => {
+    if (!formula) {
+      setText(FORMULAS[Math.floor(Math.random() * FORMULAS.length)])
+    }
+  }, [formula])
 
   return (
     <div
@@ -78,7 +86,13 @@ export function MathDivider({ formula, className = '', dim = false }: MathDivide
  * Lighter variant for public pages — uses primary colour, minimal styling.
  */
 export function PublicMathDivider({ formula, className = '' }: { formula?: string; className?: string }) {
-  const text = formula ?? FORMULAS[Math.floor(Math.random() * FORMULAS.length)]
+  const [text, setText] = useState(formula ?? FORMULAS[0])
+
+  useEffect(() => {
+    if (!formula) {
+      setText(FORMULAS[Math.floor(Math.random() * FORMULAS.length)])
+    }
+  }, [formula])
 
   return (
     <div

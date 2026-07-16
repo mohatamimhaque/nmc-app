@@ -82,3 +82,30 @@ export async function requireAdminRole(allowedRoles: AdminRole[]): Promise<Admin
 
   return guard
 }
+
+export async function requireVolunteerAccess(): Promise<AdminGuardResult> {
+  const guard = await requireAdmin()
+  if ('response' in guard) {
+    return guard
+  }
+
+  const { role, supabase, user } = guard
+  if (role === 'super_admin' || role === 'admin') {
+    return guard
+  }
+
+  if (role === 'registration_editor') {
+    const { data: adminRecord } = await supabase
+      .from('admin_users')
+      .select('can_manage_volunteers')
+      .eq('id', user.id)
+      .single()
+
+    if (adminRecord?.can_manage_volunteers) {
+      return guard
+    }
+  }
+
+  return { response: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) }
+}
+

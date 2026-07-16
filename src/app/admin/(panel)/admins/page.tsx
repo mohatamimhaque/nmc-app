@@ -33,7 +33,7 @@ export default async function AdminUsersPage() {
 
   const { data: adminUsers } = await supabase
     .from('admin_users')
-    .select('id, email, display_name, role, last_login_at, created_at')
+    .select('id, email, display_name, role, can_manage_volunteers, last_login_at, created_at')
     .order('created_at', { ascending: false })
 
   return (
@@ -70,7 +70,7 @@ export default async function AdminUsersPage() {
         </p>
       </div>
 
-      <AdminUsersPanel initialUsers={(adminUsers ?? []) as AdminUserRow[]} />
+      <AdminUsersPanel initialUsers={(adminUsers ?? []) as AdminUserRow[]} currentUserId={user.id} />
     </div>
   )
 }

@@ -1,0 +1,1050 @@
+'use client'
+
+import { useEffect, useRef, useState, useTransition } from 'react'
+import { GlassCard } from './GlassCard'
+import { MathDivider } from './MathDivider'
+import * as XLSX from 'xlsx'
+import type { Volunteer } from '@/types/database'
+
+interface VolunteersTableProps {
+  initialVolunteers: Volunteer[]
+}
+
+type ToastTone = 'success' | 'error'
+
+interface ToastState {
+  message: string
+  tone: ToastTone
+}
+
+export function VolunteersTable({ initialVolunteers }: VolunteersTableProps) {
+  const [volunteers, setVolunteers] = useState<Volunteer[]>(initialVolunteers)
+  const [libLoaded, setLibLoaded] = useState(false)
+  const [toast, setToast] = useState<ToastState | null>(null)
+
+  // Selection state
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+
+  // Bulk update states
+  const [bulkPresent, setBulkPresent] = useState<boolean | 'no-change'>('no-change')
+  const [bulkGift, setBulkGift] = useState<boolean | 'no-change'>('no-change')
+  const [bulkLunch, setBulkLunch] = useState<boolean | 'no-change'>('no-change')
+
+  // Modals state
+  const [editingVol, setEditingVol] = useState<Volunteer | null>(null)
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [addForm, setAddForm] = useState({
+    unique_id: '',
+    name: '',
+    email: '',
+    number: '',
+    image_url: '',
+    segment: '',
+    department: '',
+    student_id: '',
+    year: '',
+    t_shirt_size: 'L',
+    is_present: false,
+    is_gift_collected: false,
+    is_lunch_collected: false,
+  })
+
+  const [isUpdating, startUpdateTransition] = useTransition()
+  const tableRef = useRef<HTMLTableElement | null>(null)
+  const dataTableInstance = useRef<any>(null)
+
+  // Show Toast helper
+  const showToast = (message: string, tone: ToastTone = 'success') => {
+    setToast({ message, tone })
+  }
+
+  useEffect(() => {
+    if (!toast) return
+    const timer = setTimeout(() => setToast(null), 3000)
+    return () => clearTimeout(timer)
+  }, [toast])
+
+  // Escape key handler to close modals
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setEditingVol(null)
+        setShowAddModal(false)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
+  // Load jQuery and DataTables CDN dynamically (same as RegistrationsTable)
+  useEffect(() => {
+    let isMounted = true
+
+    const loadScripts = async () => {
+      if (!(window as any).$) {
+        await new Promise<void>((resolve, reject) => {
+          const script = document.createElement('script')
+          script.src = 'https://code.jquery.com/jquery-3.7.1.min.js'
+          script.onload = () => resolve()
+          script.onerror = () => reject(new Error('Failed to load jQuery'))
+          document.head.appendChild(script)
+        })
+      }
+
+      if (!document.getElementById('datatables-css')) {
+        const link = document.createElement('link')
+        link.id = 'datatables-css'
+        link.rel = 'stylesheet'
+        link.href = 'https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css'
+        document.head.appendChild(link)
+      }
+
+      const $ = (window as any).$
+      if (!$.fn.dataTable) {
+        await new Promise<void>((resolve, reject) => {
+          const script = document.createElement('script')
+          script.src = 'https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js'
+          script.onload = () => resolve()
+          script.onerror = () => reject(new Error('Failed to load DataTables'))
+          document.head.appendChild(script)
+        })
+      }
+
+      if (isMounted) {
+        setLibLoaded(true)
+      }
+    }
+
+    loadScripts().catch(err => {
+      console.error('Error loading DataTables CDN:', err)
+      showToast('Error loading table library. Check connection.', 'error')
+    })
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  // Initialize/re-initialize DataTable whenever data changes
+  useEffect(() => {
+    if (!libLoaded || !tableRef.current) return
+
+    const $ = (window as any).$
+
+    if (dataTableInstance.current) {
+      dataTableInstance.current.destroy()
+      dataTableInstance.current = null
+    }
+
+    const dt = $(tableRef.current).DataTable({
+      stateSave: true,
+      destroy: true,
+      columnDefs: [
+        { orderable: false, targets: [0, 4, 10, 11, 12, 13] },
+        { searchable: false, targets: [0, 10, 11, 12, 13] }
+      ],
+      pageLength: 25,
+      lengthMenu: [10, 25, 50, 100, 250],
+      language: {
+        search: "Search Volunteers:",
+        lengthMenu: "Show _MENU_ entries"
+      }
+    })
+
+    dataTableInstance.current = dt
+
+    // Bind row click event using delegation on the table
+    $(tableRef.current).off('click', 'tbody tr').on('click', 'tbody tr', (e: any) => {
+      if ($(e.target).closest('input, button, select, a, span').length) {
+        return
+      }
+      const uniqueId = $(e.currentTarget).find('td:nth-child(2)').text().trim()
+      const vol = volunteers.find(v => v.unique_id === uniqueId)
+      if (vol) {
+        setEditingVol(vol)
+      }
+    })
+
+    return () => {
+      if (dataTableInstance.current) {
+        dataTableInstance.current.destroy()
+        dataTableInstance.current = null
+      }
+    }
+  }, [volunteers, libLoaded])
+
+  // Selection handlers
+  const handleSelectRow = (uniqueId: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(uniqueId)) {
+        next.delete(uniqueId)
+      } else {
+        next.add(uniqueId)
+      }
+      return next
+    })
+  }
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedIds(new Set(volunteers.map(v => v.unique_id)))
+    } else {
+      setSelectedIds(new Set())
+    }
+  }
+
+  // Quick Inline Status Toggles
+  const toggleStatus = async (uniqueId: string, field: 'present' | 'gift' | 'lunch', currentValue: boolean) => {
+    startUpdateTransition(async () => {
+      try {
+        const endpoint = `/api/admin/volunteers/${field}`
+        const bodyKey = field === 'present' ? 'is_present' : field === 'gift' ? 'is_gift_collected' : 'is_lunch_collected'
+        
+        const res = await fetch(endpoint, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ unique_id: uniqueId, [bodyKey]: !currentValue })
+        })
+
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || 'Failed to toggle status')
+
+        setVolunteers(prev =>
+          prev.map(v => (v.unique_id === uniqueId ? { ...v, [bodyKey]: !currentValue, updated_by: data.updatedBy, updated_at: data.updatedAt } : v))
+        )
+        showToast(`Status updated successfully.`)
+      } catch (err: any) {
+        showToast(err.message, 'error')
+      }
+    })
+  }
+
+  // Handle Add Volunteer
+  const handleAddSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!addForm.unique_id || !addForm.name || !addForm.email) {
+      showToast('Unique ID, Name, and Email are required.', 'error')
+      return
+    }
+
+    startUpdateTransition(async () => {
+      try {
+        const res = await fetch('/api/admin/volunteers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(addForm)
+        })
+
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || 'Failed to create volunteer')
+
+        setVolunteers(prev => [data.data, ...prev])
+        setShowAddModal(false)
+        setAddForm({
+          unique_id: '',
+          name: '',
+          email: '',
+          number: '',
+          image_url: '',
+          segment: '',
+          department: '',
+          student_id: '',
+          year: '',
+          t_shirt_size: 'L',
+          is_present: false,
+          is_gift_collected: false,
+          is_lunch_collected: false,
+        })
+        showToast('Volunteer added successfully!')
+      } catch (err: any) {
+        showToast(err.message, 'error')
+      }
+    })
+  }
+
+  // Handle Edit/Update Volunteer
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingVol) return
+
+    startUpdateTransition(async () => {
+      try {
+        const res = await fetch('/api/admin/volunteers', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            unique_ids: editingVol.unique_id,
+            data: editingVol
+          })
+        })
+
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || 'Failed to update volunteer')
+
+        setVolunteers(prev =>
+          prev.map(v => (v.unique_id === editingVol.unique_id ? { ...editingVol, updated_by: data.updatedBy, updated_at: data.updatedAt } : v))
+        )
+        setEditingVol(null)
+        showToast('Volunteer updated successfully!')
+      } catch (err: any) {
+        showToast(err.message, 'error')
+      }
+    })
+  }
+
+  // Handle Delete Volunteer
+  const handleDeleteVolunteer = async (uniqueId: string) => {
+    if (!confirm(`Are you sure you want to delete volunteer "${uniqueId}"?`)) return
+
+    startUpdateTransition(async () => {
+      try {
+        const res = await fetch(`/api/admin/volunteers?unique_id=${encodeURIComponent(uniqueId)}`, {
+          method: 'DELETE'
+        })
+
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || 'Failed to delete volunteer')
+
+        setVolunteers(prev => prev.filter(v => v.unique_id !== uniqueId))
+        setEditingVol(null)
+        setSelectedIds(prev => {
+          const next = new Set(prev)
+          next.delete(uniqueId)
+          return next
+        })
+        showToast('Volunteer deleted.')
+      } catch (err: any) {
+        showToast(err.message, 'error')
+      }
+    })
+  }
+
+  // Bulk status updates
+  const handleBulkSubmit = async () => {
+    if (selectedIds.size === 0) {
+      showToast('No rows selected.', 'error')
+      return
+    }
+
+    const dataPayload: Record<string, any> = {}
+    if (bulkPresent !== 'no-change') dataPayload.is_present = bulkPresent
+    if (bulkGift !== 'no-change') dataPayload.is_gift_collected = bulkGift
+    if (bulkLunch !== 'no-change') dataPayload.is_lunch_collected = bulkLunch
+
+    if (Object.keys(dataPayload).length === 0) {
+      showToast('No bulk updates configured.', 'error')
+      return
+    }
+
+    startUpdateTransition(async () => {
+      try {
+        const res = await fetch('/api/admin/volunteers', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            unique_ids: Array.from(selectedIds),
+            data: dataPayload
+          })
+        })
+
+        const responseData = await res.json()
+        if (!res.ok) throw new Error(responseData.error || 'Failed to execute bulk update')
+
+        setVolunteers(prev =>
+          prev.map(v => {
+            if (selectedIds.has(v.unique_id)) {
+              return {
+                ...v,
+                ...dataPayload,
+                updated_by: responseData.updatedBy,
+                updated_at: responseData.updatedAt
+              }
+            }
+            return v
+          })
+        )
+
+        setSelectedIds(new Set())
+        setBulkPresent('no-change')
+        setBulkGift('no-change')
+        setBulkLunch('no-change')
+        showToast('Bulk update completed successfully!')
+      } catch (err: any) {
+        showToast(err.message, 'error')
+      }
+    })
+  }
+
+  // Export to Excel spreadsheet
+  const handleExportExcel = () => {
+    const dataToExport = volunteers.map(v => ({
+      'Unique ID': v.unique_id,
+      'Name': v.name,
+      'Email': v.email,
+      'Phone Number': v.number || '',
+      'Student ID': v.student_id || '',
+      'Segment': v.segment || '',
+      'Department': v.department || '',
+      'Year': v.year || '',
+      'T-shirt Size': v.t_shirt_size || '',
+      'Present': v.is_present ? 'Yes' : 'No',
+      'Gift Collected': v.is_gift_collected ? 'Yes' : 'No',
+      'Lunch Collected': v.is_lunch_collected ? 'Yes' : 'No',
+      'Updated By': v.updated_by || '',
+      'Updated At': v.updated_at ? new Date(v.updated_at).toLocaleString() : '',
+      'Created At': v.created_at ? new Date(v.created_at).toLocaleString() : '',
+    }))
+
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport)
+    const workbook = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Volunteers')
+    XLSX.writeFile(workbook, 'National_Mathematics_Carnival_2026_Volunteers.xlsx')
+    showToast('Excel spreadsheet downloaded!')
+  }
+
+  return (
+    <div style={{ maxWidth: '100%', padding: '0 0.5rem' }}>
+      {/* Toast Alert */}
+      {toast && (
+        <div style={{
+          position: 'fixed',
+          bottom: 24,
+          right: 24,
+          background: toast.tone === 'success' ? 'rgba(0,180,90,0.95)' : 'rgba(200,40,40,0.95)',
+          color: 'white',
+          padding: '0.75rem 1.25rem',
+          borderRadius: 8,
+          boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+          backdropFilter: 'blur(10px)',
+          zIndex: 9999,
+          fontFamily: 'var(--font-body)',
+          fontSize: '0.85rem',
+          border: '1px solid rgba(255,255,255,0.1)',
+        }}>
+          {toast.message}
+        </div>
+      )}
+
+      {/* Page Header */}
+      <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '1rem' }}>
+        <div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', color: 'var(--admin-accent)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '0.3rem', opacity: 0.7 }}>
+            Event Operations
+          </div>
+          <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: '2.2rem', fontWeight: 800, color: 'var(--admin-fg)', margin: 0 }}>
+            Volunteer Management
+          </h1>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.85rem', color: 'var(--admin-fg-muted)', margin: '0.3rem 0 0' }}>
+            Check attendance, manage profiles, track gift/lunch collections, and view statistics.
+          </p>
+        </div>
+
+        <div style={{ display: 'flex', gap: '0.6rem' }}>
+          <button
+            onClick={() => setShowAddModal(true)}
+            style={{
+              padding: '0.55rem 1rem',
+              borderRadius: 10,
+              background: 'var(--admin-accent)',
+              color: 'white',
+              fontFamily: 'var(--font-body)',
+              fontSize: '0.8rem',
+              fontWeight: 600,
+              border: 'none',
+              cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            }}
+          >
+            + Add Volunteer
+          </button>
+          <button
+            onClick={handleExportExcel}
+            style={{
+              padding: '0.55rem 1rem',
+              borderRadius: 10,
+              background: 'rgba(255,255,255,0.06)',
+              color: 'var(--admin-fg)',
+              fontFamily: 'var(--font-body)',
+              fontSize: '0.8rem',
+              fontWeight: 600,
+              border: '1px solid var(--admin-border)',
+              cursor: 'pointer',
+            }}
+          >
+            Export Excel
+          </button>
+        </div>
+      </div>
+
+      <MathDivider />
+
+      {/* Bulk Update Controls */}
+      <GlassCard padding="1rem" style={{ marginBottom: '1.25rem', display: 'flex', flexWrap: 'wrap', gap: '1.2rem', alignItems: 'center' }}>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--admin-fg-muted)', textTransform: 'uppercase', borderRight: '1px solid var(--admin-border)', paddingRight: '1.2rem' }}>
+          Bulk Edit ({selectedIds.size} selected)
+        </div>
+        <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--admin-fg-muted)', fontFamily: 'var(--font-body)' }}>Present:</span>
+            <select
+              value={String(bulkPresent)}
+              onChange={e => setBulkPresent(e.target.value === 'no-change' ? 'no-change' : e.target.value === 'true')}
+              style={{ padding: '0.35rem 0.6rem', borderRadius: 6, border: '1px solid var(--admin-border)', background: 'rgba(0,0,0,0.2)', color: 'var(--admin-fg)', fontSize: '0.75rem' }}
+            >
+              <option value="no-change">No Change</option>
+              <option value="true">Yes</option>
+              <option value="false">No</option>
+            </select>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--admin-fg-muted)', fontFamily: 'var(--font-body)' }}>Gift:</span>
+            <select
+              value={String(bulkGift)}
+              onChange={e => setBulkGift(e.target.value === 'no-change' ? 'no-change' : e.target.value === 'true')}
+              style={{ padding: '0.35rem 0.6rem', borderRadius: 6, border: '1px solid var(--admin-border)', background: 'rgba(0,0,0,0.2)', color: 'var(--admin-fg)', fontSize: '0.75rem' }}
+            >
+              <option value="no-change">No Change</option>
+              <option value="true">Collected</option>
+              <option value="false">Pending</option>
+            </select>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--admin-fg-muted)', fontFamily: 'var(--font-body)' }}>Lunch:</span>
+            <select
+              value={String(bulkLunch)}
+              onChange={e => setBulkLunch(e.target.value === 'no-change' ? 'no-change' : e.target.value === 'true')}
+              style={{ padding: '0.35rem 0.6rem', borderRadius: 6, border: '1px solid var(--admin-border)', background: 'rgba(0,0,0,0.2)', color: 'var(--admin-fg)', fontSize: '0.75rem' }}
+            >
+              <option value="no-change">No Change</option>
+              <option value="true">Collected</option>
+              <option value="false">Pending</option>
+            </select>
+          </div>
+
+          <button
+            onClick={handleBulkSubmit}
+            disabled={isUpdating || selectedIds.size === 0}
+            style={{
+              padding: '0.4rem 0.9rem',
+              borderRadius: 6,
+              background: selectedIds.size === 0 ? 'rgba(255,255,255,0.02)' : 'var(--admin-accent)',
+              color: selectedIds.size === 0 ? 'rgba(255,255,255,0.2)' : 'white',
+              fontFamily: 'var(--font-body)',
+              fontSize: '0.75rem',
+              fontWeight: 600,
+              border: selectedIds.size === 0 ? '1px solid var(--admin-border)' : 'none',
+              cursor: selectedIds.size === 0 ? 'not-allowed' : 'pointer',
+            }}
+          >
+            Apply Changes
+          </button>
+        </div>
+      </GlassCard>
+
+      {/* Main Table Card */}
+      <GlassCard padding="1.5rem">
+        <div style={{ overflowX: 'auto' }}>
+          <table
+            ref={tableRef}
+            className="display"
+            style={{
+              width: '100%',
+              borderCollapse: 'collapse',
+              color: 'var(--admin-fg)',
+              fontFamily: 'var(--font-body)',
+              fontSize: '0.8rem',
+            }}
+          >
+            <thead>
+              <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--admin-border)' }}>
+                <th style={{ padding: '0.75rem 0.5rem', width: 24 }}>
+                  <input
+                    type="checkbox"
+                    checked={volunteers.length > 0 && selectedIds.size === volunteers.length}
+                    onChange={e => handleSelectAll(e.target.checked)}
+                    style={{ cursor: 'pointer' }}
+                  />
+                </th>
+                <th style={{ padding: '0.75rem 0.5rem' }}>Unique ID</th>
+                <th style={{ padding: '0.75rem 0.5rem' }}>Name</th>
+                <th style={{ padding: '0.75rem 0.5rem' }}>Email</th>
+                <th style={{ padding: '0.75rem 0.5rem' }}>Phone Number</th>
+                <th style={{ padding: '0.75rem 0.5rem' }}>ID (Student ID)</th>
+                <th style={{ padding: '0.75rem 0.5rem' }}>Segment</th>
+                <th style={{ padding: '0.75rem 0.5rem' }}>Department</th>
+                <th style={{ padding: '0.75rem 0.5rem' }}>Year</th>
+                <th style={{ padding: '0.75rem 0.5rem' }}>T-shirt</th>
+                <th style={{ padding: '0.75rem 0.5rem', textAlign: 'center' }}>Present</th>
+                <th style={{ padding: '0.75rem 0.5rem', textAlign: 'center' }}>Gift</th>
+                <th style={{ padding: '0.75rem 0.5rem', textAlign: 'center' }}>Lunch</th>
+                <th style={{ padding: '0.75rem 0.5rem' }}>Updated By</th>
+              </tr>
+            </thead>
+            <tbody>
+              {volunteers.map(vol => (
+                <tr
+                  key={vol.unique_id}
+                  style={{
+                    borderBottom: '1px solid rgba(255,255,255,0.03)',
+                    cursor: 'pointer',
+                  }}
+                  className="hover-row"
+                >
+                  <td style={{ padding: '0.75rem 0.5rem' }} onClick={e => e.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(vol.unique_id)}
+                      onChange={() => handleSelectRow(vol.unique_id)}
+                      style={{ cursor: 'pointer' }}
+                    />
+                  </td>
+                  <td style={{ padding: '0.75rem 0.5rem', fontFamily: 'var(--font-mono)', fontSize: '0.75rem' }}>{vol.unique_id}</td>
+                  <td style={{ padding: '0.75rem 0.5rem', fontWeight: 600 }}>{vol.name}</td>
+                  <td style={{ padding: '0.75rem 0.5rem', opacity: 0.85 }}>{vol.email}</td>
+                  <td style={{ padding: '0.75rem 0.5rem', opacity: 0.8 }}>{vol.number || '—'}</td>
+                  <td style={{ padding: '0.75rem 0.5rem', fontFamily: 'var(--font-mono)' }}>{vol.student_id || '—'}</td>
+                  <td style={{ padding: '0.75rem 0.5rem' }}>
+                    {vol.segment ? (
+                      <span style={{ padding: '0.15rem 0.4rem', borderRadius: 4, background: 'rgba(255,255,255,0.06)', fontSize: '0.7rem' }}>
+                        {vol.segment}
+                      </span>
+                    ) : '—'}
+                  </td>
+                  <td style={{ padding: '0.75rem 0.5rem' }}>{vol.department || '—'}</td>
+                  <td style={{ padding: '0.75rem 0.5rem' }}>{vol.year || '—'}</td>
+                  <td style={{ padding: '0.75rem 0.5rem', fontWeight: 500 }}>{vol.t_shirt_size || '—'}</td>
+                  
+                  {/* Status cells: Click to toggle */}
+                  <td style={{ padding: '0.75rem 0.5rem', textAlign: 'center' }} onClick={e => { e.stopPropagation(); toggleStatus(vol.unique_id, 'present', vol.is_present) }}>
+                    <span style={{
+                      padding: '0.2rem 0.5rem',
+                      borderRadius: 20,
+                      cursor: 'pointer',
+                      fontSize: '0.65rem',
+                      fontFamily: 'var(--font-mono)',
+                      fontWeight: 600,
+                      background: vol.is_present ? 'rgba(0,250,100,0.12)' : 'rgba(250,50,50,0.08)',
+                      color: vol.is_present ? 'rgb(0,230,100)' : 'rgb(240,80,80)',
+                      border: vol.is_present ? '1px solid rgba(0,250,100,0.2)' : '1px solid rgba(250,50,50,0.15)',
+                    }}>
+                      {vol.is_present ? 'PRESENT' : 'ABSENT'}
+                    </span>
+                  </td>
+
+                  <td style={{ padding: '0.75rem 0.5rem', textAlign: 'center' }} onClick={e => { e.stopPropagation(); toggleStatus(vol.unique_id, 'gift', vol.is_gift_collected) }}>
+                    <span style={{
+                      padding: '0.2rem 0.5rem',
+                      borderRadius: 20,
+                      cursor: 'pointer',
+                      fontSize: '0.65rem',
+                      fontFamily: 'var(--font-mono)',
+                      fontWeight: 600,
+                      background: vol.is_gift_collected ? 'rgba(0,180,255,0.12)' : 'rgba(255,255,255,0.04)',
+                      color: vol.is_gift_collected ? 'rgb(0,190,255)' : 'rgba(255,255,255,0.4)',
+                      border: vol.is_gift_collected ? '1px solid rgba(0,180,255,0.2)' : '1px solid rgba(255,255,255,0.08)',
+                    }}>
+                      {vol.is_gift_collected ? 'COLLECTED' : 'PENDING'}
+                    </span>
+                  </td>
+
+                  <td style={{ padding: '0.75rem 0.5rem', textAlign: 'center' }} onClick={e => { e.stopPropagation(); toggleStatus(vol.unique_id, 'lunch', vol.is_lunch_collected) }}>
+                    <span style={{
+                      padding: '0.2rem 0.5rem',
+                      borderRadius: 20,
+                      cursor: 'pointer',
+                      fontSize: '0.65rem',
+                      fontFamily: 'var(--font-mono)',
+                      fontWeight: 600,
+                      background: vol.is_lunch_collected ? 'rgba(230,170,0,0.12)' : 'rgba(255,255,255,0.04)',
+                      color: vol.is_lunch_collected ? 'rgb(240,180,0)' : 'rgba(255,255,255,0.4)',
+                      border: vol.is_lunch_collected ? '1px solid rgba(230,170,0,0.2)' : '1px solid rgba(255,255,255,0.08)',
+                    }}>
+                      {vol.is_lunch_collected ? 'SERVED' : 'PENDING'}
+                    </span>
+                  </td>
+
+                  <td style={{ padding: '0.75rem 0.5rem', fontSize: '0.7rem', color: 'var(--admin-fg-muted)' }}>
+                    {vol.updated_by || '—'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </GlassCard>
+
+      {/* ============================================================ */}
+      {/* 1. Modal: Add Volunteer                                      */}
+      {/* ============================================================ */}
+      {showAddModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          background: 'rgba(0,0,0,0.7)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 99999,
+          padding: '1rem',
+        }}>
+          <div style={{
+            background: 'var(--admin-sidebar-bg)',
+            border: '1px solid var(--admin-border)',
+            borderRadius: 16,
+            padding: '1.75rem',
+            width: '100%',
+            maxWidth: 600,
+            maxHeight: '90vh',
+            overflowY: 'auto',
+            boxShadow: '0 24px 64px rgba(0,0,0,0.5)',
+          }}>
+            <h3 style={{ margin: '0 0 1rem', fontFamily: 'var(--font-heading)', fontSize: '1.3rem', color: 'var(--admin-fg)' }}>
+              Add Volunteer
+            </h3>
+
+            <form onSubmit={handleAddSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--admin-fg-muted)', marginBottom: '0.2rem' }}>Unique ID *</label>
+                <input
+                  value={addForm.unique_id}
+                  onChange={e => setAddForm(prev => ({ ...prev, unique_id: e.target.value }))}
+                  required
+                  placeholder="e.g. V26001"
+                  style={{ width: '100%', padding: '0.5rem', borderRadius: 8, border: '1px solid var(--admin-border)', background: 'rgba(0,0,0,0.2)', color: 'var(--admin-fg)', fontSize: '0.8rem' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--admin-fg-muted)', marginBottom: '0.2rem' }}>Full Name *</label>
+                <input
+                  value={addForm.name}
+                  onChange={e => setAddForm(prev => ({ ...prev, name: e.target.value }))}
+                  required
+                  placeholder="e.g. Sifat Ahmed"
+                  style={{ width: '100%', padding: '0.5rem', borderRadius: 8, border: '1px solid var(--admin-border)', background: 'rgba(0,0,0,0.2)', color: 'var(--admin-fg)', fontSize: '0.8rem' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--admin-fg-muted)', marginBottom: '0.2rem' }}>Email *</label>
+                <input
+                  value={addForm.email}
+                  onChange={e => setAddForm(prev => ({ ...prev, email: e.target.value }))}
+                  required
+                  type="email"
+                  placeholder="e.g. sifat@example.com"
+                  style={{ width: '100%', padding: '0.5rem', borderRadius: 8, border: '1px solid var(--admin-border)', background: 'rgba(0,0,0,0.2)', color: 'var(--admin-fg)', fontSize: '0.8rem' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--admin-fg-muted)', marginBottom: '0.2rem' }}>Phone Number</label>
+                <input
+                  value={addForm.number}
+                  onChange={e => setAddForm(prev => ({ ...prev, number: e.target.value }))}
+                  placeholder="e.g. 01712345678"
+                  style={{ width: '100%', padding: '0.5rem', borderRadius: 8, border: '1px solid var(--admin-border)', background: 'rgba(0,0,0,0.2)', color: 'var(--admin-fg)', fontSize: '0.8rem' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--admin-fg-muted)', marginBottom: '0.2rem' }}>Image URL</label>
+                <input
+                  value={addForm.image_url}
+                  onChange={e => setAddForm(prev => ({ ...prev, image_url: e.target.value }))}
+                  placeholder="e.g. https://example.com/sifat.jpg"
+                  style={{ width: '100%', padding: '0.5rem', borderRadius: 8, border: '1px solid var(--admin-border)', background: 'rgba(0,0,0,0.2)', color: 'var(--admin-fg)', fontSize: '0.8rem' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--admin-fg-muted)', marginBottom: '0.2rem' }}>Segment</label>
+                <input
+                  value={addForm.segment}
+                  onChange={e => setAddForm(prev => ({ ...prev, segment: e.target.value }))}
+                  placeholder="e.g. Registration / PR"
+                  style={{ width: '100%', padding: '0.5rem', borderRadius: 8, border: '1px solid var(--admin-border)', background: 'rgba(0,0,0,0.2)', color: 'var(--admin-fg)', fontSize: '0.8rem' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--admin-fg-muted)', marginBottom: '0.2rem' }}>Department</label>
+                <input
+                  value={addForm.department}
+                  onChange={e => setAddForm(prev => ({ ...prev, department: e.target.value }))}
+                  placeholder="e.g. CSE / EEE"
+                  style={{ width: '100%', padding: '0.5rem', borderRadius: 8, border: '1px solid var(--admin-border)', background: 'rgba(0,0,0,0.2)', color: 'var(--admin-fg)', fontSize: '0.8rem' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--admin-fg-muted)', marginBottom: '0.2rem' }}>ID (Student ID)</label>
+                <input
+                  value={addForm.student_id}
+                  onChange={e => setAddForm(prev => ({ ...prev, student_id: e.target.value }))}
+                  placeholder="e.g. 2018331001"
+                  style={{ width: '100%', padding: '0.5rem', borderRadius: 8, border: '1px solid var(--admin-border)', background: 'rgba(0,0,0,0.2)', color: 'var(--admin-fg)', fontSize: '0.8rem' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--admin-fg-muted)', marginBottom: '0.2rem' }}>Year</label>
+                <input
+                  value={addForm.year}
+                  onChange={e => setAddForm(prev => ({ ...prev, year: e.target.value }))}
+                  placeholder="e.g. 3rd Year"
+                  style={{ width: '100%', padding: '0.5rem', borderRadius: 8, border: '1px solid var(--admin-border)', background: 'rgba(0,0,0,0.2)', color: 'var(--admin-fg)', fontSize: '0.8rem' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--admin-fg-muted)', marginBottom: '0.2rem' }}>T-shirt Size</label>
+                <select
+                  value={addForm.t_shirt_size}
+                  onChange={e => setAddForm(prev => ({ ...prev, t_shirt_size: e.target.value }))}
+                  style={{ width: '100%', padding: '0.5rem', borderRadius: 8, border: '1px solid var(--admin-border)', background: 'rgba(0,0,0,0.2)', color: 'var(--admin-fg)', fontSize: '0.8rem' }}
+                >
+                  <option value="S">S</option>
+                  <option value="M">M</option>
+                  <option value="L">L</option>
+                  <option value="XL">XL</option>
+                  <option value="XXL">XXL</option>
+                </select>
+              </div>
+
+              <div style={{ gridColumn: 'span 2', display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={addForm.is_present} onChange={e => setAddForm(prev => ({ ...prev, is_present: e.target.checked }))} />
+                  Is Present
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={addForm.is_gift_collected} onChange={e => setAddForm(prev => ({ ...prev, is_gift_collected: e.target.checked }))} />
+                  Gift Collected
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={addForm.is_lunch_collected} onChange={e => setAddForm(prev => ({ ...prev, is_lunch_collected: e.target.checked }))} />
+                  Lunch Collected
+                </label>
+              </div>
+
+              <div style={{ gridColumn: 'span 2', display: 'flex', justifyContent: 'flex-end', gap: '0.6rem', marginTop: '1.2rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  style={{ padding: '0.5rem 1rem', borderRadius: 8, border: '1px solid var(--admin-border)', background: 'transparent', color: 'var(--admin-fg)', cursor: 'pointer', fontSize: '0.8rem' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isUpdating}
+                  style={{ padding: '0.5rem 1rem', borderRadius: 8, background: 'var(--admin-accent)', color: 'white', border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem' }}
+                >
+                  Create
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================ */}
+      {/* 2. Modal: Edit / Details Volunteer                           */}
+      {/* ============================================================ */}
+      {editingVol && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          background: 'rgba(0,0,0,0.7)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 99999,
+          padding: '1rem',
+        }}>
+          <div style={{
+            background: 'var(--admin-sidebar-bg)',
+            border: '1px solid var(--admin-border)',
+            borderRadius: 16,
+            padding: '1.75rem',
+            width: '100%',
+            maxWidth: 600,
+            maxHeight: '90vh',
+            overflowY: 'auto',
+            boxShadow: '0 24px 64px rgba(0,0,0,0.5)',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+              <div>
+                <h3 style={{ margin: '0', fontFamily: 'var(--font-heading)', fontSize: '1.3rem', color: 'var(--admin-fg)' }}>
+                  Edit Volunteer Profile
+                </h3>
+                <p style={{ margin: '0.2rem 0 0', fontSize: '0.75rem', color: 'var(--admin-fg-muted)', fontFamily: 'var(--font-mono)' }}>
+                  Unique ID: {editingVol.unique_id}
+                </p>
+              </div>
+              
+              <button
+                type="button"
+                onClick={() => handleDeleteVolunteer(editingVol.unique_id)}
+                style={{
+                  padding: '0.4rem 0.8rem',
+                  borderRadius: 6,
+                  background: 'rgba(250,50,50,0.1)',
+                  color: 'rgb(250,80,80)',
+                  border: '1px solid rgba(250,50,50,0.2)',
+                  fontFamily: 'var(--font-body)',
+                  fontSize: '0.7rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Delete Volunteer
+              </button>
+            </div>
+
+            <form onSubmit={handleEditSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--admin-fg-muted)', marginBottom: '0.2rem' }}>Full Name *</label>
+                <input
+                  value={editingVol.name}
+                  onChange={e => setEditingVol(prev => prev ? ({ ...prev, name: e.target.value }) : null)}
+                  required
+                  style={{ width: '100%', padding: '0.5rem', borderRadius: 8, border: '1px solid var(--admin-border)', background: 'rgba(0,0,0,0.2)', color: 'var(--admin-fg)', fontSize: '0.8rem' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--admin-fg-muted)', marginBottom: '0.2rem' }}>Email *</label>
+                <input
+                  value={editingVol.email}
+                  onChange={e => setEditingVol(prev => prev ? ({ ...prev, email: e.target.value }) : null)}
+                  required
+                  type="email"
+                  style={{ width: '100%', padding: '0.5rem', borderRadius: 8, border: '1px solid var(--admin-border)', background: 'rgba(0,0,0,0.2)', color: 'var(--admin-fg)', fontSize: '0.8rem' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--admin-fg-muted)', marginBottom: '0.2rem' }}>Phone Number</label>
+                <input
+                  value={editingVol.number || ''}
+                  onChange={e => setEditingVol(prev => prev ? ({ ...prev, number: e.target.value || null }) : null)}
+                  placeholder="e.g. 01712345678"
+                  style={{ width: '100%', padding: '0.5rem', borderRadius: 8, border: '1px solid var(--admin-border)', background: 'rgba(0,0,0,0.2)', color: 'var(--admin-fg)', fontSize: '0.8rem' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--admin-fg-muted)', marginBottom: '0.2rem' }}>Image URL</label>
+                <input
+                  value={editingVol.image_url || ''}
+                  onChange={e => setEditingVol(prev => prev ? ({ ...prev, image_url: e.target.value || null }) : null)}
+                  placeholder="e.g. Image Link"
+                  style={{ width: '100%', padding: '0.5rem', borderRadius: 8, border: '1px solid var(--admin-border)', background: 'rgba(0,0,0,0.2)', color: 'var(--admin-fg)', fontSize: '0.8rem' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--admin-fg-muted)', marginBottom: '0.2rem' }}>Segment</label>
+                <input
+                  value={editingVol.segment || ''}
+                  onChange={e => setEditingVol(prev => prev ? ({ ...prev, segment: e.target.value || null }) : null)}
+                  placeholder="e.g. Segment"
+                  style={{ width: '100%', padding: '0.5rem', borderRadius: 8, border: '1px solid var(--admin-border)', background: 'rgba(0,0,0,0.2)', color: 'var(--admin-fg)', fontSize: '0.8rem' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--admin-fg-muted)', marginBottom: '0.2rem' }}>Department</label>
+                <input
+                  value={editingVol.department || ''}
+                  onChange={e => setEditingVol(prev => prev ? ({ ...prev, department: e.target.value || null }) : null)}
+                  placeholder="e.g. Department"
+                  style={{ width: '100%', padding: '0.5rem', borderRadius: 8, border: '1px solid var(--admin-border)', background: 'rgba(0,0,0,0.2)', color: 'var(--admin-fg)', fontSize: '0.8rem' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--admin-fg-muted)', marginBottom: '0.2rem' }}>ID (Student ID)</label>
+                <input
+                  value={editingVol.student_id || ''}
+                  onChange={e => setEditingVol(prev => prev ? ({ ...prev, student_id: e.target.value || null }) : null)}
+                  placeholder="e.g. Student roll ID"
+                  style={{ width: '100%', padding: '0.5rem', borderRadius: 8, border: '1px solid var(--admin-border)', background: 'rgba(0,0,0,0.2)', color: 'var(--admin-fg)', fontSize: '0.8rem' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--admin-fg-muted)', marginBottom: '0.2rem' }}>Year</label>
+                <input
+                  value={editingVol.year || ''}
+                  onChange={e => setEditingVol(prev => prev ? ({ ...prev, year: e.target.value || null }) : null)}
+                  placeholder="e.g. Year"
+                  style={{ width: '100%', padding: '0.5rem', borderRadius: 8, border: '1px solid var(--admin-border)', background: 'rgba(0,0,0,0.2)', color: 'var(--admin-fg)', fontSize: '0.8rem' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--admin-fg-muted)', marginBottom: '0.2rem' }}>T-shirt Size</label>
+                <select
+                  value={editingVol.t_shirt_size || 'L'}
+                  onChange={e => setEditingVol(prev => prev ? ({ ...prev, t_shirt_size: e.target.value || null }) : null)}
+                  style={{ width: '100%', padding: '0.5rem', borderRadius: 8, border: '1px solid var(--admin-border)', background: 'rgba(0,0,0,0.2)', color: 'var(--admin-fg)', fontSize: '0.8rem' }}
+                >
+                  <option value="S">S</option>
+                  <option value="M">M</option>
+                  <option value="L">L</option>
+                  <option value="XL">XL</option>
+                  <option value="XXL">XXL</option>
+                </select>
+              </div>
+
+              <div style={{ gridColumn: 'span 2', display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={editingVol.is_present} onChange={e => setEditingVol(prev => prev ? ({ ...prev, is_present: e.target.checked }) : null)} />
+                  Is Present
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={editingVol.is_gift_collected} onChange={e => setEditingVol(prev => prev ? ({ ...prev, is_gift_collected: e.target.checked }) : null)} />
+                  Gift Collected
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={editingVol.is_lunch_collected} onChange={e => setEditingVol(prev => prev ? ({ ...prev, is_lunch_collected: e.target.checked }) : null)} />
+                  Lunch Collected
+                </label>
+              </div>
+
+              <div style={{ gridColumn: 'span 2', display: 'flex', justifyContent: 'flex-end', gap: '0.6rem', marginTop: '1.2rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setEditingVol(null)}
+                  style={{ padding: '0.5rem 1rem', borderRadius: 8, border: '1px solid var(--admin-border)', background: 'transparent', color: 'var(--admin-fg)', cursor: 'pointer', fontSize: '0.8rem' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isUpdating}
+                  style={{ padding: '0.5rem 1rem', borderRadius: 8, background: 'var(--admin-accent)', color: 'white', border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem' }}
+                >
+                  Save
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

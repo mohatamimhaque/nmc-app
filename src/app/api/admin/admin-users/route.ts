@@ -74,3 +74,115 @@ export async function POST(request: Request) {
 
   return NextResponse.json({ data: adminData })
 }
+
+export async function PATCH(request: Request) {
+  const guard = await requireAdminRole(['super_admin'])
+  if ('response' in guard) {
+    return guard.response
+  }
+
+  const body = await request.json().catch(() => null)
+  const id = body?.id ? String(body.id).trim() : ''
+  const role = body?.role ? String(body.role) : undefined
+  const displayName = body?.display_name !== undefined ? (body.display_name === null ? null : String(body.display_name).trim()) : undefined
+  const canManageVolunteers = body?.can_manage_volunteers !== undefined ? !!body.can_manage_volunteers : undefined
+
+  if (!id) {
+    return NextResponse.json({ error: 'Admin User ID is required.' }, { status: 400 })
+  }
+
+  const updatePayload: Record<string, any> = {}
+  if (role !== undefined) {
+    const VALID_ROLES = new Set(['super_admin', 'admin', 'moderator', 'registration_editor'])
+    if (!VALID_ROLES.has(role)) {
+      return NextResponse.json({ error: 'Invalid role.' }, { status: 400 })
+    }
+    updatePayload.role = role
+  }
+  if (displayName !== undefined) {
+    updatePayload.display_name = displayName
+  }
+  if (canManageVolunteers !== undefined) {
+    updatePayload.can_manage_volunteers = canManageVolunteers
+  }
+
+  if (Object.keys(updatePayload).length === 0) {
+    return NextResponse.json({ error: 'No fields to update.' }, { status: 400 })
+  }
+
+  const service = createServiceClient()
+  const { error, data } = await service
+    .from('admin_users')
+    .update(updatePayload)
+    .eq('id', id)
+    .select('id, email, display_name, role, can_manage_volunteers, last_login_at, created_at')
+    .single()
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 400 })
+  }
+
+  return NextResponse.json({ data })
+}
+
+export async function DELETE(request: Request) {
+  const guard = await requireAdminRole(['super_admin'])
+  if ('response' in guard) {
+    return guard.response
+  }
+
+  try {
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+
+    if (!id || id.trim() === '') {
+      return NextResponse.json({ error: 'Admin User ID is required.' }, { status: 400 })
+    }
+
+    if (id.trim() === guard.user.id) {
+      return NextResponse.json({ error: 'You cannot delete your own account.' }, { status: 400 })
+    }
+
+    const service = createServiceClient()
+
+    // Retrieve the user to check their role
+    const { data: targetUser, error: fetchError } = await service
+      .from('admin_users')
+      .select('role')
+      .eq('id', id.trim())
+      .single()
+
+    if (fetchError || !targetUser) {
+      return NextResponse.json({ error: 'Admin user not found.' }, { status: 404 })
+    }
+
+    // If target user is a super_admin, verify there is at least one other super_admin remaining
+    if (targetUser.role === 'super_admin') {
+      const { count, error: countError } = await service
+        .from('admin_users')
+        .select('id', { count: 'exact', head: true })
+        .eq('role', 'super_admin')
+
+      if (countError) {
+        return NextResponse.json({ error: countError.message }, { status: 500 })
+      }
+
+      if (count !== null && count <= 1) {
+        return NextResponse.json({ error: 'Cannot delete the last Super Admin. At least one Super Admin must always exist.' }, { status: 400 })
+      }
+    }
+
+    // Delete user from auth.users (cascades to admin_users table)
+    const { error: deleteError } = await service.auth.admin.deleteUser(id.trim())
+
+    if (deleteError) {
+      return NextResponse.json({ error: deleteError.message }, { status: 400 })
+    }
+
+    return NextResponse.json({ success: true })
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 })
+  }
+}
+
+
