@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { requireAdminRole } from '@/lib/admin-auth'
+import { requireRegistrationAccess } from '@/lib/admin-auth'
 
 export const runtime = 'nodejs'
 
@@ -8,10 +8,10 @@ export const runtime = 'nodejs'
  * Retrieve a single processed registration by its unique serial number.
  * Query Parameters:
  *   - serial: string (required)
- * Authorized: super_admin, admin, registration_editor
+ * Authorized: super_admin, admin, registration_editor, volunteer
  */
 export async function GET(request: Request) {
-  const guard = await requireAdminRole(['super_admin', 'admin', 'registration_editor'])
+  const guard = await requireRegistrationAccess()
   if ('response' in guard) return guard.response
 
   try {

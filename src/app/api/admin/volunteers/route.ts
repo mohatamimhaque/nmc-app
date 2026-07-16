@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { requireVolunteerAccess } from '@/lib/admin-auth'
+import { createServiceClient } from '@/lib/supabase/server'
 
 export const runtime = 'nodejs'
 
@@ -59,12 +60,14 @@ export async function POST(request: Request) {
       .single()
     const adminName = adminRecord?.display_name || guard.user.email || 'Admin'
 
+    const cleanEmail = String(email).trim().toLowerCase()
+
     const { data, error } = await supabase
       .from('volunteers')
       .insert({
         unique_id: String(unique_id).trim(),
         name: String(name).trim(),
-        email: String(email).trim().toLowerCase(),
+        email: cleanEmail,
         number: number ? String(number).trim() : null,
         image_url: image_url ? String(image_url).trim() : null,
         segment: segment ? String(segment).trim() : null,
@@ -82,6 +85,47 @@ export async function POST(request: Request) {
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    // Auto-create credentials for the volunteer
+    try {
+      const service = createServiceClient()
+
+      // Check if user already exists in admin_users or auth
+      const { data: existingUser } = await service
+        .from('admin_users')
+        .select('id')
+        .eq('email', cleanEmail)
+        .maybeSingle()
+
+      let userId = existingUser?.id
+
+      if (!userId) {
+        const { data: authData, error: authError } = await service.auth.admin.createUser({
+          email: cleanEmail,
+          password: '12345678',
+          email_confirm: true,
+        })
+
+        if (!authError && authData?.user) {
+          userId = authData.user.id
+        } else {
+          console.warn('Supabase auth createUser warning:', authError?.message)
+        }
+      }
+
+      if (userId) {
+        await service
+          .from('admin_users')
+          .upsert({
+            id: userId,
+            email: cleanEmail,
+            role: 'volunteer',
+            display_name: String(name).trim(),
+          })
+      }
+    } catch (authCreateErr) {
+      console.error('Failed to create volunteer auth credentials:', authCreateErr)
     }
 
     return NextResponse.json({ success: true, data })

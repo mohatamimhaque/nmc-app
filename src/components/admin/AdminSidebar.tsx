@@ -27,7 +27,7 @@ interface NavItem {
   roles?: AdminRole[]
 }
 
-type AdminRole = 'super_admin' | 'admin' | 'moderator' | 'registration_editor'
+type AdminRole = 'super_admin' | 'admin' | 'moderator' | 'registration_editor' | 'volunteer'
 
 const NAV: NavItem[] = [
   // Dashboard

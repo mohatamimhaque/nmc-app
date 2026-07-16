@@ -70,7 +70,7 @@ export function PublicNavbar({ settings, links }: PublicNavbarProps) {
               <img
                 src={settings.logo_url}
                 alt={settings.site_title || 'NMC 2026'}
-                style={{ width: 40, height: 40, borderRadius: 10, objectFit: 'cover' }}
+                style={{ width: 40, aspectRatio: 'auto', objectFit: 'cover' }}
               />
             ) : (
               <div

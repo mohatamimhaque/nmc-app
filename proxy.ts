@@ -47,8 +47,8 @@ export async function proxy(request: NextRequest) {
       .eq('id', user.id)
       .single()
 
-    // Not an admin → sign them out and redirect to login with error
-    if (error || !adminRecord) {
+    // Not an admin or is a volunteer (volunteers are restricted to mobile-only) → sign them out and redirect to login with error
+    if (error || !adminRecord || adminRecord.role === 'volunteer') {
       await supabase.auth.signOut()
       const url = new URL('/admin/login', request.url)
       url.searchParams.set('error', 'unauthorized')

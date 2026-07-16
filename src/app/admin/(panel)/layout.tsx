@@ -17,11 +17,11 @@ export default async function PanelGroupLayout({ children }: { children: React.R
 
   const { data: adminRecord, error } = await supabase
     .from('admin_users')
-    .select('id')
+    .select('id, role')
     .eq('id', user.id)
     .single()
 
-  if (error || !adminRecord) {
+  if (error || !adminRecord || adminRecord.role === 'volunteer') {
     try {
       await supabase.auth.signOut()
     } catch {

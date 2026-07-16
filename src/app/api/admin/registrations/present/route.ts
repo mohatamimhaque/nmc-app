@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { requireAdminRole } from '@/lib/admin-auth'
+import { requireRegistrationWriteAccess } from '@/lib/admin-auth'
 import { createClient } from '@/lib/supabase/server'
 
 export const runtime = 'nodejs'
@@ -7,10 +7,10 @@ export const runtime = 'nodejs'
 /**
  * PATCH /api/admin/registrations/present
  * Updates presence / attendance status (is_present) for a single registration using its serial number.
- * Authorized: super_admin, admin, registration_editor
+ * Authorized: super_admin, admin, registration_editor, permitted_volunteer
  */
 export async function PATCH(request: Request) {
-  const guard = await requireAdminRole(['super_admin', 'admin', 'registration_editor'])
+  const guard = await requireRegistrationWriteAccess()
   if ('response' in guard) return guard.response
 
   try {

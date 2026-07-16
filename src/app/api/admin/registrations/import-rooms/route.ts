@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { requireAdminRole } from '@/lib/admin-auth'
+import { requireRegistrationWriteAccess } from '@/lib/admin-auth'
 import { createServiceClient } from '@/lib/supabase/server'
 
 export const runtime = 'nodejs'
@@ -10,7 +10,7 @@ export const runtime = 'nodejs'
  * Uses a PL/pgSQL database RPC function to process updates in a single query.
  */
 export async function POST(request: Request) {
-  const guard = await requireAdminRole(['super_admin', 'admin', 'registration_editor'])
+  const guard = await requireRegistrationWriteAccess()
   if ('response' in guard) return guard.response
 
   try {

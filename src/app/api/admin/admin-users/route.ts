@@ -4,7 +4,7 @@ import { requireAdminRole } from '@/lib/admin-auth'
 
 export const runtime = 'nodejs'
 
-const ALLOWED_ROLES = new Set(['admin', 'moderator', 'registration_editor'])
+const ALLOWED_ROLES = new Set(['super_admin', 'admin', 'moderator', 'registration_editor', 'volunteer'])
 
 export async function GET() {
   const guard = await requireAdminRole(['super_admin'])
@@ -15,7 +15,7 @@ export async function GET() {
   const { supabase } = guard
   const { data, error } = await supabase
     .from('admin_users')
-    .select('id, email, display_name, role, last_login_at, created_at')
+    .select('id, email, display_name, role, can_manage_volunteers, can_manage_registrations, last_login_at, created_at')
     .order('created_at', { ascending: false })
 
   if (error) {
@@ -93,7 +93,7 @@ export async function PATCH(request: Request) {
 
   const updatePayload: Record<string, any> = {}
   if (role !== undefined) {
-    const VALID_ROLES = new Set(['super_admin', 'admin', 'moderator', 'registration_editor'])
+    const VALID_ROLES = new Set(['super_admin', 'admin', 'moderator', 'registration_editor', 'volunteer'])
     if (!VALID_ROLES.has(role)) {
       return NextResponse.json({ error: 'Invalid role.' }, { status: 400 })
     }
@@ -105,6 +105,10 @@ export async function PATCH(request: Request) {
   if (canManageVolunteers !== undefined) {
     updatePayload.can_manage_volunteers = canManageVolunteers
   }
+  const canManageRegistrations = body?.can_manage_registrations !== undefined ? !!body.can_manage_registrations : undefined
+  if (canManageRegistrations !== undefined) {
+    updatePayload.can_manage_registrations = canManageRegistrations
+  }
 
   if (Object.keys(updatePayload).length === 0) {
     return NextResponse.json({ error: 'No fields to update.' }, { status: 400 })
@@ -115,7 +119,7 @@ export async function PATCH(request: Request) {
     .from('admin_users')
     .update(updatePayload)
     .eq('id', id)
-    .select('id, email, display_name, role, can_manage_volunteers, last_login_at, created_at')
+    .select('id, email, display_name, role, can_manage_volunteers, can_manage_registrations, last_login_at, created_at')
     .single()
 
   if (error) {

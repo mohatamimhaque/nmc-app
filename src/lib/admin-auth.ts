@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { headers } from 'next/headers'
 import { createServerClient } from '@supabase/ssr'
 
-export type AdminRole = 'super_admin' | 'admin' | 'moderator' | 'registration_editor'
+export type AdminRole = 'super_admin' | 'admin' | 'moderator' | 'registration_editor' | 'volunteer'
 
 export type AdminGuardResult =
   | { supabase: SupabaseClient; user: User; role: AdminRole }
@@ -94,7 +94,7 @@ export async function requireVolunteerAccess(): Promise<AdminGuardResult> {
     return guard
   }
 
-  if (role === 'registration_editor') {
+  if (role === 'registration_editor' || role === 'volunteer') {
     const { data: adminRecord } = await supabase
       .from('admin_users')
       .select('can_manage_volunteers')
@@ -102,6 +102,46 @@ export async function requireVolunteerAccess(): Promise<AdminGuardResult> {
       .single()
 
     if (adminRecord?.can_manage_volunteers) {
+      return guard
+    }
+  }
+
+  return { response: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) }
+}
+
+export async function requireRegistrationAccess(): Promise<AdminGuardResult> {
+  const guard = await requireAdmin()
+  if ('response' in guard) {
+    return guard
+  }
+
+  const { role } = guard
+  if (role === 'super_admin' || role === 'admin' || role === 'registration_editor' || role === 'volunteer') {
+    return guard
+  }
+
+  return { response: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) }
+}
+
+export async function requireRegistrationWriteAccess(): Promise<AdminGuardResult> {
+  const guard = await requireAdmin()
+  if ('response' in guard) {
+    return guard
+  }
+
+  const { role, supabase, user } = guard
+  if (role === 'super_admin' || role === 'admin' || role === 'registration_editor') {
+    return guard
+  }
+
+  if (role === 'volunteer') {
+    const { data: adminRecord } = await supabase
+      .from('admin_users')
+      .select('can_manage_registrations')
+      .eq('id', user.id)
+      .single()
+
+    if (adminRecord?.can_manage_registrations) {
       return guard
     }
   }

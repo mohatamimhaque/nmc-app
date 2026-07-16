@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 
 export const runtime = 'nodejs'
 
@@ -17,11 +17,62 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Email and password are required.' }, { status: 400 })
     }
 
+    const cleanEmail = String(email).trim().toLowerCase()
+    const service = createServiceClient()
+
+    // ── VOLUNTEER AUTO-MIGRATION ON LOGIN ──────────────────────────────────
+    // Check if the user already has an admin_users profile
+    const { data: existingAdmin } = await service
+      .from('admin_users')
+      .select('id')
+      .eq('email', cleanEmail)
+      .maybeSingle()
+
+    if (!existingAdmin) {
+      // Check if they exist in the volunteers table
+      const { data: volunteerRecord } = await service
+        .from('volunteers')
+        .select('name')
+        .eq('email', cleanEmail)
+        .maybeSingle()
+
+      // If they are an existing volunteer and use the default password (or if password matches)
+      if (volunteerRecord && password === '12345678') {
+        const { data: authData, error: authError } = await service.auth.admin.createUser({
+          email: cleanEmail,
+          password: '12345678',
+          email_confirm: true,
+        })
+
+        let userId = authData?.user?.id
+
+        if (authError || !userId) {
+          // Fallback: If auth user already exists (e.g. created previously) but not in admin_users
+          const { data: userList } = await service.auth.admin.listUsers()
+          const matchedUser = userList?.users?.find((u: any) => u.email?.toLowerCase() === cleanEmail)
+          if (matchedUser) {
+            userId = matchedUser.id
+          }
+        }
+
+        if (userId) {
+          await service
+            .from('admin_users')
+            .upsert({
+              id: userId,
+              email: cleanEmail,
+              role: 'volunteer',
+              display_name: volunteerRecord.name,
+            })
+        }
+      }
+    }
+
     const supabase = await createClient()
 
     // Sign in to Supabase
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-      email,
+      email: cleanEmail,
       password,
     })
 

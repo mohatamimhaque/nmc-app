@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition, useMemo } from 'react'
 import { GlassCard } from './GlassCard'
 import { MathDivider } from './MathDivider'
 import * as XLSX from 'xlsx'
@@ -29,6 +29,9 @@ export function VolunteersTable({ initialVolunteers }: VolunteersTableProps) {
   const [bulkPresent, setBulkPresent] = useState<boolean | 'no-change'>('no-change')
   const [bulkGift, setBulkGift] = useState<boolean | 'no-change'>('no-change')
   const [bulkLunch, setBulkLunch] = useState<boolean | 'no-change'>('no-change')
+
+  // Filter state
+  const [activeFilter, setActiveFilter] = useState<'all' | 'present' | 'absent' | 'gift-collected' | 'gift-pending' | 'lunch-collected' | 'lunch-pending'>('all')
 
   // Modals state
   const [editingVol, setEditingVol] = useState<Volunteer | null>(null)
@@ -125,6 +128,28 @@ export function VolunteersTable({ initialVolunteers }: VolunteersTableProps) {
     }
   }, [])
 
+  const applyDataTableFilter = (dt: any, filter: string) => {
+    if (!dt) return
+    dt.column(10).search('')
+    dt.column(11).search('')
+    dt.column(12).search('')
+
+    if (filter === 'present') {
+      dt.column(10).search('^PRESENT$', true, false)
+    } else if (filter === 'absent') {
+      dt.column(10).search('^ABSENT$', true, false)
+    } else if (filter === 'gift-collected') {
+      dt.column(11).search('^COLLECTED$', true, false)
+    } else if (filter === 'gift-pending') {
+      dt.column(11).search('^PENDING$', true, false)
+    } else if (filter === 'lunch-collected') {
+      dt.column(12).search('^SERVED$', true, false)
+    } else if (filter === 'lunch-pending') {
+      dt.column(12).search('^PENDING$', true, false)
+    }
+    dt.draw()
+  }
+
   // Initialize/re-initialize DataTable whenever data changes
   useEffect(() => {
     if (!libLoaded || !tableRef.current) return
@@ -141,7 +166,7 @@ export function VolunteersTable({ initialVolunteers }: VolunteersTableProps) {
       destroy: true,
       columnDefs: [
         { orderable: false, targets: [0, 4, 10, 11, 12, 13] },
-        { searchable: false, targets: [0, 10, 11, 12, 13] }
+        { searchable: false, targets: [0, 13] }
       ],
       pageLength: 25,
       lengthMenu: [10, 25, 50, 100, 250],
@@ -152,6 +177,7 @@ export function VolunteersTable({ initialVolunteers }: VolunteersTableProps) {
     })
 
     dataTableInstance.current = dt
+    applyDataTableFilter(dt, activeFilter)
 
     // Bind row click event using delegation on the table
     $(tableRef.current).off('click', 'tbody tr').on('click', 'tbody tr', (e: any) => {
@@ -172,6 +198,12 @@ export function VolunteersTable({ initialVolunteers }: VolunteersTableProps) {
       }
     }
   }, [volunteers, libLoaded])
+
+  useEffect(() => {
+    if (libLoaded && dataTableInstance.current) {
+      applyDataTableFilter(dataTableInstance.current, activeFilter)
+    }
+  }, [activeFilter, libLoaded])
 
   // Selection handlers
   const handleSelectRow = (uniqueId: string) => {
@@ -403,6 +435,19 @@ export function VolunteersTable({ initialVolunteers }: VolunteersTableProps) {
     showToast('Excel spreadsheet downloaded!')
   }
 
+  // Summary counts
+  const stats = useMemo(() => {
+    return {
+      total: volunteers.length,
+      present: volunteers.filter(v => v.is_present).length,
+      absent: volunteers.filter(v => !v.is_present).length,
+      giftCollected: volunteers.filter(v => v.is_gift_collected).length,
+      giftPending: volunteers.filter(v => !v.is_gift_collected).length,
+      lunchCollected: volunteers.filter(v => v.is_lunch_collected).length,
+      lunchPending: volunteers.filter(v => !v.is_lunch_collected).length,
+    }
+  }, [volunteers])
+
   return (
     <div style={{ maxWidth: '100%', padding: '0 0.5rem' }}>
       {/* Toast Alert */}
@@ -475,6 +520,165 @@ export function VolunteersTable({ initialVolunteers }: VolunteersTableProps) {
             Export Excel
           </button>
         </div>
+      </div>
+
+      {/* ── Stats Overview cards ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+        
+        {/* Total Card */}
+        <div
+          onClick={() => setActiveFilter('all')}
+          style={{
+            ...statCardStyle,
+            cursor: 'pointer',
+            border: activeFilter === 'all' ? '1px solid var(--admin-accent)' : '1px solid var(--admin-border)',
+            background: activeFilter === 'all' ? 'rgba(99, 102, 241, 0.1)' : 'var(--admin-surface)',
+            transform: activeFilter === 'all' ? 'scale(1.02)' : 'none',
+            transition: 'all 0.2s ease',
+          }}
+        >
+          <div style={statLabelStyle}>Total Volunteers</div>
+          <div style={statValStyle}>{stats.total}</div>
+          <div style={{ fontSize: '0.65rem', color: 'var(--admin-fg-muted)', marginTop: '0.4rem' }}>
+            Click to view all records
+          </div>
+        </div>
+
+        {/* Presence Card */}
+        <div
+          style={{
+            ...statCardStyle,
+            border: (activeFilter === 'present' || activeFilter === 'absent') ? '1px solid #20c997' : '1px solid var(--admin-border)',
+            background: (activeFilter === 'present' || activeFilter === 'absent') ? 'rgba(32, 201, 151, 0.08)' : 'var(--admin-surface)',
+            transform: (activeFilter === 'present' || activeFilter === 'absent') ? 'scale(1.02)' : 'none',
+            transition: 'all 0.2s ease',
+          }}
+        >
+          <div style={statLabelStyle}>Attendance Check-In</div>
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginTop: '0.2rem' }}>
+            <div 
+              onClick={() => setActiveFilter(activeFilter === 'present' ? 'all' : 'present')}
+              style={{ 
+                cursor: 'pointer',
+                padding: '0.25rem 0.5rem',
+                borderRadius: 8,
+                background: activeFilter === 'present' ? 'rgba(32, 201, 151, 0.2)' : 'transparent',
+                border: activeFilter === 'present' ? '1px solid #20c997' : '1px solid transparent',
+              }}
+            >
+              <div style={{ fontSize: '0.65rem', color: '#20c997', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>PRESENT</div>
+              <div style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--admin-fg)' }}>{stats.present}</div>
+            </div>
+            <div style={{ width: '1px', height: '30px', background: 'var(--admin-border)' }}></div>
+            <div 
+              onClick={() => setActiveFilter(activeFilter === 'absent' ? 'all' : 'absent')}
+              style={{ 
+                cursor: 'pointer',
+                padding: '0.25rem 0.5rem',
+                borderRadius: 8,
+                background: activeFilter === 'absent' ? 'rgba(239, 68, 68, 0.2)' : 'transparent',
+                border: activeFilter === 'absent' ? '1px solid #ef4444' : '1px solid transparent',
+              }}
+            >
+              <div style={{ fontSize: '0.65rem', color: '#ef4444', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>ABSENT</div>
+              <div style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--admin-fg)' }}>{stats.absent}</div>
+            </div>
+          </div>
+          <div style={{ fontSize: '0.65rem', color: 'var(--admin-fg-muted)', marginTop: '0.4rem' }}>
+            Click status pill to filter
+          </div>
+        </div>
+
+        {/* Gift Card */}
+        <div
+          style={{
+            ...statCardStyle,
+            border: (activeFilter === 'gift-collected' || activeFilter === 'gift-pending') ? '1px solid #0dcaf0' : '1px solid var(--admin-border)',
+            background: (activeFilter === 'gift-collected' || activeFilter === 'gift-pending') ? 'rgba(13, 202, 240, 0.08)' : 'var(--admin-surface)',
+            transform: (activeFilter === 'gift-collected' || activeFilter === 'gift-pending') ? 'scale(1.02)' : 'none',
+            transition: 'all 0.2s ease',
+          }}
+        >
+          <div style={statLabelStyle}>Gift / T-Shirt Collection</div>
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginTop: '0.2rem' }}>
+            <div 
+              onClick={() => setActiveFilter(activeFilter === 'gift-collected' ? 'all' : 'gift-collected')}
+              style={{ 
+                cursor: 'pointer',
+                padding: '0.25rem 0.5rem',
+                borderRadius: 8,
+                background: activeFilter === 'gift-collected' ? 'rgba(13, 202, 240, 0.2)' : 'transparent',
+                border: activeFilter === 'gift-collected' ? '1px solid #0dcaf0' : '1px solid transparent',
+              }}
+            >
+              <div style={{ fontSize: '0.65rem', color: '#0dcaf0', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>COLLECTED</div>
+              <div style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--admin-fg)' }}>{stats.giftCollected}</div>
+            </div>
+            <div style={{ width: '1px', height: '30px', background: 'var(--admin-border)' }}></div>
+            <div 
+              onClick={() => setActiveFilter(activeFilter === 'gift-pending' ? 'all' : 'gift-pending')}
+              style={{ 
+                cursor: 'pointer',
+                padding: '0.25rem 0.5rem',
+                borderRadius: 8,
+                background: activeFilter === 'gift-pending' ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
+                border: activeFilter === 'gift-pending' ? '1px solid var(--admin-border)' : '1px solid transparent',
+              }}
+            >
+              <div style={{ fontSize: '0.65rem', color: 'var(--admin-fg-muted)', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>PENDING</div>
+              <div style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--admin-fg)' }}>{stats.giftPending}</div>
+            </div>
+          </div>
+          <div style={{ fontSize: '0.65rem', color: 'var(--admin-fg-muted)', marginTop: '0.4rem' }}>
+            Click status pill to filter
+          </div>
+        </div>
+
+        {/* Lunch Card */}
+        <div
+          style={{
+            ...statCardStyle,
+            border: (activeFilter === 'lunch-collected' || activeFilter === 'lunch-pending') ? '1px solid #ffc107' : '1px solid var(--admin-border)',
+            background: (activeFilter === 'lunch-collected' || activeFilter === 'lunch-pending') ? 'rgba(255, 193, 7, 0.08)' : 'var(--admin-surface)',
+            transform: (activeFilter === 'lunch-collected' || activeFilter === 'lunch-pending') ? 'scale(1.02)' : 'none',
+            transition: 'all 0.2s ease',
+          }}
+        >
+          <div style={statLabelStyle}>Lunch Service</div>
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginTop: '0.2rem' }}>
+            <div 
+              onClick={() => setActiveFilter(activeFilter === 'lunch-collected' ? 'all' : 'lunch-collected')}
+              style={{ 
+                cursor: 'pointer',
+                padding: '0.25rem 0.5rem',
+                borderRadius: 8,
+                background: activeFilter === 'lunch-collected' ? 'rgba(255, 193, 7, 0.2)' : 'transparent',
+                border: activeFilter === 'lunch-collected' ? '1px solid #ffc107' : '1px solid transparent',
+              }}
+            >
+              <div style={{ fontSize: '0.65rem', color: '#ffc107', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>SERVED</div>
+              <div style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--admin-fg)' }}>{stats.lunchCollected}</div>
+            </div>
+            <div style={{ width: '1px', height: '30px', background: 'var(--admin-border)' }}></div>
+            <div 
+              onClick={() => setActiveFilter(activeFilter === 'lunch-pending' ? 'all' : 'lunch-pending')}
+              style={{ 
+                cursor: 'pointer',
+                padding: '0.25rem 0.5rem',
+                borderRadius: 8,
+                background: activeFilter === 'lunch-pending' ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
+                border: activeFilter === 'lunch-pending' ? '1px solid var(--admin-border)' : '1px solid transparent',
+              }}
+            >
+              <div style={{ fontSize: '0.65rem', color: 'var(--admin-fg-muted)', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>PENDING</div>
+              <div style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--admin-fg)' }}>{stats.lunchPending}</div>
+            </div>
+          </div>
+          <div style={{ fontSize: '0.65rem', color: 'var(--admin-fg-muted)', marginTop: '0.4rem' }}>
+            Click status pill to filter
+          </div>
+        </div>
+
       </div>
 
       <MathDivider />
@@ -754,14 +958,102 @@ export function VolunteersTable({ initialVolunteers }: VolunteersTableProps) {
                 />
               </div>
 
-              <div>
-                <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--admin-fg-muted)', marginBottom: '0.2rem' }}>Image URL</label>
-                <input
-                  value={addForm.image_url}
-                  onChange={e => setAddForm(prev => ({ ...prev, image_url: e.target.value }))}
-                  placeholder="e.g. https://example.com/sifat.jpg"
-                  style={{ width: '100%', padding: '0.5rem', borderRadius: 8, border: '1px solid var(--admin-border)', background: 'rgba(0,0,0,0.2)', color: 'var(--admin-fg)', fontSize: '0.8rem' }}
-                />
+              <div style={{ gridColumn: 'span 2' }}>
+                <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--admin-fg-muted)', marginBottom: '0.2rem' }}>Volunteer Picture (Optional)</label>
+                <div style={{
+                  display: 'flex',
+                  gap: '1rem',
+                  alignItems: 'center',
+                  padding: '0.75rem',
+                  border: '1px dashed var(--admin-border)',
+                  borderRadius: 12,
+                  background: 'rgba(0, 0, 0, 0.2)'
+                }}>
+                  <div style={{
+                    width: 70,
+                    height: 70,
+                    borderRadius: 8,
+                    overflow: 'hidden',
+                    border: '1px solid var(--admin-border)',
+                    background: 'rgba(0,0,0,0.4)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0
+                  }}>
+                    {addForm.image_url ? (
+                      <img src={addForm.image_url} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      <span style={{ fontSize: '0.6rem', color: 'var(--admin-fg-muted)' }}>No Image</span>
+                    )}
+                  </div>
+                  <div style={{ flexGrow: 1, display: 'grid', gap: '0.4rem' }}>
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        id="add-vol-image-file"
+                        style={{ display: 'none' }}
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0]
+                          if (!file) return
+                          try {
+                            const formData = new FormData()
+                            formData.append('file', file)
+                            const response = await fetch('/api/admin/upload', { method: 'POST', body: formData })
+                            const data = await response.json().catch(() => null)
+                            if (response.ok && data?.url) {
+                              setAddForm(prev => ({ ...prev, image_url: data.url }))
+                              showToast('Image uploaded successfully!')
+                            } else {
+                              showToast(data?.error ?? 'Upload failed.', 'error')
+                            }
+                          } catch (err: any) {
+                            showToast(err.message, 'error')
+                          }
+                        }}
+                      />
+                      <label
+                        htmlFor="add-vol-image-file"
+                        style={{
+                          padding: '0.35rem 0.8rem',
+                          borderRadius: 6,
+                          background: 'var(--admin-accent)',
+                          color: '#fff',
+                          fontSize: '0.7rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          display: 'inline-block'
+                        }}
+                      >
+                        Upload Image
+                      </label>
+                      {addForm.image_url && (
+                        <button
+                          type="button"
+                          onClick={() => setAddForm(prev => ({ ...prev, image_url: '' }))}
+                          style={{
+                            padding: '0.35rem 0.8rem',
+                            borderRadius: 6,
+                            background: 'rgba(239, 68, 68, 0.2)',
+                            color: '#ef4444',
+                            border: '1px solid rgba(239, 68, 68, 0.3)',
+                            fontSize: '0.7rem',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                    <input
+                      value={addForm.image_url}
+                      onChange={e => setAddForm(prev => ({ ...prev, image_url: e.target.value }))}
+                      placeholder="Or paste image URL directly..."
+                      style={{ width: '100%', padding: '0.35rem 0.5rem', borderRadius: 6, border: '1px solid var(--admin-border)', background: 'rgba(0,0,0,0.3)', color: 'var(--admin-fg)', fontSize: '0.75rem' }}
+                    />
+                  </div>
+                </div>
               </div>
 
               <div>
@@ -945,14 +1237,102 @@ export function VolunteersTable({ initialVolunteers }: VolunteersTableProps) {
                 />
               </div>
 
-              <div>
-                <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--admin-fg-muted)', marginBottom: '0.2rem' }}>Image URL</label>
-                <input
-                  value={editingVol.image_url || ''}
-                  onChange={e => setEditingVol(prev => prev ? ({ ...prev, image_url: e.target.value || null }) : null)}
-                  placeholder="e.g. Image Link"
-                  style={{ width: '100%', padding: '0.5rem', borderRadius: 8, border: '1px solid var(--admin-border)', background: 'rgba(0,0,0,0.2)', color: 'var(--admin-fg)', fontSize: '0.8rem' }}
-                />
+              <div style={{ gridColumn: 'span 2' }}>
+                <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--admin-fg-muted)', marginBottom: '0.2rem' }}>Volunteer Picture (Optional)</label>
+                <div style={{
+                  display: 'flex',
+                  gap: '1rem',
+                  alignItems: 'center',
+                  padding: '0.75rem',
+                  border: '1px dashed var(--admin-border)',
+                  borderRadius: 12,
+                  background: 'rgba(0, 0, 0, 0.2)'
+                }}>
+                  <div style={{
+                    width: 70,
+                    height: 70,
+                    borderRadius: 8,
+                    overflow: 'hidden',
+                    border: '1px solid var(--admin-border)',
+                    background: 'rgba(0,0,0,0.4)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0
+                  }}>
+                    {editingVol.image_url ? (
+                      <img src={editingVol.image_url} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      <span style={{ fontSize: '0.6rem', color: 'var(--admin-fg-muted)' }}>No Image</span>
+                    )}
+                  </div>
+                  <div style={{ flexGrow: 1, display: 'grid', gap: '0.4rem' }}>
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        id="edit-vol-image-file"
+                        style={{ display: 'none' }}
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0]
+                          if (!file) return
+                          try {
+                            const formData = new FormData()
+                            formData.append('file', file)
+                            const response = await fetch('/api/admin/upload', { method: 'POST', body: formData })
+                            const data = await response.json().catch(() => null)
+                            if (response.ok && data?.url) {
+                              setEditingVol(prev => prev ? ({ ...prev, image_url: data.url }) : null)
+                              showToast('Image uploaded successfully!')
+                            } else {
+                              showToast(data?.error ?? 'Upload failed.', 'error')
+                            }
+                          } catch (err: any) {
+                            showToast(err.message, 'error')
+                          }
+                        }}
+                      />
+                      <label
+                        htmlFor="edit-vol-image-file"
+                        style={{
+                          padding: '0.35rem 0.8rem',
+                          borderRadius: 6,
+                          background: 'var(--admin-accent)',
+                          color: '#fff',
+                          fontSize: '0.7rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          display: 'inline-block'
+                        }}
+                      >
+                        Upload Image
+                      </label>
+                      {editingVol.image_url && (
+                        <button
+                          type="button"
+                          onClick={() => setEditingVol(prev => prev ? ({ ...prev, image_url: null }) : null)}
+                          style={{
+                            padding: '0.35rem 0.8rem',
+                            borderRadius: 6,
+                            background: 'rgba(239, 68, 68, 0.2)',
+                            color: '#ef4444',
+                            border: '1px solid rgba(239, 68, 68, 0.3)',
+                            fontSize: '0.7rem',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                    <input
+                      value={editingVol.image_url || ''}
+                      onChange={e => setEditingVol(prev => prev ? ({ ...prev, image_url: e.target.value || null }) : null)}
+                      placeholder="Or paste image URL directly..."
+                      style={{ width: '100%', padding: '0.35rem 0.5rem', borderRadius: 6, border: '1px solid var(--admin-border)', background: 'rgba(0,0,0,0.3)', color: 'var(--admin-fg)', fontSize: '0.75rem' }}
+                    />
+                  </div>
+                </div>
               </div>
 
               <div>
@@ -1047,4 +1427,31 @@ export function VolunteersTable({ initialVolunteers }: VolunteersTableProps) {
       )}
     </div>
   )
+}
+
+const statCardStyle: React.CSSProperties = {
+  background: 'var(--admin-surface)',
+  border: '1px solid var(--admin-border)',
+  borderRadius: 12,
+  padding: '1rem',
+  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'center',
+}
+
+const statLabelStyle: React.CSSProperties = {
+  fontFamily: 'var(--font-mono)',
+  fontSize: '0.65rem',
+  color: 'var(--admin-fg-muted)',
+  textTransform: 'uppercase',
+  letterSpacing: '0.08em',
+  marginBottom: '0.4rem',
+}
+
+const statValStyle: React.CSSProperties = {
+  fontSize: '1.5rem',
+  fontWeight: 700,
+  color: 'var(--admin-fg)',
+  fontFamily: 'var(--font-heading)',
 }

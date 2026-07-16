@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { requireAdminRole } from '@/lib/admin-auth'
+import { requireRegistrationAccess } from '@/lib/admin-auth'
 import { createClient } from '@/lib/supabase/server'
 
 export const runtime = 'nodejs'
@@ -7,10 +7,10 @@ export const runtime = 'nodejs'
 /**
  * GET /api/admin/registrations/summary
  * Fetch full statistics/summary of registrations (no parameters required).
- * Authorized: super_admin, admin, registration_editor
+ * Authorized: super_admin, admin, registration_editor, volunteer
  */
 export async function GET() {
-  const guard = await requireAdminRole(['super_admin', 'admin', 'registration_editor'])
+  const guard = await requireRegistrationAccess()
   if ('response' in guard) return guard.response
 
   try {

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 import sharp from 'sharp'
-import { requireAdminRole } from '@/lib/admin-auth'
+import { requireAdmin } from '@/lib/admin-auth'
 
 export const runtime = 'nodejs'
 
@@ -35,9 +35,25 @@ const getR2Client = () => {
 const sanitizeFilename = (value: string) => value.replace(/[^a-zA-Z0-9._-]/g, '_')
 
 export async function POST(request: Request) {
-  const guard = await requireAdminRole(['super_admin', 'admin'])
+  const guard = await requireAdmin()
   if ('response' in guard) {
     return guard.response
+  }
+
+  let isAuthorized = guard.role === 'super_admin' || guard.role === 'admin'
+  if (!isAuthorized && guard.role === 'registration_editor') {
+    const { data: adminRecord } = await guard.supabase
+      .from('admin_users')
+      .select('can_manage_volunteers')
+      .eq('id', guard.user.id)
+      .single()
+    if (adminRecord?.can_manage_volunteers) {
+      isAuthorized = true
+    }
+  }
+
+  if (!isAuthorized) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
   const formData = await request.formData()

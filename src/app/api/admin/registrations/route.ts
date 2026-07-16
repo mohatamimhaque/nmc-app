@@ -1,15 +1,15 @@
 import { NextResponse } from 'next/server'
-import { requireAdminRole } from '@/lib/admin-auth'
+import { requireRegistrationAccess, requireRegistrationWriteAccess } from '@/lib/admin-auth'
 import { createClient } from '@/lib/supabase/server'
 
 export const runtime = 'nodejs'
 
 /**
  * GET /api/admin/registrations
- * Fetch all processed registration records. Securely protected for super_admin & admin.
+ * Fetch all processed registration records. Securely protected.
  */
 export async function GET() {
-  const guard = await requireAdminRole(['super_admin', 'admin', 'registration_editor'])
+  const guard = await requireRegistrationAccess()
   if ('response' in guard) return guard.response
 
   const supabase = guard.supabase
@@ -30,7 +30,7 @@ export async function GET() {
  * Bulk or individual update of status flags: is_kit_coollect, is_present, is_collect_launch, and allocated_room.
  */
 export async function PATCH(request: Request) {
-  const guard = await requireAdminRole(['super_admin', 'admin', 'registration_editor'])
+  const guard = await requireRegistrationWriteAccess()
   if ('response' in guard) return guard.response
 
   try {
