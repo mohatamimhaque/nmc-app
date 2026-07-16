@@ -653,7 +653,7 @@ export interface AdminUser {
   id: string
   email: string
   display_name: string | null
-  role: 'super_admin' | 'admin' | 'moderator' | 'registration_editor'
+  role: 'super_admin' | 'admin' | 'moderator' | 'registration_editor' | 'volunteer'
   can_manage_volunteers: boolean
   last_login_at: string | null
   created_at: string

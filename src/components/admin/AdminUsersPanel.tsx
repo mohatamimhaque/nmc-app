@@ -7,7 +7,7 @@ export type AdminUserRow = {
   id: string
   email: string
   display_name: string | null
-  role: 'super_admin' | 'admin' | 'moderator' | 'registration_editor'
+  role: 'super_admin' | 'admin' | 'moderator' | 'registration_editor' | 'volunteer'
   can_manage_volunteers: boolean
   last_login_at: string | null
   created_at: string
@@ -192,10 +192,11 @@ export function AdminUsersPanel({ initialUsers, currentUserId }: { initialUsers:
               fontSize: '0.85rem',
             }}
           >
-            <option value="super_admin">Super Admin</option>
-            <option value="admin">Admin</option>
-            <option value="moderator">Moderator</option>
-            <option value="registration_editor">Registration Editor</option>
+            <option style={{ background: 'var(--admin-bg)', color: 'var(--admin-fg)' }} value="super_admin">Super Admin</option>
+            <option style={{ background: 'var(--admin-bg)', color: 'var(--admin-fg)' }} value="admin">Admin</option>
+            <option style={{ background: 'var(--admin-bg)', color: 'var(--admin-fg)' }} value="moderator">Moderator</option>
+            <option style={{ background: 'var(--admin-bg)', color: 'var(--admin-fg)' }} value="registration_editor">Registration Editor</option>
+            <option style={{ background: 'var(--admin-bg)', color: 'var(--admin-fg)' }} value="volunteer">Volunteer</option>
           </select>
 
           <label
