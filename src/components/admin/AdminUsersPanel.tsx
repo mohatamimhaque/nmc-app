@@ -9,6 +9,9 @@ export type AdminUserRow = {
   display_name: string | null
   role: 'super_admin' | 'admin' | 'moderator' | 'registration_editor' | 'volunteer'
   can_manage_volunteers: boolean
+  can_manage_kit: boolean
+  can_manage_presents: boolean
+  can_manage_lunch: boolean
   last_login_at: string | null
   created_at: string
 }
@@ -21,6 +24,9 @@ export function AdminUsersPanel({ initialUsers, currentUserId }: { initialUsers:
     role: 'admin',
     display_name: '',
     can_manage_volunteers: false,
+    can_manage_kit: false,
+    can_manage_presents: false,
+    can_manage_lunch: false,
   })
   const [editingUser, setEditingUser] = useState<AdminUserRow | null>(null)
   const [status, setStatus] = useState<string | null>(null)
@@ -61,13 +67,25 @@ export function AdminUsersPanel({ initialUsers, currentUserId }: { initialUsers:
       role: user.role,
       display_name: user.display_name || '',
       can_manage_volunteers: user.can_manage_volunteers,
+      can_manage_kit: user.can_manage_kit || false,
+      can_manage_presents: user.can_manage_presents || false,
+      can_manage_lunch: user.can_manage_lunch || false,
     })
     setStatus(null)
   }
 
   const cancelEdit = () => {
     setEditingUser(null)
-    setForm({ email: '', password: '', role: 'admin', display_name: '', can_manage_volunteers: false })
+    setForm({
+      email: '',
+      password: '',
+      role: 'admin',
+      display_name: '',
+      can_manage_volunteers: false,
+      can_manage_kit: false,
+      can_manage_presents: false,
+      can_manage_lunch: false,
+    })
     setStatus(null)
   }
 
@@ -90,6 +108,9 @@ export function AdminUsersPanel({ initialUsers, currentUserId }: { initialUsers:
             role: form.role,
             display_name: form.display_name || null,
             can_manage_volunteers: form.role === 'super_admin' || form.role === 'admin' ? true : form.can_manage_volunteers,
+            can_manage_kit: form.role === 'super_admin' || form.role === 'admin' || form.role === 'registration_editor' ? true : form.can_manage_kit,
+            can_manage_presents: form.role === 'super_admin' || form.role === 'admin' || form.role === 'registration_editor' ? true : form.can_manage_presents,
+            can_manage_lunch: form.role === 'super_admin' || form.role === 'admin' || form.role === 'registration_editor' ? true : form.can_manage_lunch,
           }),
         })
         const payload = await res.json()
@@ -109,6 +130,10 @@ export function AdminUsersPanel({ initialUsers, currentUserId }: { initialUsers:
             password: form.password,
             role: form.role,
             display_name: form.display_name || null,
+            can_manage_volunteers: form.role === 'super_admin' || form.role === 'admin' ? true : form.can_manage_volunteers,
+            can_manage_kit: form.role === 'super_admin' || form.role === 'admin' || form.role === 'registration_editor' ? true : form.can_manage_kit,
+            can_manage_presents: form.role === 'super_admin' || form.role === 'admin' || form.role === 'registration_editor' ? true : form.can_manage_presents,
+            can_manage_lunch: form.role === 'super_admin' || form.role === 'admin' || form.role === 'registration_editor' ? true : form.can_manage_lunch,
           }),
         })
         const payload = await res.json()
@@ -116,7 +141,16 @@ export function AdminUsersPanel({ initialUsers, currentUserId }: { initialUsers:
           throw new Error(payload?.error ?? 'Failed to create admin.')
         }
         setUsers(prev => [payload.data, ...prev])
-        setForm({ email: '', password: '', role: 'admin', display_name: '', can_manage_volunteers: false })
+        setForm({
+          email: '',
+          password: '',
+          role: 'admin',
+          display_name: '',
+          can_manage_volunteers: false,
+          can_manage_kit: false,
+          can_manage_presents: false,
+          can_manage_lunch: false,
+        })
         setStatus('Admin user created successfully.')
       }
     } catch (error) {
@@ -222,6 +256,75 @@ export function AdminUsersPanel({ initialUsers, currentUserId }: { initialUsers:
             Can Manage Volunteers
           </label>
 
+          <label
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              color: 'var(--admin-fg)',
+              fontFamily: 'var(--font-body)',
+              fontSize: '0.8rem',
+              cursor: 'pointer',
+              margin: '0.2rem 0',
+              opacity: (form.role === 'super_admin' || form.role === 'admin' || form.role === 'registration_editor') ? 0.6 : 1,
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={(form.role === 'super_admin' || form.role === 'admin' || form.role === 'registration_editor') ? true : form.can_manage_kit}
+              disabled={form.role === 'super_admin' || form.role === 'admin' || form.role === 'registration_editor'}
+              onChange={e => onChange('can_manage_kit', e.target.checked)}
+              style={{ cursor: 'pointer' }}
+            />
+            Can Manage Kit Collection
+          </label>
+
+          <label
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              color: 'var(--admin-fg)',
+              fontFamily: 'var(--font-body)',
+              fontSize: '0.8rem',
+              cursor: 'pointer',
+              margin: '0.2rem 0',
+              opacity: (form.role === 'super_admin' || form.role === 'admin' || form.role === 'registration_editor') ? 0.6 : 1,
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={(form.role === 'super_admin' || form.role === 'admin' || form.role === 'registration_editor') ? true : form.can_manage_presents}
+              disabled={form.role === 'super_admin' || form.role === 'admin' || form.role === 'registration_editor'}
+              onChange={e => onChange('can_manage_presents', e.target.checked)}
+              style={{ cursor: 'pointer' }}
+            />
+            Can Manage Presents/Attendance
+          </label>
+
+          <label
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              color: 'var(--admin-fg)',
+              fontFamily: 'var(--font-body)',
+              fontSize: '0.8rem',
+              cursor: 'pointer',
+              margin: '0.2rem 0',
+              opacity: (form.role === 'super_admin' || form.role === 'admin' || form.role === 'registration_editor') ? 0.6 : 1,
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={(form.role === 'super_admin' || form.role === 'admin' || form.role === 'registration_editor') ? true : form.can_manage_lunch}
+              disabled={form.role === 'super_admin' || form.role === 'admin' || form.role === 'registration_editor'}
+              onChange={e => onChange('can_manage_lunch', e.target.checked)}
+              style={{ cursor: 'pointer' }}
+            />
+            Can Manage Lunch/Launch
+          </label>
+
           <button
             onClick={submit}
             disabled={isSubmitting}
@@ -284,7 +387,7 @@ export function AdminUsersPanel({ initialUsers, currentUserId }: { initialUsers:
               background: 'rgba(255,255,255,0.03)',
             }}>
               <div>
-                <div style={{ fontFamily: 'var(--font-body)', fontSize: '0.8rem', color: 'var(--admin-fg)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: '0.8rem', color: 'var(--admin-fg)', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.4rem' }}>
                   <span>{user.display_name || user.email}</span>
                   {user.can_manage_volunteers && (
                     <span style={{
@@ -297,6 +400,45 @@ export function AdminUsersPanel({ initialUsers, currentUserId }: { initialUsers:
                       border: '1px solid rgba(0,255,100,0.2)'
                     }}>
                       Volunteers OK
+                    </span>
+                  )}
+                  {user.can_manage_kit && (
+                    <span style={{
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: '0.55rem',
+                      background: 'rgba(124,58,237,0.1)',
+                      color: 'rgb(167,139,250)',
+                      padding: '0.1rem 0.3rem',
+                      borderRadius: 4,
+                      border: '1px solid rgba(124,58,237,0.2)'
+                    }}>
+                      Kits OK
+                    </span>
+                  )}
+                  {user.can_manage_presents && (
+                    <span style={{
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: '0.55rem',
+                      background: 'rgba(249,115,22,0.1)',
+                      color: 'rgb(251,146,60)',
+                      padding: '0.1rem 0.3rem',
+                      borderRadius: 4,
+                      border: '1px solid rgba(249,115,22,0.2)'
+                    }}>
+                      Presents OK
+                    </span>
+                  )}
+                  {user.can_manage_lunch && (
+                    <span style={{
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: '0.55rem',
+                      background: 'rgba(37,99,235,0.1)',
+                      color: 'rgb(96,165,250)',
+                      padding: '0.1rem 0.3rem',
+                      borderRadius: 4,
+                      border: '1px solid rgba(37,99,235,0.2)'
+                    }}>
+                      Lunch OK
                     </span>
                   )}
                 </div>

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { requireVolunteerAccess } from '@/lib/admin-auth'
+import { requireVolunteerAccess, requireVolunteerReadAccess } from '@/lib/admin-auth'
 import { createServiceClient } from '@/lib/supabase/server'
 
 export const runtime = 'nodejs'
@@ -37,7 +37,7 @@ async function generateNextSerialNo(supabase: any): Promise<string> {
   if (data && data.length > 0) {
     for (const v of data) {
       if (v.serial_no) {
-        const match = v.serial_no.match(/^V26(\d+)$/)
+         const match = v.serial_no.match(/^V26(\d+)$/)
         if (match) {
           const num = parseInt(match[1], 10)
           if (num > maxNum) {
@@ -56,7 +56,7 @@ async function generateNextSerialNo(supabase: any): Promise<string> {
  * Fetch all volunteer records. Securely protected.
  */
 export async function GET() {
-  const guard = await requireVolunteerAccess()
+  const guard = await requireVolunteerReadAccess()
   if ('response' in guard) return guard.response
 
   const supabase = guard.supabase

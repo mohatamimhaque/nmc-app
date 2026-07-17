@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { requireRegistrationWriteAccess } from '@/lib/admin-auth'
+import { requireLunchWriteAccess } from '@/lib/admin-auth'
 import { createClient } from '@/lib/supabase/server'
 
 export const runtime = 'nodejs'
@@ -10,7 +10,7 @@ export const runtime = 'nodejs'
  * Authorized: super_admin, admin, registration_editor, permitted_volunteer
  */
 export async function PATCH(request: Request) {
-  const guard = await requireRegistrationWriteAccess()
+  const guard = await requireLunchWriteAccess()
   if ('response' in guard) return guard.response
 
   try {

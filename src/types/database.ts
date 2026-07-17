@@ -660,6 +660,9 @@ export interface AdminUser {
   display_name: string | null
   role: 'super_admin' | 'admin' | 'moderator' | 'registration_editor' | 'volunteer'
   can_manage_volunteers: boolean
+  can_manage_kit: boolean
+  can_manage_presents: boolean
+  can_manage_lunch: boolean
   last_login_at: string | null
   created_at: string
 }

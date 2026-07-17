@@ -15,7 +15,7 @@ export async function GET() {
   const { supabase } = guard
   const { data, error } = await supabase
     .from('admin_users')
-    .select('id, email, display_name, role, can_manage_volunteers, can_manage_registrations, last_login_at, created_at')
+    .select('id, email, display_name, role, can_manage_volunteers, can_manage_registrations, can_manage_kit, can_manage_presents, can_manage_lunch, last_login_at, created_at')
     .order('created_at', { ascending: false })
 
   if (error) {
@@ -57,6 +57,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: authError?.message ?? 'Failed to create user.' }, { status: 400 })
   }
 
+  const canManageVolunteers = body?.can_manage_volunteers !== undefined ? !!body.can_manage_volunteers : false
+  const canManageKit = body?.can_manage_kit !== undefined ? !!body.can_manage_kit : false
+  const canManagePresents = body?.can_manage_presents !== undefined ? !!body.can_manage_presents : false
+  const canManageLunch = body?.can_manage_lunch !== undefined ? !!body.can_manage_lunch : false
+
   const { error: adminError, data: adminData } = await service
     .from('admin_users')
     .upsert({
@@ -64,8 +69,12 @@ export async function POST(request: Request) {
       email,
       role,
       display_name: displayName,
+      can_manage_volunteers: (role === 'super_admin' || role === 'admin') ? true : canManageVolunteers,
+      can_manage_kit: (role === 'super_admin' || role === 'admin') ? true : canManageKit,
+      can_manage_presents: (role === 'super_admin' || role === 'admin') ? true : canManagePresents,
+      can_manage_lunch: (role === 'super_admin' || role === 'admin') ? true : canManageLunch,
     })
-    .select('id, email, display_name, role, created_at')
+    .select('id, email, display_name, role, can_manage_volunteers, can_manage_kit, can_manage_presents, can_manage_lunch, created_at')
     .single()
 
   if (adminError) {
@@ -86,6 +95,9 @@ export async function PATCH(request: Request) {
   const role = body?.role ? String(body.role) : undefined
   const displayName = body?.display_name !== undefined ? (body.display_name === null ? null : String(body.display_name).trim()) : undefined
   const canManageVolunteers = body?.can_manage_volunteers !== undefined ? !!body.can_manage_volunteers : undefined
+  const canManageKit = body?.can_manage_kit !== undefined ? !!body.can_manage_kit : undefined
+  const canManagePresents = body?.can_manage_presents !== undefined ? !!body.can_manage_presents : undefined
+  const canManageLunch = body?.can_manage_lunch !== undefined ? !!body.can_manage_lunch : undefined
 
   if (!id) {
     return NextResponse.json({ error: 'Admin User ID is required.' }, { status: 400 })
@@ -98,12 +110,27 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: 'Invalid role.' }, { status: 400 })
     }
     updatePayload.role = role
+    if (role === 'super_admin' || role === 'admin') {
+      updatePayload.can_manage_volunteers = true
+      updatePayload.can_manage_kit = true
+      updatePayload.can_manage_presents = true
+      updatePayload.can_manage_lunch = true
+    }
   }
   if (displayName !== undefined) {
     updatePayload.display_name = displayName
   }
-  if (canManageVolunteers !== undefined) {
+  if (canManageVolunteers !== undefined && role !== 'super_admin' && role !== 'admin') {
     updatePayload.can_manage_volunteers = canManageVolunteers
+  }
+  if (canManageKit !== undefined && role !== 'super_admin' && role !== 'admin') {
+    updatePayload.can_manage_kit = canManageKit
+  }
+  if (canManagePresents !== undefined && role !== 'super_admin' && role !== 'admin') {
+    updatePayload.can_manage_presents = canManagePresents
+  }
+  if (canManageLunch !== undefined && role !== 'super_admin' && role !== 'admin') {
+    updatePayload.can_manage_lunch = canManageLunch
   }
   const canManageRegistrations = body?.can_manage_registrations !== undefined ? !!body.can_manage_registrations : undefined
   if (canManageRegistrations !== undefined) {
@@ -119,7 +146,7 @@ export async function PATCH(request: Request) {
     .from('admin_users')
     .update(updatePayload)
     .eq('id', id)
-    .select('id, email, display_name, role, can_manage_volunteers, can_manage_registrations, last_login_at, created_at')
+    .select('id, email, display_name, role, can_manage_volunteers, can_manage_registrations, can_manage_kit, can_manage_presents, can_manage_lunch, last_login_at, created_at')
     .single()
 
   if (error) {

@@ -109,6 +109,35 @@ export async function requireVolunteerAccess(): Promise<AdminGuardResult> {
   return { response: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) }
 }
 
+export async function requireVolunteerReadAccess(): Promise<AdminGuardResult> {
+  const guard = await requireAdmin()
+  if ('response' in guard) {
+    return guard
+  }
+
+  const { role, supabase, user } = guard
+  if (role === 'super_admin' || role === 'admin' || role === 'registration_editor') {
+    return guard
+  }
+
+  const { data: adminRecord } = await supabase
+    .from('admin_users')
+    .select('can_manage_volunteers, can_manage_kit, can_manage_presents, can_manage_lunch')
+    .eq('id', user.id)
+    .single()
+
+  if (
+    adminRecord?.can_manage_volunteers ||
+    adminRecord?.can_manage_kit ||
+    adminRecord?.can_manage_presents ||
+    adminRecord?.can_manage_lunch
+  ) {
+    return guard
+  }
+
+  return { response: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) }
+}
+
 export async function requireRegistrationAccess(): Promise<AdminGuardResult> {
   const guard = await requireAdmin()
   if ('response' in guard) {
@@ -116,7 +145,13 @@ export async function requireRegistrationAccess(): Promise<AdminGuardResult> {
   }
 
   const { role } = guard
-  if (role === 'super_admin' || role === 'admin' || role === 'registration_editor' || role === 'volunteer') {
+  if (
+    role === 'super_admin' ||
+    role === 'admin' ||
+    role === 'moderator' ||
+    role === 'registration_editor' ||
+    role === 'volunteer'
+  ) {
     return guard
   }
 
@@ -144,6 +179,138 @@ export async function requireRegistrationWriteAccess(): Promise<AdminGuardResult
     if (adminRecord?.can_manage_registrations) {
       return guard
     }
+  }
+
+  return { response: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) }
+}
+
+export async function requireKitWriteAccess(): Promise<AdminGuardResult> {
+  const guard = await requireAdmin()
+  if ('response' in guard) return guard
+
+  const { role, supabase, user } = guard
+  if (role === 'super_admin' || role === 'admin' || role === 'registration_editor') return guard
+
+  const { data: adminRecord } = await supabase
+    .from('admin_users')
+    .select('can_manage_kit, can_manage_registrations')
+    .eq('id', user.id)
+    .single()
+
+  if (adminRecord?.can_manage_kit || adminRecord?.can_manage_registrations) {
+    return guard
+  }
+
+  return { response: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) }
+}
+
+export async function requirePresentWriteAccess(): Promise<AdminGuardResult> {
+  const guard = await requireAdmin()
+  if ('response' in guard) return guard
+
+  const { role, supabase, user } = guard
+  if (role === 'super_admin' || role === 'admin' || role === 'registration_editor') return guard
+
+  const { data: adminRecord } = await supabase
+    .from('admin_users')
+    .select('can_manage_presents, can_manage_registrations')
+    .eq('id', user.id)
+    .single()
+
+  if (adminRecord?.can_manage_presents || adminRecord?.can_manage_registrations) {
+    return guard
+  }
+
+  return { response: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) }
+}
+
+export async function requireLunchWriteAccess(): Promise<AdminGuardResult> {
+  const guard = await requireAdmin()
+  if ('response' in guard) return guard
+
+  const { role, supabase, user } = guard
+  if (role === 'super_admin' || role === 'admin' || role === 'registration_editor') return guard
+
+  const { data: adminRecord } = await supabase
+    .from('admin_users')
+    .select('can_manage_lunch, can_manage_registrations')
+    .eq('id', user.id)
+    .single()
+
+  if (adminRecord?.can_manage_lunch || adminRecord?.can_manage_registrations) {
+    return guard
+  }
+
+  return { response: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) }
+}
+
+export async function requireVolunteerPresentWriteAccess(): Promise<AdminGuardResult> {
+  const guard = await requireAdmin()
+  if ('response' in guard) return guard
+
+  const { role, supabase, user } = guard
+  if (role === 'super_admin' || role === 'admin') return guard
+
+  const { data: adminRecord } = await supabase
+    .from('admin_users')
+    .select('can_manage_volunteers, can_manage_presents')
+    .eq('id', user.id)
+    .single()
+
+  if (role === 'registration_editor') {
+    if (adminRecord?.can_manage_volunteers) return guard
+  }
+
+  if (adminRecord?.can_manage_volunteers && adminRecord?.can_manage_presents) {
+    return guard
+  }
+
+  return { response: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) }
+}
+
+export async function requireVolunteerGiftWriteAccess(): Promise<AdminGuardResult> {
+  const guard = await requireAdmin()
+  if ('response' in guard) return guard
+
+  const { role, supabase, user } = guard
+  if (role === 'super_admin' || role === 'admin') return guard
+
+  const { data: adminRecord } = await supabase
+    .from('admin_users')
+    .select('can_manage_volunteers, can_manage_presents')
+    .eq('id', user.id)
+    .single()
+
+  if (role === 'registration_editor') {
+    if (adminRecord?.can_manage_volunteers) return guard
+  }
+
+  if (adminRecord?.can_manage_volunteers && adminRecord?.can_manage_presents) {
+    return guard
+  }
+
+  return { response: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) }
+}
+
+export async function requireVolunteerLunchWriteAccess(): Promise<AdminGuardResult> {
+  const guard = await requireAdmin()
+  if ('response' in guard) return guard
+
+  const { role, supabase, user } = guard
+  if (role === 'super_admin' || role === 'admin') return guard
+
+  const { data: adminRecord } = await supabase
+    .from('admin_users')
+    .select('can_manage_volunteers, can_manage_lunch')
+    .eq('id', user.id)
+    .single()
+
+  if (role === 'registration_editor') {
+    if (adminRecord?.can_manage_volunteers) return guard
+  }
+
+  if (adminRecord?.can_manage_volunteers && adminRecord?.can_manage_lunch) {
+    return guard
   }
 
   return { response: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) }

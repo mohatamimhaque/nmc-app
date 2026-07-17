@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { requireVolunteerAccess } from '@/lib/admin-auth'
+import { requireVolunteerLunchWriteAccess } from '@/lib/admin-auth'
 
 export const runtime = 'nodejs'
 
@@ -8,7 +8,7 @@ export const runtime = 'nodejs'
  * Updates is_lunch_collected status for a single volunteer using their unique_id.
  */
 export async function PATCH(request: Request) {
-  const guard = await requireVolunteerAccess()
+  const guard = await requireVolunteerLunchWriteAccess()
   if ('response' in guard) return guard.response
 
   try {

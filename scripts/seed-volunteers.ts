@@ -43,7 +43,8 @@ const supabase = createClient(url, serviceKey)
 
 const demoVolunteers = [
   {
-    unique_id: 'V260001',
+    unique_id: 'CY6NGPU3',
+    serial_no: 'V260001',
     name: 'Nabil Rahman',
     email: 'nabil@example.com',
     number: '01711223344',
@@ -59,7 +60,8 @@ const demoVolunteers = [
     updated_by: 'Super Admin'
   },
   {
-    unique_id: 'V260002',
+    unique_id: 'N7YTT6YJ',
+    serial_no: 'V260002',
     name: 'Fariha Tasnim',
     email: 'fariha@example.com',
     number: '01822334455',
@@ -75,7 +77,8 @@ const demoVolunteers = [
     updated_by: 'Super Admin'
   },
   {
-    unique_id: 'V260003',
+    unique_id: 'N663D6L2',
+    serial_no: 'V260003',
     name: 'Tanvir Ahmed',
     email: 'tanvir@example.com',
     number: '01933445566',
@@ -91,7 +94,8 @@ const demoVolunteers = [
     updated_by: 'Super Admin'
   },
   {
-    unique_id: 'V260004',
+    unique_id: '34DVPRFX',
+    serial_no: 'V260004',
     name: 'Anika Tabassum',
     email: 'anika@example.com',
     number: '01544556677',
@@ -107,7 +111,8 @@ const demoVolunteers = [
     updated_by: 'Super Admin'
   },
   {
-    unique_id: 'V260005',
+    unique_id: 'U5BBKZAE',
+    serial_no: 'V260005',
     name: 'Zahid Hasan',
     email: 'zahid@example.com',
     number: '01655667788',
@@ -123,7 +128,8 @@ const demoVolunteers = [
     updated_by: 'Super Admin'
   },
   {
-    unique_id: 'V260006',
+    unique_id: 'JNT2D8SR',
+    serial_no: 'V260006',
     name: 'Rashedul Islam',
     email: 'rashedul@example.com',
     number: '01766778899',
@@ -139,7 +145,8 @@ const demoVolunteers = [
     updated_by: 'Super Admin'
   },
   {
-    unique_id: 'V260007',
+    unique_id: 'B4MSAXL7',
+    serial_no: 'V260007',
     name: 'Tasnim Jahan',
     email: 'tasnim@example.com',
     number: '01877889900',
@@ -155,7 +162,8 @@ const demoVolunteers = [
     updated_by: 'Super Admin'
   },
   {
-    unique_id: 'V260008',
+    unique_id: '4RH2PLZ7',
+    serial_no: 'V260008',
     name: 'Faisal Mahmud',
     email: 'faisal@example.com',
     number: '01988990011',

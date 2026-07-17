@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { requireVolunteerAccess } from '@/lib/admin-auth'
+import { requireVolunteerPresentWriteAccess } from '@/lib/admin-auth'
 
 export const runtime = 'nodejs'
 
@@ -8,7 +8,7 @@ export const runtime = 'nodejs'
  * Updates is_present status for a single volunteer using their unique_id.
  */
 export async function PATCH(request: Request) {
-  const guard = await requireVolunteerAccess()
+  const guard = await requireVolunteerPresentWriteAccess()
   if ('response' in guard) return guard.response
 
   try {

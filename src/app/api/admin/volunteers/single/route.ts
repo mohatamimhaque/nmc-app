@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { requireVolunteerAccess } from '@/lib/admin-auth'
+import { requireVolunteerReadAccess } from '@/lib/admin-auth'
 
 export const runtime = 'nodejs'
 
@@ -8,7 +8,7 @@ export const runtime = 'nodejs'
  * Retrieve a single volunteer by unique_id query parameter. Securely protected.
  */
 export async function GET(request: Request) {
-  const guard = await requireVolunteerAccess()
+  const guard = await requireVolunteerReadAccess()
   if ('response' in guard) return guard.response
 
   try {
