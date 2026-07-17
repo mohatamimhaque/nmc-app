@@ -35,11 +35,16 @@ export async function GET() {
       .eq('email', adminRecord.email.trim().toLowerCase())
       .maybeSingle()
 
+    const volunteerWithQr = volunteerRecord ? {
+      ...volunteerRecord,
+      qr_code_url: `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(volunteerRecord.unique_id)}`
+    } : null
+
     return NextResponse.json({
       success: true,
       profile: {
         ...adminRecord,
-        volunteer_details: volunteerRecord || null,
+        volunteer_details: volunteerWithQr,
       },
     })
   }

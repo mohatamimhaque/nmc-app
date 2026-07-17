@@ -4,6 +4,53 @@ import { createServiceClient } from '@/lib/supabase/server'
 
 export const runtime = 'nodejs'
 
+const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+
+function generateRandomId(): string {
+  let value = ''
+  for (let i = 0; i < 8; i += 1) {
+    value += ALPHABET[Math.floor(Math.random() * ALPHABET.length)]
+  }
+  return value
+}
+
+async function generateVolunteerUniqueId(supabase: any): Promise<string> {
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    const value = generateRandomId()
+    const { data } = await supabase
+      .from('volunteers')
+      .select('unique_id')
+      .eq('unique_id', value)
+      .maybeSingle()
+    if (!data) return value
+  }
+  return `V-${Date.now()}`.slice(-8)
+}
+
+async function generateNextSerialNo(supabase: any): Promise<string> {
+  const { data } = await supabase
+    .from('volunteers')
+    .select('serial_no')
+    .like('serial_no', 'V26%')
+
+  let maxNum = 0
+  if (data && data.length > 0) {
+    for (const v of data) {
+      if (v.serial_no) {
+        const match = v.serial_no.match(/^V26(\d+)$/)
+        if (match) {
+          const num = parseInt(match[1], 10)
+          if (num > maxNum) {
+            maxNum = num
+          }
+        }
+      }
+    }
+  }
+  const nextNum = maxNum + 1
+  return `V26${String(nextNum).padStart(4, '0')}`
+}
+
 /**
  * GET /api/admin/volunteers
  * Fetch all volunteer records. Securely protected.
@@ -22,7 +69,12 @@ export async function GET() {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  return NextResponse.json(data)
+  const volunteersWithQr = (data || []).map(v => ({
+    ...v,
+    qr_code_url: `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(v.unique_id)}`
+  }))
+
+  return NextResponse.json(volunteersWithQr)
 }
 
 /**
@@ -37,6 +89,7 @@ export async function POST(request: Request) {
     const body = await request.json()
     const {
       unique_id,
+      serial_no,
       name,
       email,
       number,
@@ -48,11 +101,32 @@ export async function POST(request: Request) {
       t_shirt_size,
     } = body
 
-    if (!unique_id || !name || !email) {
-      return NextResponse.json({ error: 'Unique ID, Name, and Email are required.' }, { status: 400 })
+    if (!name || !email) {
+      return NextResponse.json({ error: 'Name and Email are required.' }, { status: 400 })
     }
 
     const supabase = guard.supabase
+    let finalUniqueId = unique_id ? String(unique_id).trim() : ''
+
+    if (!finalUniqueId) {
+      finalUniqueId = await generateVolunteerUniqueId(supabase)
+    } else {
+      // Check collision if manually provided
+      const { data: existing } = await supabase
+        .from('volunteers')
+        .select('unique_id')
+        .eq('unique_id', finalUniqueId)
+        .maybeSingle()
+      if (existing) {
+        return NextResponse.json({ error: `Volunteer with ID "${finalUniqueId}" already exists.` }, { status: 400 })
+      }
+    }
+
+    let finalSerialNo = serial_no ? String(serial_no).trim() : ''
+    if (!finalSerialNo) {
+      finalSerialNo = await generateNextSerialNo(supabase)
+    }
+
     const { data: adminRecord } = await supabase
       .from('admin_users')
       .select('display_name, email')
@@ -65,7 +139,8 @@ export async function POST(request: Request) {
     const { data, error } = await supabase
       .from('volunteers')
       .insert({
-        unique_id: String(unique_id).trim(),
+        unique_id: finalUniqueId,
+        serial_no: finalSerialNo,
         name: String(name).trim(),
         email: cleanEmail,
         number: number ? String(number).trim() : null,
@@ -128,7 +203,12 @@ export async function POST(request: Request) {
       console.error('Failed to create volunteer auth credentials:', authCreateErr)
     }
 
-    return NextResponse.json({ success: true, data })
+    const responseData = {
+      ...data,
+      qr_code_url: `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(data.unique_id)}`
+    }
+
+    return NextResponse.json({ success: true, data: responseData })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
@@ -167,6 +247,7 @@ export async function PATCH(request: Request) {
     if (data.is_lunch_collected !== undefined) updatePayload.is_lunch_collected = !!data.is_lunch_collected
 
     if (data.name !== undefined) updatePayload.name = data.name === null ? null : String(data.name).trim()
+    if (data.serial_no !== undefined) updatePayload.serial_no = data.serial_no === null ? null : String(data.serial_no).trim()
     if (data.email !== undefined) updatePayload.email = data.email === null ? null : String(data.email).trim().toLowerCase()
     if (data.number !== undefined) updatePayload.number = data.number === null ? null : String(data.number).trim()
     if (data.image_url !== undefined) updatePayload.image_url = data.image_url === null ? null : String(data.image_url).trim()

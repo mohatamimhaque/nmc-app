@@ -700,6 +700,7 @@ export interface ProcessedRegistration {
 
 export interface Volunteer {
   unique_id: string
+  serial_no: string | null
   name: string
   email: string
   number: string | null
@@ -715,6 +716,7 @@ export interface Volunteer {
   created_at: string
   updated_at: string
   updated_by: string | null
+  qr_code_url?: string
 }
 
 export interface LocationConfig {

@@ -6,6 +6,15 @@ import { MathDivider } from './MathDivider'
 import * as XLSX from 'xlsx'
 import type { Volunteer } from '@/types/database'
 
+const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+function generateRandomId(): string {
+  let value = ''
+  for (let i = 0; i < 8; i += 1) {
+    value += ALPHABET[Math.floor(Math.random() * ALPHABET.length)]
+  }
+  return value
+}
+
 interface VolunteersTableProps {
   initialVolunteers: Volunteer[]
 }
@@ -38,6 +47,7 @@ export function VolunteersTable({ initialVolunteers }: VolunteersTableProps) {
   const [showAddModal, setShowAddModal] = useState(false)
   const [addForm, setAddForm] = useState({
     unique_id: '',
+    serial_no: '',
     name: '',
     email: '',
     number: '',
@@ -275,6 +285,7 @@ export function VolunteersTable({ initialVolunteers }: VolunteersTableProps) {
         setShowAddModal(false)
         setAddForm({
           unique_id: '',
+          serial_no: '',
           name: '',
           email: '',
           number: '',
@@ -412,6 +423,7 @@ export function VolunteersTable({ initialVolunteers }: VolunteersTableProps) {
   const handleExportExcel = () => {
     const dataToExport = volunteers.map(v => ({
       'Unique ID': v.unique_id,
+      'Serial No': v.serial_no || '',
       'Name': v.name,
       'Email': v.email,
       'Phone Number': v.number || '',
@@ -487,7 +499,10 @@ export function VolunteersTable({ initialVolunteers }: VolunteersTableProps) {
 
         <div style={{ display: 'flex', gap: '0.6rem' }}>
           <button
-            onClick={() => setShowAddModal(true)}
+            onClick={() => {
+              setAddForm(prev => ({ ...prev, unique_id: generateRandomId() }))
+              setShowAddModal(true)
+            }}
             style={{
               padding: '0.55rem 1rem',
               borderRadius: 10,
@@ -773,6 +788,7 @@ export function VolunteersTable({ initialVolunteers }: VolunteersTableProps) {
                   />
                 </th>
                 <th style={{ padding: '0.75rem 0.5rem' }}>Unique ID</th>
+                <th style={{ padding: '0.75rem 0.5rem' }}>Serial No</th>
                 <th style={{ padding: '0.75rem 0.5rem' }}>Name</th>
                 <th style={{ padding: '0.75rem 0.5rem' }}>Email</th>
                 <th style={{ padding: '0.75rem 0.5rem' }}>Phone Number</th>
@@ -806,6 +822,7 @@ export function VolunteersTable({ initialVolunteers }: VolunteersTableProps) {
                     />
                   </td>
                   <td style={{ padding: '0.75rem 0.5rem', fontFamily: 'var(--font-mono)', fontSize: '0.75rem' }}>{vol.unique_id}</td>
+                  <td style={{ padding: '0.75rem 0.5rem', fontFamily: 'var(--font-mono)', fontSize: '0.75rem' }}>{vol.serial_no || '-'}</td>
                   <td style={{ padding: '0.75rem 0.5rem', fontWeight: 600 }}>{vol.name}</td>
                   <td style={{ padding: '0.75rem 0.5rem', opacity: 0.85 }}>{vol.email}</td>
                   <td style={{ padding: '0.75rem 0.5rem', opacity: 0.8 }}>{vol.number || '—'}</td>
@@ -916,12 +933,41 @@ export function VolunteersTable({ initialVolunteers }: VolunteersTableProps) {
             <form onSubmit={handleAddSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--admin-fg-muted)', marginBottom: '0.2rem' }}>Unique ID *</label>
+                <div style={{ display: 'flex', gap: '0.4rem' }}>
+                  <input
+                    value={addForm.unique_id}
+                    onChange={e => setAddForm(prev => ({ ...prev, unique_id: e.target.value.toUpperCase() }))}
+                    required
+                    placeholder="Auto-generated"
+                    style={{ flexGrow: 1, padding: '0.5rem', borderRadius: 8, border: '1px solid var(--admin-border)', background: 'rgba(0,0,0,0.2)', color: 'var(--admin-fg)', fontSize: '0.8rem', fontFamily: 'var(--font-mono)' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setAddForm(prev => ({ ...prev, unique_id: generateRandomId() }))}
+                    style={{
+                      padding: '0.5rem 0.8rem',
+                      borderRadius: 8,
+                      background: 'rgba(255,255,255,0.05)',
+                      color: 'var(--admin-fg)',
+                      border: '1px solid var(--admin-border)',
+                      fontSize: '0.75rem',
+                      cursor: 'pointer',
+                      fontWeight: 600,
+                      fontFamily: 'var(--font-body)'
+                    }}
+                  >
+                    Generate
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--admin-fg-muted)', marginBottom: '0.2rem' }}>Serial No (Optional)</label>
                 <input
-                  value={addForm.unique_id}
-                  onChange={e => setAddForm(prev => ({ ...prev, unique_id: e.target.value }))}
-                  required
-                  placeholder="e.g. V26001"
-                  style={{ width: '100%', padding: '0.5rem', borderRadius: 8, border: '1px solid var(--admin-border)', background: 'rgba(0,0,0,0.2)', color: 'var(--admin-fg)', fontSize: '0.8rem' }}
+                  value={addForm.serial_no}
+                  onChange={e => setAddForm(prev => ({ ...prev, serial_no: e.target.value }))}
+                  placeholder="Auto-generated (e.g. V260009)"
+                  style={{ width: '100%', padding: '0.5rem', borderRadius: 8, border: '1px solid var(--admin-border)', background: 'rgba(0,0,0,0.2)', color: 'var(--admin-fg)', fontSize: '0.8rem', fontFamily: 'var(--font-mono)' }}
                 />
               </div>
 
@@ -1207,6 +1253,16 @@ export function VolunteersTable({ initialVolunteers }: VolunteersTableProps) {
 
             <form onSubmit={handleEditSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
               <div>
+                <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--admin-fg-muted)', marginBottom: '0.2rem' }}>Serial No</label>
+                <input
+                  value={editingVol.serial_no || ''}
+                  onChange={e => setEditingVol(prev => prev ? ({ ...prev, serial_no: e.target.value }) : null)}
+                  placeholder="Auto-generated"
+                  style={{ width: '100%', padding: '0.5rem', borderRadius: 8, border: '1px solid var(--admin-border)', background: 'rgba(0,0,0,0.2)', color: 'var(--admin-fg)', fontSize: '0.8rem', fontFamily: 'var(--font-mono)' }}
+                />
+              </div>
+
+              <div>
                 <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--admin-fg-muted)', marginBottom: '0.2rem' }}>Full Name *</label>
                 <input
                   value={editingVol.name}
@@ -1235,6 +1291,39 @@ export function VolunteersTable({ initialVolunteers }: VolunteersTableProps) {
                   placeholder="e.g. 01712345678"
                   style={{ width: '100%', padding: '0.5rem', borderRadius: 8, border: '1px solid var(--admin-border)', background: 'rgba(0,0,0,0.2)', color: 'var(--admin-fg)', fontSize: '0.8rem' }}
                 />
+              </div>
+
+              <div style={{ gridColumn: 'span 2', display: 'flex', gap: '1rem', alignItems: 'center', padding: '0.75rem', border: '1px solid var(--admin-border)', borderRadius: 12, background: 'rgba(255,255,255,0.02)', marginBottom: '0.2rem' }}>
+                <div style={{ background: '#ffffff', padding: '0.25rem', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', width: 106, height: 106, flexShrink: 0 }}>
+                  <img 
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(editingVol.unique_id)}`} 
+                    alt="Volunteer QR Code" 
+                    style={{ width: 100, height: 100 }} 
+                  />
+                </div>
+                <div>
+                  <h4 style={{ margin: '0 0 0.2rem 0', fontSize: '0.85rem', color: 'var(--admin-fg)' }}>Volunteer QR Code</h4>
+                  <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.7rem', color: 'var(--admin-fg-muted)' }}>Scan this code with the Android app for quick check-in, lunch service, and gift distribution.</p>
+                  <a 
+                    href={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(editingVol.unique_id)}`} 
+                    target="_blank" 
+                    rel="noreferrer"
+                    style={{
+                      display: 'inline-block',
+                      padding: '0.35rem 0.8rem',
+                      borderRadius: 6,
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      color: 'var(--admin-fg)',
+                      fontSize: '0.7rem',
+                      textDecoration: 'none',
+                      border: '1px solid var(--admin-border)',
+                      fontWeight: 600,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Open Full QR Code
+                  </a>
+                </div>
               </div>
 
               <div style={{ gridColumn: 'span 2' }}>

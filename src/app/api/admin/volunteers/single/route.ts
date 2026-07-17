@@ -34,9 +34,14 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: `Volunteer with unique_id "${unique_id}" not found.` }, { status: 404 })
     }
 
+    const volunteerWithQr = {
+      ...data,
+      qr_code_url: `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(data.unique_id)}`
+    }
+
     return NextResponse.json({
       success: true,
-      volunteer: data
+      volunteer: volunteerWithQr
     })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })

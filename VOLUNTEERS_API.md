@@ -74,7 +74,8 @@ R2_PUBLIC_URL=https://pub-99e7fad4ec9f4d2dafa1e77c8558eee0.r2.dev
     ```json
     [
       {
-        "unique_id": "V260001",
+        "unique_id": "CY6NGPU3",
+        "serial_no": "V260001",
         "name": "Mahir Faysal",
         "email": "mahir@example.com",
         "number": "01812345678",
@@ -87,6 +88,7 @@ R2_PUBLIC_URL=https://pub-99e7fad4ec9f4d2dafa1e77c8558eee0.r2.dev
         "is_present": true,
         "is_gift_collected": true,
         "is_lunch_collected": false,
+        "qr_code_url": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=CY6NGPU3",
         "created_at": "2026-07-16T12:00:00.000Z",
         "updated_at": "2026-07-16T12:30:00.000Z",
         "updated_by": "Sifat Ahmed"
@@ -106,7 +108,8 @@ R2_PUBLIC_URL=https://pub-99e7fad4ec9f4d2dafa1e77c8558eee0.r2.dev
     {
       "success": true,
       "volunteer": {
-        "unique_id": "V260001",
+        "unique_id": "CY6NGPU3",
+        "serial_no": "V260001",
         "name": "Mahir Faysal",
         "email": "mahir@example.com",
         "number": "01812345678",
@@ -119,6 +122,7 @@ R2_PUBLIC_URL=https://pub-99e7fad4ec9f4d2dafa1e77c8558eee0.r2.dev
         "is_present": true,
         "is_gift_collected": true,
         "is_lunch_collected": false,
+        "qr_code_url": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=CY6NGPU3",
         "created_at": "2026-07-16T12:00:00.000Z",
         "updated_at": "2026-07-16T12:30:00.000Z",
         "updated_by": "Sifat Ahmed"
@@ -128,7 +132,7 @@ R2_PUBLIC_URL=https://pub-99e7fad4ec9f4d2dafa1e77c8558eee0.r2.dev
 *   **Response (404 Not Found)**:
     ```json
     {
-      "error": "Volunteer with unique_id \"V269999\" not found."
+      "error": "Volunteer with unique_id \"CY6NGPU3\" not found."
     }
     ```
 
@@ -145,7 +149,8 @@ R2_PUBLIC_URL=https://pub-99e7fad4ec9f4d2dafa1e77c8558eee0.r2.dev
 *   **Request Format**:
     ```json
     {
-      "unique_id": "V260002",
+      "unique_id": "CY6NGPU3", // Optional: if omitted, will be auto-generated as a random 8-character string
+      "serial_no": "V260002", // Optional: if omitted, will be auto-generated sequentially (V260001, V260002, etc.)
       "name": "Sajid Karim",
       "email": "sajid@example.com",
       "number": "01512345678",
@@ -162,8 +167,10 @@ R2_PUBLIC_URL=https://pub-99e7fad4ec9f4d2dafa1e77c8558eee0.r2.dev
     {
       "success": true,
       "data": {
-        "unique_id": "V260002",
+        "unique_id": "CY6NGPU3",
+        "serial_no": "V260002",
         "name": "Sajid Karim",
+        "qr_code_url": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=CY6NGPU3",
         ...
       }
     }
@@ -285,26 +292,29 @@ R2_PUBLIC_URL=https://pub-99e7fad4ec9f4d2dafa1e77c8558eee0.r2.dev
 
 ## Android App Check-In Workflows
 
+> [!NOTE]
+> The Android Admin application generates and renders QR codes dynamically on the device screen using the volunteer's `unique_id` (a random 8-character string, e.g., `CY6NGPU3`). Scanning these codes checks in volunteers or handles lunch/gift redemptions.
+
 ### Scenario A: Fast Attendance Scan (Gate Entrance)
 1.  Admin selects "Attendance Mode" in the app.
-2.  App activates camera scanner and decodes the volunteer's ID barcode (e.g., `V260001`).
-3.  App calls `PATCH /api/admin/volunteers/present` with body `{"unique_id": "V260001", "is_present": true}`.
+2.  App activates camera scanner and decodes the volunteer's scanned QR code (e.g. `CY6NGPU3`, which corresponds to their `unique_id`).
+3.  App calls `PATCH /api/admin/volunteers/present` with body `{"unique_id": "CY6NGPU3", "is_present": true}`.
 4.  If successful, the app shows a green checkmark and says "Mahir Faysal Checked In". If status is `403 Forbidden`, the app warns "Access Denied: Inadequate Permissions".
 
 ### Scenario B: Gift Distribution Desk
 1.  Admin selects "Gift collection mode" in the app.
 2.  Admin scans the volunteer's QR code.
-3.  App first calls `GET /api/admin/volunteers/single?unique_id=V260001` to display details (Name, Segment, T-shirt size, etc.).
+3.  App first calls `GET /api/admin/volunteers/single?unique_id=CY6NGPU3` to display details (Name, Segment, T-shirt size, etc.).
 4.  Admin hands over the correct T-shirt size (e.g., `XL`) and presses "Mark Gift Collected".
-5.  App calls `PATCH /api/admin/volunteers/gift` with body `{"unique_id": "V260001", "is_gift_collected": true}`.
+5.  App calls `PATCH /api/admin/volunteers/gift` with body `{"unique_id": "CY6NGPU3", "is_gift_collected": true}`.
 
 ### Scenario C: Lunch Token Redemption
 1.  Admin selects "Lunch service mode" in the app.
 2.  Admin scans the QR code.
-3.  App first calls `GET /api/admin/volunteers/single?unique_id=V260001`.
+3.  App first calls `GET /api/admin/volunteers/single?unique_id=CY6NGPU3`.
 4.  App checks if `"is_lunch_collected"` is already `true`. If so, show a red alarm "Error: Lunch already served!".
 5.  If not served, the admin hands over lunch and presses "Confirm Lunch Served".
-6.  App calls `PATCH /api/admin/volunteers/lunch` with body `{"unique_id": "V260001", "is_lunch_collected": true}`.
+6.  App calls `PATCH /api/admin/volunteers/lunch` with body `{"unique_id": "CY6NGPU3", "is_lunch_collected": true}`.
 
 ---
 
