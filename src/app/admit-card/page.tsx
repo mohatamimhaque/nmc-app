@@ -29,9 +29,13 @@ export default function AdmitCardPage() {
     e.preventDefault()
     
     const searchVal = query.trim()
-    if (searchVal.length < 3) {
+    const cleanPhone = searchVal.replace(/[\s\-]/g, '')
+    const isEmail = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(searchVal)
+    const isPhone = /^\+?[0-9]{9,15}$/.test(cleanPhone)
+
+    if (!isEmail && !isPhone) {
       setStatus('error')
-      setError('Please enter at least 3 characters of your Name or Phone number.')
+      setError('Please enter a valid full Email address or Phone number.')
       return
     }
 
@@ -71,7 +75,7 @@ export default function AdmitCardPage() {
             Download Admit Card
           </h1>
           <p style={{ color: 'var(--foreground-muted)', maxWidth: 620, margin: '0 auto', fontSize: '1rem', lineHeight: '1.5' }}>
-            Select your Category and Event, then enter your Name or Phone number to retrieve your admit card.
+            Select your Category and Event, then enter your Email address or Phone number to retrieve your admit card.
           </p>
         </div>
       </section>
@@ -148,14 +152,14 @@ export default function AdmitCardPage() {
             {/* Name/Phone Search query */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <label style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--foreground-muted)' }}>
-                Name or Mobile Number
+                Email or Phone Number
               </label>
               <input
                 type="text"
                 value={query}
                 onChange={e => setQuery(e.target.value)}
-                placeholder="e.g. mohatamim or 01518749114"
-                maxLength={40}
+                placeholder="e.g. user@example.com or 01716608477"
+                maxLength={50}
                 style={{
                   borderRadius: 10,
                   border: '1px solid var(--border)',
@@ -221,7 +225,7 @@ export default function AdmitCardPage() {
                   color: 'var(--foreground-muted)'
                 }}
               >
-                No registrations matched your search criteria. Please verify your Name/Phone number spelling.
+                No registrations matched your search criteria. Please verify your Email or Phone number.
               </div>
             ) : (
               <div style={{ overflowX: 'auto', border: '1px solid var(--border)', borderRadius: 18, background: 'var(--surface)' }}>
