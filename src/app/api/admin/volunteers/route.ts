@@ -318,17 +318,60 @@ export async function DELETE(request: Request) {
     }
 
     const supabase = guard.supabase
-    const { error } = await supabase
+
+    // 1. Fetch volunteer to check their email
+    const { data: volunteer, error: fetchError } = await supabase
+      .from('volunteers')
+      .select('email')
+      .eq('unique_id', unique_id.trim())
+      .maybeSingle()
+
+    if (fetchError) {
+      return NextResponse.json({ error: fetchError.message }, { status: 500 })
+    }
+
+    if (!volunteer) {
+      return NextResponse.json({ error: 'Volunteer not found.' }, { status: 404 })
+    }
+
+    // 2. If email exists, check and delete from admin_users and auth.users
+    if (volunteer.email) {
+      const serviceClient = createServiceClient()
+      const { data: adminUser } = await serviceClient
+        .from('admin_users')
+        .select('id')
+        .eq('email', volunteer.email.trim())
+        .maybeSingle()
+
+      if (adminUser?.id) {
+        // Delete from auth.users (cascades to admin_users)
+        const { error: authDeleteError } = await serviceClient.auth.admin.deleteUser(
+          adminUser.id
+        )
+        if (authDeleteError) {
+          console.error('Failed to delete auth user, attempting direct admin_users deletion:', authDeleteError.message)
+          // Fallback: manually delete from admin_users
+          await serviceClient
+            .from('admin_users')
+            .delete()
+            .eq('id', adminUser.id)
+        }
+      }
+    }
+
+    // 3. Delete the volunteer record
+    const { error: deleteVolError } = await supabase
       .from('volunteers')
       .delete()
       .eq('unique_id', unique_id.trim())
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+    if (deleteVolError) {
+      return NextResponse.json({ error: deleteVolError.message }, { status: 500 })
     }
 
     return NextResponse.json({ success: true })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+  } catch (err: unknown) {
+    const error = err as Error
+    return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }

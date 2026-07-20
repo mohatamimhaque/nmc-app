@@ -127,3 +127,52 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
+
+/**
+ * DELETE /api/admin/registrations
+ * Delete one or more registration records. Securely protected (requires write access).
+ */
+export async function DELETE(request: Request) {
+  const guard = await requireRegistrationWriteAccess()
+  if ('response' in guard) return guard.response
+
+  try {
+    const { serials } = await request.json()
+
+    if (serials === undefined) {
+      return NextResponse.json({ error: 'Missing serials parameter.' }, { status: 400 })
+    }
+
+    const supabase = guard.supabase
+
+    if (Array.isArray(serials)) {
+      if (serials.length === 0) {
+        return NextResponse.json({ success: true, deletedCount: 0 })
+      }
+      const { error } = await supabase
+        .from('processed_registrations')
+        .delete()
+        .in('serial', serials)
+
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 })
+      }
+      return NextResponse.json({ success: true, deletedCount: serials.length })
+    } else if (typeof serials === 'string') {
+      const { error } = await supabase
+        .from('processed_registrations')
+        .delete()
+        .eq('serial', serials)
+
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 })
+      }
+      return NextResponse.json({ success: true, deletedCount: 1 })
+    } else {
+      return NextResponse.json({ error: 'Invalid serials parameter format.' }, { status: 400 })
+    }
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 })
+  }
+}
+

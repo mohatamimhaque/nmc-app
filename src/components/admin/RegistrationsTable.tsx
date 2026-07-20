@@ -659,6 +659,40 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
     }
   }
 
+  // Handle individual deletion of a registration
+  const handleDeleteIndividual = async (serial: string, name: string) => {
+    if (!confirm(`Are you sure you want to delete registration for "${name}" (Serial: ${serial})? This action cannot be undone.`)) {
+      return
+    }
+
+    startUpdateTransition(async () => {
+      try {
+        const res = await fetch('/api/admin/registrations', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ serials: serial })
+        })
+
+        const result = await res.json()
+        if (!res.ok) throw new Error(result.error || 'Failed to delete registration.')
+
+        // Update local state
+        setRegistrations(prev => prev.filter(r => r.serial !== serial))
+        setSelectedSerials(prev => {
+          const next = new Set(prev)
+          next.delete(serial)
+          return next
+        })
+
+        showToast(`Successfully deleted registration for ${name}!`)
+        setEditingReg(null)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (err: any) {
+        showToast(err.message, 'error')
+      }
+    })
+  }
+
   // Summary counts
   const stats = useMemo(() => {
     return {
@@ -1050,7 +1084,7 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
                 <th>Room</th>
                 <th>Updated By</th>
                 <th style={{ textAlign: 'center' }}>Admit Card</th>
-                <th style={{ width: '60px', textAlign: 'center' }}>Actions</th>
+                <th style={{ width: '130px', textAlign: 'center' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -1214,13 +1248,33 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
 
                   {/* Action buttons */}
                   <td style={{ textAlign: 'center' }}>
-                    <button
-                      type="button"
-                      onClick={() => setEditingReg(reg)}
-                      style={actionBtnStyle}
-                    >
-                      Edit
-                    </button>
+                    <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'center' }}>
+                      <button
+                        type="button"
+                        onClick={() => setEditingReg(reg)}
+                        style={actionBtnStyle}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteIndividual(reg.serial, reg.full_name || '')}
+                        style={{
+                          ...actionBtnStyle,
+                          background: 'rgba(239, 68, 68, 0.15)',
+                          border: '1px solid #ef4444',
+                          color: '#ef4444'
+                        }}
+                        onMouseEnter={e => {
+                          e.currentTarget.style.background = 'rgba(239, 68, 68, 0.25)'
+                        }}
+                        onMouseLeave={e => {
+                          e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)'
+                        }}
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -1286,7 +1340,26 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
             style={modalContainerStyle}
           >
             <div style={modalHeaderStyle}>
-              <h3 style={{ margin: 0, fontFamily: 'var(--font-heading)', fontSize: '1.25rem' }}>Edit Registration</h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <h3 style={{ margin: 0, fontFamily: 'var(--font-heading)', fontSize: '1.25rem' }}>Edit Registration</h3>
+                <button
+                  type="button"
+                  onClick={() => handleDeleteIndividual(editingReg.serial, editingReg.full_name || '')}
+                  style={{
+                    padding: '0.4rem 0.8rem',
+                    borderRadius: 6,
+                    background: 'rgba(250,50,50,0.1)',
+                    color: 'rgb(250,80,80)',
+                    border: '1px solid rgba(250,50,50,0.2)',
+                    fontFamily: 'var(--font-body)',
+                    fontSize: '0.7rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Delete Record
+                </button>
+              </div>
               <button type="button" onClick={() => setEditingReg(null)} style={closeBtnStyle}>✕</button>
             </div>
             <div style={modalBodyStyle}>
