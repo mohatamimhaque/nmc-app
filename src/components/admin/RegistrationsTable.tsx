@@ -722,12 +722,16 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
               width: 100%;
               border-collapse: collapse;
               font-size: 11px;
+              table-layout: fixed;
             }
             th, td {
               border: 1px solid #ddd;
               padding: 8px;
               text-align: left;
               vertical-align: middle;
+              word-wrap: break-word;
+              word-break: break-word;
+              overflow: hidden;
             }
             th {
               background-color: #f3f4f6;
@@ -819,16 +823,16 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
           <table>
             <thead>
               <tr>
-                <th>#</th>
-                <th>Serial</th>
-                <th>Name / Institution</th>
-                <th>Email</th>
-                <th>Phone</th>
-                <th>Level & Year</th>
-                <th>Event</th>
-                <th>Room</th>
-                <th>Kit</th>
-                <th>Present</th>
+                <th style="width: 3.5%; text-align: center;">#</th>
+                <th style="width: 7.5%;">Serial</th>
+                <th style="width: 29%;">Name / Institution</th>
+                <th style="width: 14%;">Email</th>
+                <th style="width: 8%;">Phone</th>
+                <th style="width: 14%;">Level &amp; Year</th>
+                <th style="width: 12%;">Event</th>
+                <th style="width: 6%;">Room</th>
+                <th style="width: 3%; text-align: center;">Kit</th>
+                <th style="width: 3%; text-align: center;">Pres</th>
               </tr>
             </thead>
             <tbody>
