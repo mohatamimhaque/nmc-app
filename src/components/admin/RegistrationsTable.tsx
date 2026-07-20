@@ -687,9 +687,12 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
               margin-bottom: 30px; 
               align-items: center; 
               border: 1px solid #e5e7eb; 
-              padding: 20px; 
-              border-radius: 8px; 
-              background-color: #f9fafb;
+              padding: 25px; 
+              border-radius: 12px; 
+              background-color: #ffffff;
+              background-image: radial-gradient(#e2e8f0 1.5px, transparent 1.5px);
+              background-size: 15px 15px;
+              box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
             }
             .stats-text {
               flex: 1;
@@ -736,14 +739,37 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
             @media print {
               body { padding: 0; }
               @page { size: landscape; margin: 1cm; }
-              .summary-card { background-color: #f9fafb !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+              .summary-card { background-color: #ffffff !important; background-image: radial-gradient(#e2e8f0 1.5px, transparent 1.5px) !important; background-size: 15px 15px !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             }
           </style>
         </head>
         <body>
-          <h1>National Mathematics Carnival 2026</h1>
-          <div style="font-weight: bold; font-size: 14px; margin-bottom: 5px;">Processed Registrations Report</div>
-          <div class="meta">Generated on: ${new Date().toLocaleString()}</div>
+          <!-- Branded Math Header Graphics Banner -->
+          <svg width="100%" height="80" style="margin-bottom: 20px; border-bottom: 2px solid #4f46e5; padding-bottom: 10px;">
+            <!-- Geometric math wave patterns in background -->
+            <g opacity="0.08">
+              <path d="M 0,40 Q 150,5 300,40 T 600,40 T 900,40" fill="none" stroke="#4f46e5" stroke-width="2.5" />
+              <path d="M 0,50 Q 150,85 300,50 T 600,50 T 900,50" fill="none" stroke="#6366f1" stroke-width="1.5" />
+              <circle cx="120" cy="20" r="15" fill="none" stroke="#4f46e5" stroke-width="1" />
+              <rect x="450" y="10" width="20" height="20" transform="rotate(45 460 20)" fill="none" stroke="#4f46e5" stroke-width="1" />
+              <polygon points="750,15 765,45 735,45" fill="none" stroke="#4f46e5" stroke-width="1" />
+              <!-- Mathematical symbols -->
+              <text x="50" y="32" font-family="monospace" font-size="22" font-weight="bold" fill="#4f46e5">∑</text>
+              <text x="250" y="62" font-family="monospace" font-size="26" font-weight="bold" fill="#4f46e5">π</text>
+              <text x="550" y="27" font-family="monospace" font-size="22" font-weight="bold" fill="#6366f1">√x</text>
+              <text x="800" y="57" font-family="monospace" font-size="24" font-weight="bold" fill="#4f46e5">∞</text>
+            </g>
+            <!-- Branded Header Text -->
+            <g transform="translate(10, 15)">
+              <rect x="0" y="5" width="8" height="40" fill="#4f46e5" rx="4" />
+              <text x="20" y="26" font-size="22" font-weight="800" fill="#1f2937" style="font-family: sans-serif; letter-spacing: -0.02em;">NATIONAL MATHEMATICS CARNIVAL 2026</text>
+              <text x="20" y="45" font-size="11" font-weight="700" fill="#4f46e5" style="font-family: monospace; letter-spacing: 0.05em;">PROCESSED REGISTRATIONS DATABASE &amp; METRICS REPORT</text>
+            </g>
+            <!-- Metadata Right Aligned -->
+            <g transform="translate(850, 48)">
+              <text x="0" y="0" font-size="10" font-family="monospace" fill="#6b7280" text-anchor="end">Generated: ${new Date().toLocaleString()}</text>
+            </g>
+          </svg>
           
           <!-- Summary Metrics and Charts Dashboard -->
           <div class="summary-card">
