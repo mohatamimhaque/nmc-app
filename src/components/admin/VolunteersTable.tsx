@@ -175,8 +175,8 @@ export function VolunteersTable({ initialVolunteers }: VolunteersTableProps) {
       stateSave: true,
       destroy: true,
       columnDefs: [
-        { orderable: false, targets: [0, 4, 10, 11, 12, 13] },
-        { searchable: false, targets: [0, 13] }
+        { orderable: false, targets: [0, 4, 10, 11, 12, 13, 15] },
+        { searchable: false, targets: [0, 15] }
       ],
       pageLength: 25,
       lengthMenu: [10, 25, 50, 100, 250],
@@ -801,6 +801,7 @@ export function VolunteersTable({ initialVolunteers }: VolunteersTableProps) {
                 <th style={{ padding: '0.75rem 0.5rem', textAlign: 'center' }}>Gift</th>
                 <th style={{ padding: '0.75rem 0.5rem', textAlign: 'center' }}>Lunch</th>
                 <th style={{ padding: '0.75rem 0.5rem' }}>Updated By</th>
+                <th style={{ padding: '0.75rem 0.5rem', width: 90, textAlign: 'center' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -889,6 +890,31 @@ export function VolunteersTable({ initialVolunteers }: VolunteersTableProps) {
 
                   <td style={{ padding: '0.75rem 0.5rem', fontSize: '0.7rem', color: 'var(--admin-fg-muted)' }}>
                     {vol.updated_by || '—'}
+                  </td>
+                  <td style={{ padding: '0.75rem 0.5rem', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteVolunteer(vol.unique_id)}
+                      style={{
+                        padding: '0.3rem 0.6rem',
+                        borderRadius: 6,
+                        background: 'rgba(239, 68, 68, 0.1)',
+                        color: '#ef4444',
+                        border: '1px solid rgba(239, 68, 68, 0.3)',
+                        fontSize: '0.7rem',
+                        cursor: 'pointer',
+                        fontWeight: 600,
+                        transition: 'background 0.15s'
+                      }}
+                      onMouseEnter={e => {
+                        e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)'
+                      }}
+                      onMouseLeave={e => {
+                        e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'
+                      }}
+                    >
+                      Delete
+                    </button>
                   </td>
                 </tr>
               ))}

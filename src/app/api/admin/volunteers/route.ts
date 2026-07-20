@@ -319,10 +319,10 @@ export async function DELETE(request: Request) {
 
     const supabase = guard.supabase
 
-    // 1. Fetch volunteer to check their email
+    // 1. Fetch volunteer to check their name and email
     const { data: volunteer, error: fetchError } = await supabase
       .from('volunteers')
-      .select('email')
+      .select('name, email')
       .eq('unique_id', unique_id.trim())
       .maybeSingle()
 
@@ -334,19 +334,42 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'Volunteer not found.' }, { status: 404 })
     }
 
-    // 2. If email exists, check and delete from admin_users and auth.users
+    // 2. Delete matching admin users by email or name if they exist
+    const serviceClient = createServiceClient()
+    const adminUserIdsToDelete: string[] = []
+
+    // Check by email
     if (volunteer.email) {
-      const serviceClient = createServiceClient()
-      const { data: adminUser } = await serviceClient
+      const { data: byEmail } = await serviceClient
         .from('admin_users')
         .select('id')
         .eq('email', volunteer.email.trim())
         .maybeSingle()
+      if (byEmail?.id) {
+        adminUserIdsToDelete.push(byEmail.id)
+      }
+    }
 
-      if (adminUser?.id) {
-        // Delete from auth.users (cascades to admin_users)
+    // Check by name
+    if (volunteer.name) {
+      const { data: byNames } = await serviceClient
+        .from('admin_users')
+        .select('id')
+        .eq('name', volunteer.name.trim())
+      if (byNames && byNames.length > 0) {
+        byNames.forEach((admin: { id: string }) => {
+          if (!adminUserIdsToDelete.includes(admin.id)) {
+            adminUserIdsToDelete.push(admin.id)
+          }
+        })
+      }
+    }
+
+    // Delete found admin users from auth.users (cascades to admin_users)
+    if (adminUserIdsToDelete.length > 0) {
+      for (const adminId of adminUserIdsToDelete) {
         const { error: authDeleteError } = await serviceClient.auth.admin.deleteUser(
-          adminUser.id
+          adminId
         )
         if (authDeleteError) {
           console.error('Failed to delete auth user, attempting direct admin_users deletion:', authDeleteError.message)
@@ -354,7 +377,7 @@ export async function DELETE(request: Request) {
           await serviceClient
             .from('admin_users')
             .delete()
-            .eq('id', adminUser.id)
+            .eq('id', adminId)
         }
       }
     }
