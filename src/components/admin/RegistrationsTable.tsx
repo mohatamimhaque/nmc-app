@@ -22,7 +22,6 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
   const [registrations, setRegistrations] = useState<ProcessedRegistration[]>(initialRegistrations)
   const [libLoaded, setLibLoaded] = useState(false)
   const [toast, setToast] = useState<ToastState | null>(null)
-  const [pdfLoading, setPdfLoading] = useState(false)
 
   // Event filtering states
   const [selectedEventFilter, setSelectedEventFilter] = useState<string>('all')
@@ -663,7 +662,7 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
       <!DOCTYPE html>
       <html>
         <head>
-          <title>\${title}</title>
+          <title>${title}</title>
           <meta charset="utf-8" />
           <style>
             @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Kalpurush&family=Noto+Sans+Bengali:wght@400;700&display=swap');
@@ -744,17 +743,17 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
         <body>
           <h1>National Mathematics Carnival 2026</h1>
           <div style="font-weight: bold; font-size: 14px; margin-bottom: 5px;">Processed Registrations Report</div>
-          <div class="meta">Generated on: \${new Date().toLocaleString()}</div>
+          <div class="meta">Generated on: ${new Date().toLocaleString()}</div>
           
           <!-- Summary Metrics and Charts Dashboard -->
           <div class="summary-card">
             <div class="stats-text">
               <h3>Exported Data Summary</h3>
               <div class="stats-grid">
-                <div><strong>Total Registrations:</strong> \${totalCount}</div>
-                <div><strong>Present Attendance:</strong> \${presentCount} / \dots \${totalCount} (\${presentPercent.toFixed(1)}%)</div>
-                <div><strong>Kits Collected:</strong> \${kitCount} / \${totalCount} (\${kitPercent.toFixed(1)}%)</div>
-                <div><strong>Launch Served:</strong> \${launchCount} / \${totalCount} (\${launchPercent.toFixed(1)}%)</div>
+                <div><strong>Total Registrations:</strong> ${totalCount}</div>
+                <div><strong>Present Attendance:</strong> ${presentCount} / ${totalCount} (${presentPercent.toFixed(1)}%)</div>
+                <div><strong>Kits Collected:</strong> ${kitCount} / ${totalCount} (${kitPercent.toFixed(1)}%)</div>
+                <div><strong>Launch Served:</strong> ${launchCount} / ${totalCount} (${launchPercent.toFixed(1)}%)</div>
               </div>
             </div>
             <div class="chart-container">
@@ -763,8 +762,8 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
                 <svg width="80" height="80" viewBox="0 0 36 36" style="transform: rotate(-90deg);">
                   <circle cx="18" cy="18" r="15.915" fill="none" stroke="#e5e7eb" stroke-width="3" />
                   <circle cx="18" cy="18" r="15.915" fill="none" stroke="#10b981" stroke-width="3" 
-                          stroke-dasharray="\${presentPercent} \${100 - presentPercent}" />
-                  <text x="18" y="18" dominant-baseline="central" text-anchor="middle" font-size="6" font-family="sans-serif" font-weight="bold" fill="#333" style="transform: rotate(90deg); transform-origin: 18px 18px;">\${presentPercent.toFixed(0)}%</text>
+                          stroke-dasharray="${presentPercent} ${100 - presentPercent}" />
+                  <text x="18" y="18" dominant-baseline="central" text-anchor="middle" font-size="6" font-family="sans-serif" font-weight="bold" fill="#333" style="transform: rotate(90deg); transform-origin: 18px 18px;">${presentPercent.toFixed(0)}%</text>
                 </svg>
                 <div style="font-size: 10px; font-weight: bold; margin-top: 5px; color: #4b5563;">Attendance</div>
               </div>
@@ -773,8 +772,8 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
                 <svg width="80" height="80" viewBox="0 0 36 36" style="transform: rotate(-90deg);">
                   <circle cx="18" cy="18" r="15.915" fill="none" stroke="#e5e7eb" stroke-width="3" />
                   <circle cx="18" cy="18" r="15.915" fill="none" stroke="#06b6d4" stroke-width="3" 
-                          stroke-dasharray="\${kitPercent} \${100 - kitPercent}" />
-                  <text x="18" y="18" dominant-baseline="central" text-anchor="middle" font-size="6" font-family="sans-serif" font-weight="bold" fill="#333" style="transform: rotate(90deg); transform-origin: 18px 18px;">\${kitPercent.toFixed(0)}%</text>
+                          stroke-dasharray="${kitPercent} ${100 - kitPercent}" />
+                  <text x="18" y="18" dominant-baseline="central" text-anchor="middle" font-size="6" font-family="sans-serif" font-weight="bold" fill="#333" style="transform: rotate(90deg); transform-origin: 18px 18px;">${kitPercent.toFixed(0)}%</text>
                 </svg>
                 <div style="font-size: 10px; font-weight: bold; margin-top: 5px; color: #4b5563;">Kits Distributed</div>
               </div>
@@ -783,8 +782,8 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
                 <svg width="80" height="80" viewBox="0 0 36 36" style="transform: rotate(-90deg);">
                   <circle cx="18" cy="18" r="15.915" fill="none" stroke="#e5e7eb" stroke-width="3" />
                   <circle cx="18" cy="18" r="15.915" fill="none" stroke="#f59e0b" stroke-width="3" 
-                          stroke-dasharray="\${launchPercent} \dots \${100 - launchPercent}" />
-                  <text x="18" y="18" dominant-baseline="central" text-anchor="middle" font-size="6" font-family="sans-serif" font-weight="bold" fill="#333" style="transform: rotate(90deg); transform-origin: 18px 18px;">\${launchPercent.toFixed(0)}%</text>
+                          stroke-dasharray="${launchPercent} ${100 - launchPercent}" />
+                  <text x="18" y="18" dominant-baseline="central" text-anchor="middle" font-size="6" font-family="sans-serif" font-weight="bold" fill="#333" style="transform: rotate(90deg); transform-origin: 18px 18px;">${launchPercent.toFixed(0)}%</text>
                 </svg>
                 <div style="font-size: 10px; font-weight: bold; margin-top: 5px; color: #4b5563;">Launch Served</div>
               </div>
@@ -807,7 +806,7 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
               </tr>
             </thead>
             <tbody>
-              \${rowsHtml}
+              ${rowsHtml}
             </tbody>
           </table>
           <script>
@@ -947,7 +946,6 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
           <button
             type="button"
             onClick={handleExportPDF}
-            disabled={pdfLoading}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -961,19 +959,18 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
               border: '1px solid #ef4444',
               background: 'rgba(239, 68, 68, 0.05)',
               color: '#ef4444',
-              cursor: pdfLoading ? 'not-allowed' : 'pointer',
+              cursor: 'pointer',
               transition: 'background 0.15s, border-color 0.15s',
-              fontWeight: 600,
-              opacity: pdfLoading ? 0.7 : 1
+              fontWeight: 600
             }}
             onMouseEnter={e => {
-              if (!pdfLoading) e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)'
+              e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)'
             }}
             onMouseLeave={e => {
-              if (!pdfLoading) e.currentTarget.style.background = 'rgba(239, 68, 68, 0.05)'
+              e.currentTarget.style.background = 'rgba(239, 68, 68, 0.05)'
             }}
           >
-            📄 {pdfLoading ? 'Exporting PDF...' : 'Export PDF'}
+            📄 Export PDF
           </button>
 
           {/* Excel Import button */}
