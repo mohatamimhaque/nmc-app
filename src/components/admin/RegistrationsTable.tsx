@@ -22,6 +22,7 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
   const [registrations, setRegistrations] = useState<ProcessedRegistration[]>(initialRegistrations)
   const [libLoaded, setLibLoaded] = useState(false)
   const [toast, setToast] = useState<ToastState | null>(null)
+  const [pdfLoading, setPdfLoading] = useState(false)
   
   // Selection state
   const [selectedSerials, setSelectedSerials] = useState<Set<string>>(new Set())
@@ -140,8 +141,8 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
       stateSave: true,
       destroy: true,
       columnDefs: [
-        { orderable: false, targets: [0, 6, 7, 8, 9, 12, 13] },
-        { searchable: false, targets: [0, 7, 8, 9, 12, 13] }
+        { orderable: false, targets: [0, 8, 9, 10, 11, 14, 15] },
+        { searchable: false, targets: [0, 9, 10, 11, 14, 15] }
       ],
       pageLength: 25,
       lengthMenu: [10, 25, 50, 100, 250],
@@ -542,6 +543,122 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
     })
   }
 
+  // Export registrations data to Excel spreadsheet
+  const handleExportExcel = () => {
+    const dataToExport = registrations.map(r => ({
+      'Serial': r.serial,
+      'Full Name': r.full_name || '',
+      'Email Address': r.email_address || '',
+      'Phone Number': r.phone_number || '',
+      'Institution': r.institution || '',
+      'Class/Year': r.class_year_student_of || '',
+      'Level': r.level || '',
+      'Event': r.event || '',
+      'T-shirt Size': r.t_shirt_size || '',
+      'Payment Method': r.payment_method || '',
+      'Payment Number': r.payment_number || '',
+      'Transaction ID': r.transaction_id || '',
+      'Kit Collected': r.is_kit_coollect ? 'Yes' : 'No',
+      'Present': r.is_present ? 'Yes' : 'No',
+      'Launch Collected': r.is_collect_launch ? 'Yes' : 'No',
+      'Allocated Room': r.allocated_room || '',
+      'Updated By': r.updated_by || '',
+      'Updated At': r.updated_at ? new Date(r.updated_at).toLocaleString() : '',
+    }))
+
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport)
+    const workbook = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Registrations')
+    XLSX.writeFile(workbook, 'National_Mathematics_Carnival_2026_Registrations.xlsx')
+    showToast('Excel spreadsheet downloaded!')
+  }
+
+  // Export registrations data to PDF report
+  const handleExportPDF = async () => {
+    setPdfLoading(true)
+    try {
+      // Load jsPDF if not already loaded
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if (!(window as any).jspdf) {
+        await new Promise<void>((resolve, reject) => {
+          const script = document.createElement('script')
+          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'
+          script.onload = () => resolve()
+          script.onerror = () => reject(new Error('Failed to load jsPDF library'))
+          document.head.appendChild(script)
+        })
+      }
+
+      // Load jsPDF-AutoTable if not already loaded
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if (!(window as any).jspdf?.jsPDF?.API?.autoTable && !(window as any).jsPDF?.API?.autoTable) {
+        await new Promise<void>((resolve, reject) => {
+          const script = document.createElement('script')
+          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js'
+          script.onload = () => resolve()
+          script.onerror = () => reject(new Error('Failed to load jsPDF-AutoTable plugin'))
+          document.head.appendChild(script)
+        })
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { jsPDF } = (window as any).jspdf
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })
+
+      // Add title
+      doc.setFontSize(16)
+      doc.text('National Mathematics Carnival 2026', 14, 15)
+      doc.setFontSize(12)
+      doc.text('Processed Registrations Report', 14, 22)
+      doc.setFontSize(8)
+      doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 27)
+
+      const columns = [
+        { header: 'Serial', dataKey: 'serial' },
+        { header: 'Name', dataKey: 'name' },
+        { header: 'Email', dataKey: 'email' },
+        { header: 'Phone', dataKey: 'phone' },
+        { header: 'Institution', dataKey: 'institution' },
+        { header: 'Level', dataKey: 'level' },
+        { header: 'Event', dataKey: 'event' },
+        { header: 'Room', dataKey: 'room' },
+        { header: 'Kit', dataKey: 'kit' },
+        { header: 'Present', dataKey: 'present' }
+      ]
+
+      const rows = registrations.map(r => ({
+        serial: r.serial || '',
+        name: r.full_name || '',
+        email: r.email_address || '',
+        phone: r.phone_number || '',
+        institution: r.institution || '',
+        level: r.level || '',
+        event: r.event || '',
+        room: r.allocated_room || '',
+        kit: r.is_kit_coollect ? 'Yes' : 'No',
+        present: r.is_present ? 'Yes' : 'No'
+      }))
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ;(doc as any).autoTable({
+        columns: columns,
+        body: rows,
+        startY: 32,
+        styles: { fontSize: 8, cellPadding: 2 },
+        headStyles: { fillColor: [99, 102, 241] }, // admin-accent indigo
+        theme: 'striped'
+      })
+
+      doc.save('National_Mathematics_Carnival_2026_Registrations.pdf')
+      showToast('PDF report downloaded!')
+    } catch (err: any) {
+      console.error(err)
+      showToast(`PDF generation failed: ${err.message}`, 'error')
+    } finally {
+      setPdfLoading(false)
+    }
+  }
+
   // Summary counts
   const stats = useMemo(() => {
     return {
@@ -570,42 +687,109 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
           </p>
         </div>
 
-        {/* Excel Import button */}
-        <label
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            fontFamily: 'var(--font-mono)',
-            fontSize: '0.75rem',
-            letterSpacing: '0.05em',
-            textTransform: 'uppercase',
-            padding: '0.6rem 1.2rem',
-            borderRadius: 8,
-            border: '1px dashed var(--admin-accent)',
-            background: 'rgba(99, 102, 241, 0.05)',
-            color: 'var(--admin-accent)',
-            cursor: 'pointer',
-            transition: 'background 0.15s, border-color 0.15s',
-            fontWeight: 600
-          }}
-          onMouseEnter={e => {
-            e.currentTarget.style.background = 'rgba(99, 102, 241, 0.12)'
-            e.currentTarget.style.borderColor = 'var(--admin-fg)'
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.background = 'rgba(99, 102, 241, 0.05)'
-            e.currentTarget.style.borderColor = 'var(--admin-accent)'
-          }}
-        >
-          <span style={{ fontSize: '1rem' }}>📥</span> Import Rooms (.xlsx)
-          <input
-            type="file"
-            accept=".xlsx"
-            onChange={handleExcelFileChange}
-            style={{ display: 'none' }}
-          />
-        </label>
+        {/* Action Buttons Group */}
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+          {/* Excel Export button */}
+          <button
+            type="button"
+            onClick={handleExportExcel}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '0.75rem',
+              letterSpacing: '0.05em',
+              textTransform: 'uppercase',
+              padding: '0.6rem 1.2rem',
+              borderRadius: 8,
+              border: '1px solid #107c41',
+              background: 'rgba(16, 124, 65, 0.05)',
+              color: '#107c41',
+              cursor: 'pointer',
+              transition: 'background 0.15s, border-color 0.15s',
+              fontWeight: 600
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = 'rgba(16, 124, 65, 0.15)'
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = 'rgba(16, 124, 65, 0.05)'
+            }}
+          >
+            📊 Export Excel
+          </button>
+
+          {/* PDF Export button */}
+          <button
+            type="button"
+            onClick={handleExportPDF}
+            disabled={pdfLoading}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '0.75rem',
+              letterSpacing: '0.05em',
+              textTransform: 'uppercase',
+              padding: '0.6rem 1.2rem',
+              borderRadius: 8,
+              border: '1px solid #ef4444',
+              background: 'rgba(239, 68, 68, 0.05)',
+              color: '#ef4444',
+              cursor: pdfLoading ? 'not-allowed' : 'pointer',
+              transition: 'background 0.15s, border-color 0.15s',
+              fontWeight: 600,
+              opacity: pdfLoading ? 0.7 : 1
+            }}
+            onMouseEnter={e => {
+              if (!pdfLoading) e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)'
+            }}
+            onMouseLeave={e => {
+              if (!pdfLoading) e.currentTarget.style.background = 'rgba(239, 68, 68, 0.05)'
+            }}
+          >
+            📄 {pdfLoading ? 'Exporting PDF...' : 'Export PDF'}
+          </button>
+
+          {/* Excel Import button */}
+          <label
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '0.75rem',
+              letterSpacing: '0.05em',
+              textTransform: 'uppercase',
+              padding: '0.6rem 1.2rem',
+              borderRadius: 8,
+              border: '1px dashed var(--admin-accent)',
+              background: 'rgba(99, 102, 241, 0.05)',
+              color: 'var(--admin-accent)',
+              cursor: 'pointer',
+              transition: 'background 0.15s, border-color 0.15s',
+              fontWeight: 600
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = 'rgba(99, 102, 241, 0.12)'
+              e.currentTarget.style.borderColor = 'var(--admin-fg)'
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = 'rgba(99, 102, 241, 0.05)'
+              e.currentTarget.style.borderColor = 'var(--admin-accent)'
+            }}
+          >
+            <span>📥</span> Import Rooms (.xlsx)
+            <input
+              type="file"
+              accept=".xlsx"
+              onChange={handleExcelFileChange}
+              style={{ display: 'none' }}
+            />
+          </label>
+        </div>
       </div>
 
       {/* ── Stats Overview cards ── */}
@@ -854,6 +1038,8 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
                 </th>
                 <th>Serial</th>
                 <th>Name / Institution</th>
+                <th>Email</th>
+                <th>Phone</th>
                 <th>Level & Year</th>
                 <th>Event</th>
                 <th>T-Shirt</th>
@@ -889,6 +1075,28 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
                   <td>
                     <div style={{ fontWeight: 600, color: 'var(--admin-fg)' }}>{reg.full_name || '-'}</div>
                     <div style={{ fontSize: '0.75rem', color: 'var(--admin-fg-muted)', marginTop: '2px' }}>{reg.institution || '-'}</div>
+                  </td>
+
+                  {/* Email */}
+                  <td>
+                    {reg.email_address ? (
+                      <a href={`mailto:${reg.email_address}`} style={{ color: 'var(--admin-accent)', textDecoration: 'none' }}>
+                        {reg.email_address}
+                      </a>
+                    ) : (
+                      <span style={{ color: 'var(--admin-fg-muted)', fontStyle: 'italic' }}>-</span>
+                    )}
+                  </td>
+
+                  {/* Phone */}
+                  <td>
+                    {reg.phone_number ? (
+                      <a href={`tel:${reg.phone_number}`} style={{ color: 'var(--admin-fg)', textDecoration: 'none' }}>
+                        {reg.phone_number}
+                      </a>
+                    ) : (
+                      <span style={{ color: 'var(--admin-fg-muted)', fontStyle: 'italic' }}>-</span>
+                    )}
                   </td>
 
                   {/* Class / level */}
