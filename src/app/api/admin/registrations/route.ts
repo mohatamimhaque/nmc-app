@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { requireRegistrationAccess, requireRegistrationWriteAccess } from '@/lib/admin-auth'
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 
 export const runtime = 'nodejs'
 
@@ -145,6 +145,52 @@ export async function DELETE(request: Request) {
 
     const supabase = guard.supabase
 
+    // 1. Fetch emails of registrations to be deleted
+    let emails: string[] = []
+    if (Array.isArray(serials)) {
+      const { data: regs } = await supabase
+        .from('processed_registrations')
+        .select('email_address')
+        .in('serial', serials)
+      if (regs) {
+        emails = regs.map(r => r.email_address).filter((e): e is string => !!e)
+      }
+    } else if (typeof serials === 'string') {
+      const { data: reg } = await supabase
+        .from('processed_registrations')
+        .select('email_address')
+        .eq('serial', serials)
+        .maybeSingle()
+      if (reg?.email_address) {
+        emails = [reg.email_address]
+      }
+    }
+
+    // 2. Delete associated admin_users/auth.users if they exist
+    if (emails.length > 0) {
+      const serviceClient = createServiceClient()
+      const { data: adminUsers } = await serviceClient
+        .from('admin_users')
+        .select('id, email')
+        .in('email', emails)
+
+      if (adminUsers && adminUsers.length > 0) {
+        for (const adminUser of adminUsers) {
+          const { error: authDeleteError } = await serviceClient.auth.admin.deleteUser(
+            adminUser.id
+          )
+          if (authDeleteError) {
+            console.error('Failed to delete auth user, attempting direct admin_users deletion:', authDeleteError.message)
+            await serviceClient
+              .from('admin_users')
+              .delete()
+              .eq('id', adminUser.id)
+          }
+        }
+      }
+    }
+
+    // 3. Delete the registrations
     if (Array.isArray(serials)) {
       if (serials.length === 0) {
         return NextResponse.json({ success: true, deletedCount: 0 })
@@ -171,8 +217,9 @@ export async function DELETE(request: Request) {
     } else {
       return NextResponse.json({ error: 'Invalid serials parameter format.' }, { status: 400 })
     }
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+  } catch (err: unknown) {
+    const error = err as Error
+    return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }
 

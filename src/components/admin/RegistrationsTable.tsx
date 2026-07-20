@@ -23,6 +23,21 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
   const [libLoaded, setLibLoaded] = useState(false)
   const [toast, setToast] = useState<ToastState | null>(null)
   const [pdfLoading, setPdfLoading] = useState(false)
+
+  // Event filtering states
+  const [selectedEventFilter, setSelectedEventFilter] = useState<string>('all')
+
+  // Collect unique events dynamically
+  const uniqueEvents = useMemo(() => {
+    const events = registrations.map(r => r.event).filter((e): e is string => !!e)
+    return Array.from(new Set(events)).sort()
+  }, [registrations])
+
+  // Filter registrations based on selected event
+  const displayedRegistrations = useMemo(() => {
+    if (selectedEventFilter === 'all') return registrations
+    return registrations.filter(r => r.event === selectedEventFilter)
+  }, [registrations, selectedEventFilter])
   
   // Selection state
   const [selectedSerials, setSelectedSerials] = useState<Set<string>>(new Set())
@@ -177,7 +192,7 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
         dataTableInstance.current = null
       }
     }
-  }, [registrations, libLoaded])
+  }, [displayedRegistrations, libLoaded])
 
   // Selection handlers
   const handleSelectRow = (serial: string) => {
@@ -543,9 +558,35 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
     })
   }
 
+  // Helper to extract currently filtered/visible registrations in the DataTable
+  const getFilteredRegistrations = () => {
+    const $ = (window as any).$
+    if (!dataTableInstance.current || !$) return displayedRegistrations
+
+    const filteredSerials: string[] = []
+    dataTableInstance.current.rows({ filter: 'applied' }).every(function (this: any) {
+      const rowNode = this.node()
+      if (rowNode) {
+        const serial = $(rowNode).find('td:nth-child(2)').text().trim()
+        if (serial) {
+          filteredSerials.push(serial)
+        }
+      }
+    })
+
+    const serialSet = new Set(filteredSerials)
+    return displayedRegistrations.filter(r => serialSet.has(r.serial))
+  }
+
   // Export registrations data to Excel spreadsheet
   const handleExportExcel = () => {
-    const dataToExport = registrations.map(r => ({
+    const targetData = getFilteredRegistrations()
+    if (targetData.length === 0) {
+      showToast('No registrations found to export.', 'error')
+      return
+    }
+
+    const dataToExport = targetData.map(r => ({
       'Serial': r.serial,
       'Full Name': r.full_name || '',
       'Email Address': r.email_address || '',
@@ -573,90 +614,212 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
     showToast('Excel spreadsheet downloaded!')
   }
 
-  // Export registrations data to PDF report
-  const handleExportPDF = async () => {
-    setPdfLoading(true)
-    try {
-      // Load jsPDF if not already loaded
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      if (!(window as any).jspdf) {
-        await new Promise<void>((resolve, reject) => {
-          const script = document.createElement('script')
-          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'
-          script.onload = () => resolve()
-          script.onerror = () => reject(new Error('Failed to load jsPDF library'))
-          document.head.appendChild(script)
-        })
-      }
-
-      // Load jsPDF-AutoTable if not already loaded
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      if (!(window as any).jspdf?.jsPDF?.API?.autoTable && !(window as any).jsPDF?.API?.autoTable) {
-        await new Promise<void>((resolve, reject) => {
-          const script = document.createElement('script')
-          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js'
-          script.onload = () => resolve()
-          script.onerror = () => reject(new Error('Failed to load jsPDF-AutoTable plugin'))
-          document.head.appendChild(script)
-        })
-      }
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { jsPDF } = (window as any).jspdf
-      const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })
-
-      // Add title
-      doc.setFontSize(16)
-      doc.text('National Mathematics Carnival 2026', 14, 15)
-      doc.setFontSize(12)
-      doc.text('Processed Registrations Report', 14, 22)
-      doc.setFontSize(8)
-      doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 27)
-
-      const columns = [
-        { header: 'Serial', dataKey: 'serial' },
-        { header: 'Name', dataKey: 'name' },
-        { header: 'Email', dataKey: 'email' },
-        { header: 'Phone', dataKey: 'phone' },
-        { header: 'Institution', dataKey: 'institution' },
-        { header: 'Level', dataKey: 'level' },
-        { header: 'Event', dataKey: 'event' },
-        { header: 'Room', dataKey: 'room' },
-        { header: 'Kit', dataKey: 'kit' },
-        { header: 'Present', dataKey: 'present' }
-      ]
-
-      const rows = registrations.map(r => ({
-        serial: r.serial || '',
-        name: r.full_name || '',
-        email: r.email_address || '',
-        phone: r.phone_number || '',
-        institution: r.institution || '',
-        level: r.level || '',
-        event: r.event || '',
-        room: r.allocated_room || '',
-        kit: r.is_kit_coollect ? 'Yes' : 'No',
-        present: r.is_present ? 'Yes' : 'No'
-      }))
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ;(doc as any).autoTable({
-        columns: columns,
-        body: rows,
-        startY: 32,
-        styles: { fontSize: 8, cellPadding: 2 },
-        headStyles: { fillColor: [99, 102, 241] }, // admin-accent indigo
-        theme: 'striped'
-      })
-
-      doc.save('National_Mathematics_Carnival_2026_Registrations.pdf')
-      showToast('PDF report downloaded!')
-    } catch (err: any) {
-      console.error(err)
-      showToast(`PDF generation failed: ${err.message}`, 'error')
-    } finally {
-      setPdfLoading(false)
+  // Export registrations data to PDF report with proper Unicode/Bangla support using native print shaper
+  const handleExportPDF = () => {
+    const targetData = getFilteredRegistrations()
+    if (targetData.length === 0) {
+      showToast('No registrations found to export.', 'error')
+      return
     }
+
+    const printWindow = window.open('', '_blank')
+    if (!printWindow) {
+      showToast('Pop-up blocked! Please allow popups to export PDF.', 'error')
+      return
+    }
+
+    const title = 'National Mathematics Carnival 2026 - Processed Registrations'
+    
+    // Compute summary metrics for the targetData
+    const totalCount = targetData.length
+    const presentCount = targetData.filter(r => r.is_present).length
+    const kitCount = targetData.filter(r => r.is_kit_coollect).length
+    const launchCount = targetData.filter(r => r.is_collect_launch).length
+
+    const presentPercent = totalCount > 0 ? (presentCount / totalCount) * 100 : 0
+    const kitPercent = totalCount > 0 ? (kitCount / totalCount) * 100 : 0
+    const launchPercent = totalCount > 0 ? (launchCount / totalCount) * 100 : 0
+
+    // Build table rows HTML
+    const rowsHtml = targetData.map((r, index) => `
+      <tr>
+        <td style="font-family: monospace;">${index + 1}</td>
+        <td>${r.serial || ''}</td>
+        <td>
+          <div style="font-weight: bold;">${r.full_name || ''}</div>
+          <div style="font-size: 10px; color: #555;">${r.institution || ''}</div>
+        </td>
+        <td>${r.email_address || ''}</td>
+        <td>${r.phone_number || ''}</td>
+        <td>${r.level || ''} (${r.class_year_student_of || ''})</td>
+        <td>${r.event || ''}</td>
+        <td>${r.allocated_room || 'Not Allocated'}</td>
+        <td style="text-align: center;">${r.is_kit_coollect ? 'Yes' : 'No'}</td>
+        <td style="text-align: center;">${r.is_present ? 'Present' : 'Absent'}</td>
+      </tr>
+    `).join('')
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>\${title}</title>
+          <meta charset="utf-8" />
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Kalpurush&family=Noto+Sans+Bengali:wght@400;700&display=swap');
+            body {
+              font-family: 'Inter', 'Noto Sans Bengali', 'Kalpurush', sans-serif;
+              padding: 20px;
+              color: #333;
+            }
+            h1 {
+              font-size: 20px;
+              margin-bottom: 5px;
+            }
+            .meta {
+              font-size: 11px;
+              color: #666;
+              margin-bottom: 20px;
+              font-family: monospace;
+            }
+            .summary-card {
+              display: flex; 
+              gap: 40px; 
+              margin-bottom: 30px; 
+              align-items: center; 
+              border: 1px solid #e5e7eb; 
+              padding: 20px; 
+              border-radius: 8px; 
+              background-color: #f9fafb;
+            }
+            .stats-text {
+              flex: 1;
+            }
+            .stats-text h3 {
+              margin-top: 0; 
+              margin-bottom: 12px; 
+              font-size: 13px; 
+              text-transform: uppercase; 
+              color: #4f46e5; 
+              letter-spacing: 0.05em;
+            }
+            .stats-grid {
+              display: grid; 
+              grid-template-columns: 1fr 1fr; 
+              gap: 8px; 
+              font-size: 12px;
+            }
+            .chart-container {
+              display: flex; 
+              gap: 20px;
+            }
+            .chart-box {
+              text-align: center;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              font-size: 11px;
+            }
+            th, td {
+              border: 1px solid #ddd;
+              padding: 8px;
+              text-align: left;
+              vertical-align: middle;
+            }
+            th {
+              background-color: #f3f4f6;
+              font-weight: 700;
+            }
+            tr:nth-child(even) {
+              background-color: #fafafa;
+            }
+            @media print {
+              body { padding: 0; }
+              @page { size: landscape; margin: 1cm; }
+              .summary-card { background-color: #f9fafb !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            }
+          </style>
+        </head>
+        <body>
+          <h1>National Mathematics Carnival 2026</h1>
+          <div style="font-weight: bold; font-size: 14px; margin-bottom: 5px;">Processed Registrations Report</div>
+          <div class="meta">Generated on: \${new Date().toLocaleString()}</div>
+          
+          <!-- Summary Metrics and Charts Dashboard -->
+          <div class="summary-card">
+            <div class="stats-text">
+              <h3>Exported Data Summary</h3>
+              <div class="stats-grid">
+                <div><strong>Total Registrations:</strong> \${totalCount}</div>
+                <div><strong>Present Attendance:</strong> \${presentCount} / \dots \${totalCount} (\${presentPercent.toFixed(1)}%)</div>
+                <div><strong>Kits Collected:</strong> \${kitCount} / \${totalCount} (\${kitPercent.toFixed(1)}%)</div>
+                <div><strong>Launch Served:</strong> \${launchCount} / \${totalCount} (\${launchPercent.toFixed(1)}%)</div>
+              </div>
+            </div>
+            <div class="chart-container">
+              <!-- SVG Donut Chart for Attendance -->
+              <div class="chart-box">
+                <svg width="80" height="80" viewBox="0 0 36 36" style="transform: rotate(-90deg);">
+                  <circle cx="18" cy="18" r="15.915" fill="none" stroke="#e5e7eb" stroke-width="3" />
+                  <circle cx="18" cy="18" r="15.915" fill="none" stroke="#10b981" stroke-width="3" 
+                          stroke-dasharray="\${presentPercent} \${100 - presentPercent}" />
+                  <text x="18" y="18" dominant-baseline="central" text-anchor="middle" font-size="6" font-family="sans-serif" font-weight="bold" fill="#333" style="transform: rotate(90deg); transform-origin: 18px 18px;">\${presentPercent.toFixed(0)}%</text>
+                </svg>
+                <div style="font-size: 10px; font-weight: bold; margin-top: 5px; color: #4b5563;">Attendance</div>
+              </div>
+              <!-- SVG Donut Chart for Kit -->
+              <div class="chart-box">
+                <svg width="80" height="80" viewBox="0 0 36 36" style="transform: rotate(-90deg);">
+                  <circle cx="18" cy="18" r="15.915" fill="none" stroke="#e5e7eb" stroke-width="3" />
+                  <circle cx="18" cy="18" r="15.915" fill="none" stroke="#06b6d4" stroke-width="3" 
+                          stroke-dasharray="\${kitPercent} \${100 - kitPercent}" />
+                  <text x="18" y="18" dominant-baseline="central" text-anchor="middle" font-size="6" font-family="sans-serif" font-weight="bold" fill="#333" style="transform: rotate(90deg); transform-origin: 18px 18px;">\${kitPercent.toFixed(0)}%</text>
+                </svg>
+                <div style="font-size: 10px; font-weight: bold; margin-top: 5px; color: #4b5563;">Kits Distributed</div>
+              </div>
+              <!-- SVG Donut Chart for Launch -->
+              <div class="chart-box">
+                <svg width="80" height="80" viewBox="0 0 36 36" style="transform: rotate(-90deg);">
+                  <circle cx="18" cy="18" r="15.915" fill="none" stroke="#e5e7eb" stroke-width="3" />
+                  <circle cx="18" cy="18" r="15.915" fill="none" stroke="#f59e0b" stroke-width="3" 
+                          stroke-dasharray="\${launchPercent} \dots \${100 - launchPercent}" />
+                  <text x="18" y="18" dominant-baseline="central" text-anchor="middle" font-size="6" font-family="sans-serif" font-weight="bold" fill="#333" style="transform: rotate(90deg); transform-origin: 18px 18px;">\${launchPercent.toFixed(0)}%</text>
+                </svg>
+                <div style="font-size: 10px; font-weight: bold; margin-top: 5px; color: #4b5563;">Launch Served</div>
+              </div>
+            </div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Serial</th>
+                <th>Name / Institution</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Level & Year</th>
+                <th>Event</th>
+                <th>Room</th>
+                <th>Kit</th>
+                <th>Present</th>
+              </tr>
+            </thead>
+            <tbody>
+              \${rowsHtml}
+            </tbody>
+          </table>
+          <script>
+            window.onload = function() {
+              window.print();
+            };
+          </script>
+        </body>
+      </html>
+    `)
+    printWindow.document.close()
+    showToast('PDF print preview opened!')
   }
 
   // Handle individual deletion of a registration
@@ -696,13 +859,13 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
   // Summary counts
   const stats = useMemo(() => {
     return {
-      total: registrations.length,
-      kits: registrations.filter(r => r.is_kit_coollect).length,
-      present: registrations.filter(r => r.is_present).length,
-      launch: registrations.filter(r => r.is_collect_launch).length,
-      rooms: registrations.filter(r => r.allocated_room !== null && r.allocated_room !== '').length
+      total: displayedRegistrations.length,
+      kits: displayedRegistrations.filter(r => r.is_kit_coollect).length,
+      present: displayedRegistrations.filter(r => r.is_present).length,
+      launch: displayedRegistrations.filter(r => r.is_collect_launch).length,
+      rooms: displayedRegistrations.filter(r => r.allocated_room !== null && r.allocated_room !== '').length
     }
-  }, [registrations])
+  }, [displayedRegistrations])
 
   return (
     <div style={{ maxWidth: '100%', margin: '0 auto', position: 'relative' }}>
@@ -722,7 +885,33 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
         </div>
 
         {/* Action Buttons Group */}
-        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+          {/* Event Filter dropdown */}
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginRight: '0.5rem' }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--admin-fg-muted)', textTransform: 'uppercase' }}>Filter Event:</span>
+            <select
+              value={selectedEventFilter}
+              onChange={e => setSelectedEventFilter(e.target.value)}
+              style={{
+                background: 'var(--admin-surface)',
+                color: 'var(--admin-fg)',
+                border: '1px solid var(--admin-border)',
+                borderRadius: 8,
+                padding: '0.55rem 1rem',
+                fontSize: '0.75rem',
+                outline: 'none',
+                cursor: 'pointer',
+                fontWeight: 600,
+                fontFamily: 'var(--font-body)'
+              }}
+            >
+              <option value="all">All Events</option>
+              {uniqueEvents.map(evt => (
+                <option key={evt} value={evt}>{evt}</option>
+              ))}
+            </select>
+          </div>
+
           {/* Excel Export button */}
           <button
             type="button"
@@ -1088,7 +1277,7 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
               </tr>
             </thead>
             <tbody>
-              {registrations.map(reg => (
+              {displayedRegistrations.map(reg => (
                 <tr key={reg.serial}>
                   {/* Select Checkbox */}
                   <td style={{ textAlign: 'center' }}>
