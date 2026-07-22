@@ -316,11 +316,12 @@ export async function GET(request: Request) {
     }
 
     const pdfBuffer = await new Promise<Buffer>((resolve, reject) => {
-      const doc = new PDFDocument({ margin: 30, size: 'A4', layout: 'landscape' })
+      const PDFDoc = (PDFDocument as any).default || PDFDocument
+      const doc = new PDFDoc({ margin: 30, size: 'A4', layout: 'landscape' })
       const chunks: Buffer[] = []
-      doc.on('data', (chunk) => chunks.push(chunk))
+      doc.on('data', (chunk: any) => chunks.push(chunk))
       doc.on('end', () => resolve(Buffer.concat(chunks)))
-      doc.on('error', (err) => reject(err))
+      doc.on('error', (err: any) => reject(err))
 
       // Header bar
       doc.fillColor('#6366f1')
