@@ -49,6 +49,7 @@ const NAV: NavItem[] = [
 
   // Settings
   { label: 'Registrations',href: '/admin/registrations',icon: <HexagonIcon />,  group: 'Manage', roles: ['super_admin', 'admin', 'registration_editor'] },
+  { label: 'Certificates', href: '/admin/certificates',  icon: <IntegralIcon />, group: 'Manage', roles: ['super_admin', 'admin', 'registration_editor'] },
   { label: 'Volunteers',   href: '/admin/volunteers',    icon: <IntegralIcon />,  group: 'Manage', roles: ['super_admin', 'admin', 'registration_editor'] },
   { label: 'Visibility',  href: '/admin/visibility',    icon: <InfinityIcon />, group: 'Manage', roles: ['super_admin'] },
   { label: 'Navigation',  href: '/admin/navigation',   icon: <GridIcon />,     group: 'Manage', roles: ['super_admin', 'admin'] },

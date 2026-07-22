@@ -36,14 +36,21 @@ R2_PUBLIC_URL=https://pub-99e7fad4ec9f4d2dafa1e77c8558eee0.r2.dev
 
 ## Authentication Gateway (Secure Login)
 *   **Route**: `POST /api/admin/login`
-*   **Description**: Authenticates admin email and password. Returns JWT session tokens.
-*   **Request Format**:
+*   **Description**: Authenticates volunteers, registration editors, and administrators using either **Email Address** OR **Mobile Number** and password (default password: `12345678`). Auto-provisions volunteer accounts if logging in for the first time.
+*   **Request Format (Mobile or Email)**:
     *   Content-Type: `application/json`
-    *   Body:
+    *   Body (Mobile login):
+        ```json
+        {
+          "mobile": "01812345678",
+          "password": "12345678"
+        }
+        ```
+    *   Body (Email login or using "email"/"identifier" field):
         ```json
         {
           "email": "editor@example.com",
-          "password": "securepassword123"
+          "password": "12345678"
         }
         ```
 *   **Response Format (200 OK)**:
@@ -60,7 +67,12 @@ R2_PUBLIC_URL=https://pub-99e7fad4ec9f4d2dafa1e77c8558eee0.r2.dev
         "id": "u-uuid-5678",
         "email": "editor@example.com",
         "display_name": "Sifat Ahmed",
-        "role": "registration_editor"
+        "role": "registration_editor",
+        "can_manage_volunteers": false,
+        "can_manage_registrations": true,
+        "can_manage_kit": true,
+        "can_manage_presents": true,
+        "can_manage_lunch": true
       }
     }
     ```
