@@ -1,11 +1,285 @@
 import { NextResponse } from 'next/server'
 import { requireVolunteerAccess } from '@/lib/admin-auth'
+import PDFDocument from 'pdfkit'
 
 export const runtime = 'nodejs'
 
+function sanitizePdfText(text: string | null | undefined): string {
+  if (!text) return ''
+  // Strip non-ASCII characters to prevent PDFKit rendering crashes
+  return text.replace(/[^\x20-\x7E\n\t]/g, '')
+}
+
+function truncateText(text: string, maxLength: number): string {
+  if (text.length > maxLength) {
+    return text.substring(0, maxLength - 3) + '...'
+  }
+  return text
+}
+
+function drawStatsBox(
+  doc: any,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  label: string,
+  value: string,
+  subtext: string,
+  color: string
+) {
+  // Draw card background
+  doc.fillColor('#f8fafc')
+     .roundedRect(x, y, width, height, 6)
+     .fill()
+  
+  // Draw card border
+  doc.strokeColor('#cbd5e1')
+     .lineWidth(1)
+     .roundedRect(x, y, width, height, 6)
+     .stroke()
+  
+  // Draw label
+  doc.fillColor('#64748b')
+     .font('Helvetica-Bold')
+     .fontSize(7.5)
+     .text(label.toUpperCase(), x + 10, y + 8)
+  
+  // Draw value
+  doc.fillColor(color)
+     .font('Helvetica-Bold')
+     .fontSize(16)
+     .text(value, x + 10, y + 18)
+  
+  // Draw subtext
+  doc.fillColor('#475569')
+     .font('Helvetica')
+     .fontSize(7.5)
+     .text(subtext, x + 10, y + 36)
+}
+
+function drawBreakdownTable(
+  doc: any,
+  x: number,
+  y: number,
+  width: number,
+  title: string,
+  headers: string[],
+  rows: [string, string | number][]
+) {
+  // Draw title
+  doc.fillColor('#334155')
+     .font('Helvetica-Bold')
+     .fontSize(9)
+     .text(title.toUpperCase(), x, y)
+  
+  const tableY = y + 15
+  const rowHeight = 16
+  
+  // Draw table header background
+  doc.fillColor('#f1f5f9')
+     .rect(x, tableY, width, rowHeight)
+     .fill()
+  
+  // Draw header text
+  doc.fillColor('#475569')
+     .font('Helvetica-Bold')
+     .fontSize(8)
+  doc.text(headers[0], x + 6, tableY + 4, { width: width - 80 })
+  doc.text(headers[1], x + width - 70, tableY + 4, { width: 64, align: 'right' })
+  
+  // Draw header bottom border
+  doc.strokeColor('#cbd5e1')
+     .lineWidth(0.5)
+     .moveTo(x, tableY + rowHeight)
+     .lineTo(x + width, tableY + rowHeight)
+     .stroke()
+  
+  let currentY = tableY + rowHeight
+  rows.forEach(([name, count], index) => {
+    // Zebra striping
+    if (index % 2 === 0) {
+      doc.fillColor('#f8fafc')
+         .rect(x, currentY, width, rowHeight)
+         .fill()
+    }
+    
+    doc.fillColor('#1e293b')
+       .font('Helvetica')
+       .fontSize(8)
+    doc.text(truncateText(sanitizePdfText(name), 30), x + 6, currentY + 4, { width: width - 80 })
+    doc.font('Helvetica-Bold')
+       .text(String(count), x + width - 70, currentY + 4, { width: 64, align: 'right' })
+    
+    doc.strokeColor('#cbd5e1')
+       .lineWidth(0.5)
+       .moveTo(x, currentY + rowHeight)
+       .lineTo(x + width, currentY + rowHeight)
+       .stroke()
+    
+    currentY += rowHeight
+  })
+}
+
+function drawVolunteerHeaders(doc: any, y: number) {
+  const rowHeight = 20
+  
+  // Header background
+  doc.fillColor('#f1f5f9')
+     .rect(30, y, 841.89 - 60, rowHeight)
+     .fill()
+  
+  let x = 30
+  doc.fillColor('#334155')
+     .font('Helvetica-Bold')
+     .fontSize(8.5)
+  
+  doc.text('#', x, y + 6, { width: 20, align: 'center' })
+  x += 20
+  
+  doc.text('Serial / ID', x + 5, y + 6, { width: 75, align: 'left' })
+  x += 85
+  
+  doc.text('Volunteer Name & Email', x + 5, y + 6, { width: 170, align: 'left' })
+  x += 180
+  
+  doc.text('Mobile', x + 5, y + 6, { width: 75, align: 'left' })
+  x += 85
+  
+  doc.text('Dept & Year', x + 5, y + 6, { width: 130, align: 'left' })
+  x += 140
+  
+  doc.text('Segment', x + 5, y + 6, { width: 80, align: 'left' })
+  x += 90
+  
+  doc.text('Size', x, y + 6, { width: 30, align: 'center' })
+  x += 30
+  
+  doc.text('Present', x, y + 6, { width: 50, align: 'center' })
+  x += 50
+  
+  doc.text('Gift', x, y + 6, { width: 40, align: 'center' })
+  x += 40
+  
+  doc.text('Lunch', x, y + 6, { width: 40, align: 'center' })
+  
+  // Bottom border line
+  doc.strokeColor('#cbd5e1')
+     .lineWidth(1)
+     .moveTo(30, y + rowHeight)
+     .lineTo(841.89 - 30, y + rowHeight)
+     .stroke()
+}
+
+function drawVolunteerRow(
+  doc: any,
+  y: number,
+  v: any,
+  index: number
+) {
+  const rowHeight = 30
+  
+  // Zebra striping
+  if (index % 2 === 0) {
+    doc.fillColor('#f8fafc')
+       .rect(30, y, 841.89 - 60, rowHeight)
+       .fill()
+  }
+  
+  let x = 30
+  
+  // 1. Index
+  doc.fillColor('#64748b')
+     .font('Courier')
+     .fontSize(8)
+     .text(String(index), x, y + 10, { width: 20, align: 'center' })
+  x += 20
+  
+  // 2. Serial / ID
+  doc.fillColor('#0f172a')
+     .font('Helvetica-Bold')
+     .fontSize(8.5)
+     .text(sanitizePdfText(v.serial_no || v.unique_id), x + 5, y + 10, { width: 75, align: 'left' })
+  x += 85
+  
+  // 3. Name & Email
+  doc.fillColor('#0f172a')
+     .font('Helvetica-Bold')
+     .fontSize(8.5)
+     .text(truncateText(sanitizePdfText(v.name), 35), x + 5, y + 4, { width: 170, align: 'left' })
+  doc.fillColor('#64748b')
+     .font('Helvetica')
+     .fontSize(7.5)
+     .text(truncateText(sanitizePdfText(v.email), 38), x + 5, y + 16, { width: 170, align: 'left' })
+  x += 180
+  
+  // 4. Mobile
+  doc.fillColor('#0f172a')
+     .font('Helvetica')
+     .fontSize(8)
+     .text(sanitizePdfText(v.number), x + 5, y + 10, { width: 75, align: 'left' })
+  x += 85
+  
+  // 5. Dept & Year
+  const deptStr = sanitizePdfText(v.department || 'General')
+  const yearStr = v.year ? `(${sanitizePdfText(v.year)})` : ''
+  doc.fillColor('#0f172a')
+     .font('Helvetica')
+     .fontSize(8)
+     .text(truncateText(`${deptStr} ${yearStr}`.trim(), 28), x + 5, y + 10, { width: 130, align: 'left' })
+  x += 140
+  
+  // 6. Segment
+  doc.fillColor('#4338ca')
+     .font('Helvetica-Bold')
+     .fontSize(8)
+     .text(truncateText(sanitizePdfText(v.segment || 'Unassigned'), 18), x + 5, y + 10, { width: 80, align: 'left' })
+  x += 90
+  
+  // 7. Size
+  doc.fillColor('#0f172a')
+     .font('Helvetica-Bold')
+     .fontSize(8.5)
+     .text(sanitizePdfText(v.t_shirt_size || 'N/A'), x, y + 10, { width: 30, align: 'center' })
+  x += 30
+  
+  // 8. Present
+  const presText = v.is_present ? 'PRESENT' : 'ABSENT'
+  const presColor = v.is_present ? '#137333' : '#c5221f'
+  doc.fillColor(presColor)
+     .font('Helvetica-Bold')
+     .fontSize(7.5)
+     .text(presText, x, y + 10, { width: 50, align: 'center' })
+  x += 50
+  
+  // 9. Gift
+  const giftText = v.is_gift_collected ? 'COLLECTED' : 'PENDING'
+  const giftColor = v.is_gift_collected ? '#1a73e8' : '#5f6368'
+  doc.fillColor(giftColor)
+     .font('Helvetica-Bold')
+     .fontSize(7.5)
+     .text(giftText, x, y + 10, { width: 40, align: 'center' })
+  x += 40
+  
+  // 10. Lunch
+  const lunchText = v.is_lunch_collected ? 'SERVED' : 'PENDING'
+  const lunchColor = v.is_lunch_collected ? '#b06000' : '#5f6368'
+  doc.fillColor(lunchColor)
+     .font('Helvetica-Bold')
+     .fontSize(7.5)
+     .text(lunchText, x, y + 10, { width: 40, align: 'center' })
+  
+  // Bottom border line
+  doc.strokeColor('#cbd5e1')
+     .lineWidth(0.5)
+     .moveTo(30, y + rowHeight)
+     .lineTo(841.89 - 30, y + rowHeight)
+     .stroke()
+}
+
 /**
  * GET /api/admin/volunteers/summary-pdf
- * Renders & downloads full Volunteer Management Summary PDF/HTML report.
+ * Renders & downloads full Volunteer Management Summary PDF report.
  * Authorized for super_admin, admin, and authorized volunteer managers.
  * Supports Authorization: Bearer <token> (mobile apps) & Cookie auth (web).
  */
@@ -45,254 +319,86 @@ export async function GET(request: Request) {
       byDepartment[dept] = (byDepartment[dept] || 0) + 1
     }
 
-    const segmentRowsHtml = Object.entries(bySegment)
-      .map(([seg, count]) => `<tr><td style="padding:4px 8px;">${seg}</td><td style="padding:4px 8px;text-align:right;font-weight:bold;">${count}</td></tr>`)
-      .join('')
+    const pdfBuffer = await new Promise<Buffer>((resolve, reject) => {
+      const doc = new PDFDocument({ margin: 30, size: 'A4', layout: 'landscape' })
+      const chunks: Buffer[] = []
+      doc.on('data', (chunk) => chunks.push(chunk))
+      doc.on('end', () => resolve(Buffer.concat(chunks)))
+      doc.on('error', (err) => reject(err))
 
-    const deptRowsHtml = Object.entries(byDepartment)
-      .map(([dept, count]) => `<tr><td style="padding:4px 8px;">${dept}</td><td style="padding:4px 8px;text-align:right;font-weight:bold;">${count}</td></tr>`)
-      .join('')
+      // Header bar
+      doc.fillColor('#6366f1')
+         .rect(30, 30, 841.89 - 60, 4)
+         .fill()
 
-    const rowsHtml = list.map((v, index) => `
-      <tr>
-        <td style="font-family: monospace; text-align: center;">${index + 1}</td>
-        <td style="font-family: monospace; font-weight: bold;">${v.serial_no || v.unique_id}</td>
-        <td>
-          <div style="font-weight: bold; color: #1e293b;">${v.name || ''}</div>
-          <div style="font-size: 10px; color: #64748b;">${v.email || ''}</div>
-        </td>
-        <td>${v.number || ''}</td>
-        <td>${v.department || ''} ${v.year ? `(${v.year})` : ''}</td>
-        <td>${v.segment || ''}</td>
-        <td style="text-align: center; font-weight: bold;">${v.t_shirt_size || ''}</td>
-        <td style="text-align: center;">
-          <span style="padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; background: ${v.is_present ? '#e6f4ea' : '#fce8e6'}; color: ${v.is_present ? '#137333' : '#c5221f'};">
-            ${v.is_present ? 'PRESENT' : 'ABSENT'}
-          </span>
-        </td>
-        <td style="text-align: center;">
-          <span style="padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; background: ${v.is_gift_collected ? '#e8f0fe' : '#f1f3f4'}; color: ${v.is_gift_collected ? '#1a73e8' : '#5f6368'};">
-            ${v.is_gift_collected ? 'COLLECTED' : 'PENDING'}
-          </span>
-        </td>
-        <td style="text-align: center;">
-          <span style="padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; background: ${v.is_lunch_collected ? '#fef7e0' : '#f1f3f4'}; color: ${v.is_lunch_collected ? '#b06000' : '#5f6368'};">
-            ${v.is_lunch_collected ? 'SERVED' : 'PENDING'}
-          </span>
-        </td>
-      </tr>
-    `).join('')
+      doc.fillColor('#0f172a')
+         .font('Helvetica-Bold')
+         .fontSize(18)
+         .text('National Mathematics Carnival 2026', 30, 40)
 
-    const html = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>NMC 2026 - Volunteer Management Summary Report</title>
-          <meta charset="utf-8" />
-          <meta name="viewport" content="width=device-width, initial-scale=1" />
-          <style>
-            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Kalpurush&family=Noto+Sans+Bengali:wght@400;700&display=swap');
-            body {
-              font-family: 'Inter', 'Noto Sans Bengali', 'Kalpurush', sans-serif;
-              padding: 20px;
-              color: #1e293b;
-              background: #ffffff;
-              margin: 0;
-            }
-            .header-bar {
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-              border-bottom: 2px solid #6366f1;
-              padding-bottom: 12px;
-              margin-bottom: 16px;
-            }
-            .header-title {
-              font-size: 20px;
-              font-weight: 800;
-              color: #0f172a;
-            }
-            .header-sub {
-              font-size: 11px;
-              color: #64748b;
-              margin-top: 2px;
-            }
-            .stats-grid {
-              display: grid;
-              grid-template-columns: repeat(4, 1fr);
-              gap: 10px;
-              margin-bottom: 20px;
-            }
-            .stat-box {
-              background: #f8fafc;
-              border: 1px solid #e2e8f0;
-              border-radius: 8px;
-              padding: 10px;
-            }
-            .stat-label {
-              font-size: 10px;
-              font-weight: 700;
-              color: #64748b;
-              text-transform: uppercase;
-            }
-            .stat-val {
-              font-size: 18px;
-              font-weight: 800;
-              color: #0f172a;
-              margin-top: 4px;
-            }
-            .stat-sub {
-              font-size: 10px;
-              color: #475569;
-              margin-top: 2px;
-            }
-            .breakdown-section {
-              display: grid;
-              grid-template-columns: 1fr 1fr;
-              gap: 16px;
-              margin-bottom: 20px;
-            }
-            .breakdown-card {
-              background: #f8fafc;
-              border: 1px solid #e2e8f0;
-              border-radius: 8px;
-              padding: 10px;
-            }
-            .breakdown-title {
-              font-size: 11px;
-              font-weight: 700;
-              color: #334155;
-              margin-bottom: 6px;
-              text-transform: uppercase;
-            }
-            table {
-              width: 100%;
-              border-collapse: collapse;
-              font-size: 11px;
-            }
-            th, td {
-              border: 1px solid #cbd5e1;
-              padding: 6px 8px;
-            }
-            th {
-              background: #f1f5f9;
-              font-weight: 700;
-              color: #334155;
-              text-align: left;
-            }
-            tr:nth-child(even) {
-              background: #f8fafc;
-            }
-            @media print {
-              body { padding: 0; }
-              @page { size: landscape; margin: 12mm; }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="header-bar">
-            <div>
-              <div class="header-title">National Mathematics Carnival 2026</div>
-              <div class="header-sub">Volunteer Management Summary Report · Generated on ${new Date().toLocaleString()}</div>
-            </div>
-            <div style="text-align: right;">
-              <span style="background: #6366f1; color: white; padding: 4px 10px; border-radius: 6px; font-weight: 700; font-size: 12px;">
-                TOTAL VOLUNTEERS: ${totalCount}
-              </span>
-            </div>
-          </div>
+      doc.fillColor('#64748b')
+         .font('Helvetica')
+         .fontSize(9)
+         .text(`Volunteer Management Summary Report · Generated on ${new Date().toLocaleString()}`, 30, 60)
 
-          <div class="stats-grid">
-            <div class="stat-box">
-              <div class="stat-label">Total Volunteers</div>
-              <div class="stat-val">${totalCount}</div>
-              <div class="stat-sub">Active Duty Records</div>
-            </div>
-            <div class="stat-box">
-              <div class="stat-label">Attendance Rate</div>
-              <div class="stat-val" style="color: #10b981;">${presentPercent}%</div>
-              <div class="stat-sub">Present: ${presentCount} | Absent: ${absentCount}</div>
-            </div>
-            <div class="stat-box">
-              <div class="stat-label">Gift Collection</div>
-              <div class="stat-val" style="color: #3b82f6;">${giftPercent}%</div>
-              <div class="stat-sub">Collected: ${giftCount} | Pending: ${totalCount - giftCount}</div>
-            </div>
-            <div class="stat-box">
-              <div class="stat-label">Lunch Service</div>
-              <div class="stat-val" style="color: #f59e0b;">${lunchPercent}%</div>
-              <div class="stat-sub">Served: ${lunchCount} | Pending: ${totalCount - lunchCount}</div>
-            </div>
-          </div>
+      doc.fillColor('#6366f1')
+         .font('Helvetica-Bold')
+         .fontSize(10)
+         .text(`TOTAL VOLUNTEERS: ${totalCount}`, 30, 72)
 
-          <div class="breakdown-section">
-            <div class="breakdown-card">
-              <div class="breakdown-title">Breakdown by Sub-Committee / Segment</div>
-              <table>
-                <thead>
-                  <tr><th>Segment</th><th style="text-align:right;">Volunteers</th></tr>
-                </thead>
-                <tbody>
-                  ${segmentRowsHtml}
-                </tbody>
-              </table>
-            </div>
+      // Stats boxes at y = 90
+      const boxWidth = 184
+      const spacing = 15
+      const statsY = 90
+      const statsHeight = 50
 
-            <div class="breakdown-card">
-              <div class="breakdown-title">Breakdown by Department</div>
-              <table>
-                <thead>
-                  <tr><th>Department</th><th style="text-align:right;">Volunteers</th></tr>
-                </thead>
-                <tbody>
-                  ${deptRowsHtml}
-                </tbody>
-              </table>
-            </div>
-          </div>
+      drawStatsBox(doc, 30, statsY, boxWidth, statsHeight, 'Total Volunteers', String(totalCount), 'Active Duty Records', '#0f172a')
+      drawStatsBox(doc, 30 + boxWidth + spacing, statsY, boxWidth, statsHeight, 'Attendance Rate', `${presentPercent}%`, `Present: ${presentCount} | Absent: ${absentCount}`, '#10b981')
+      drawStatsBox(doc, 30 + (boxWidth + spacing) * 2, statsY, boxWidth, statsHeight, 'Gift Collection', `${giftPercent}%`, `Collected: ${giftCount} | Pending: ${totalCount - giftCount}`, '#3b82f6')
+      drawStatsBox(doc, 30 + (boxWidth + spacing) * 3, statsY, boxWidth, statsHeight, 'Lunch Service', `${lunchPercent}%`, `Served: ${lunchCount} | Pending: ${totalCount - lunchCount}`, '#f59e0b')
 
-          <div style="margin-bottom: 8px; font-size: 12px; font-weight: 700; color: #334155; text-transform: uppercase;">
-            Complete Volunteer Roster (${totalCount} Records)
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th style="width: 30px; text-align: center;">#</th>
-                <th>Serial / ID</th>
-                <th>Volunteer Name & Email</th>
-                <th>Mobile</th>
-                <th>Department</th>
-                <th>Segment</th>
-                <th style="text-align: center;">Size</th>
-                <th style="text-align: center;">Present</th>
-                <th style="text-align: center;">Gift</th>
-                <th style="text-align: center;">Lunch</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${rowsHtml}
-            </tbody>
-          </table>
+      // Breakdown side-by-side tables at y = 155
+      const tableWidth = 375
+      const breakdownY = 155
+      const segmentRows = Object.entries(bySegment)
+      const deptRows = Object.entries(byDepartment)
 
-          <script>
-            window.onload = function() {
-              setTimeout(function() {
-                window.print();
-              }, 500);
-            };
-          </script>
-        </body>
-      </html>
-    `
+      drawBreakdownTable(doc, 30, breakdownY, tableWidth, 'Breakdown by Sub-Committee / Segment', ['Segment', 'Volunteers'], segmentRows)
+      drawBreakdownTable(doc, 436.89, breakdownY, tableWidth, 'Breakdown by Department', ['Department', 'Volunteers'], deptRows)
 
-    return new Response(html, {
+      // Roster section title
+      doc.fillColor('#334155')
+         .font('Helvetica-Bold')
+         .fontSize(10)
+         .text(`COMPLETE VOLUNTEER ROSTER (${totalCount} RECORDS)`, 30, 265)
+
+      let currentY = 280
+      drawVolunteerHeaders(doc, currentY)
+      currentY += 20
+
+      list.forEach((v, idx) => {
+        if (currentY + 30 > 535) {
+          doc.addPage()
+          currentY = 30
+          drawVolunteerHeaders(doc, currentY)
+          currentY += 20
+        }
+        drawVolunteerRow(doc, currentY, v, idx + 1)
+        currentY += 30
+      })
+
+      doc.end()
+    })
+
+    return new Response(pdfBuffer as any, {
       status: 200,
       headers: {
-        'Content-Type': 'text/html; charset=utf-8',
-        'Content-Disposition': 'inline; filename="Volunteer_Summary_Report_2026.html"',
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': 'inline; filename="Volunteer_Summary_Report_2026.pdf"',
       },
     })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
+

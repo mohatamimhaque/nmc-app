@@ -1,11 +1,281 @@
 import { NextResponse } from 'next/server'
 import { requireRegistrationAccess } from '@/lib/admin-auth'
+import PDFDocument from 'pdfkit'
 
 export const runtime = 'nodejs'
 
+function sanitizePdfText(text: string | null | undefined): string {
+  if (!text) return ''
+  // Strip non-ASCII characters to prevent PDFKit rendering crashes
+  return text.replace(/[^\x20-\x7E\n\t]/g, '')
+}
+
+function truncateText(text: string, maxLength: number): string {
+  if (text.length > maxLength) {
+    return text.substring(0, maxLength - 3) + '...'
+  }
+  return text
+}
+
+function drawStatsBox(
+  doc: any,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  label: string,
+  value: string,
+  subtext: string,
+  color: string
+) {
+  // Draw card background
+  doc.fillColor('#f8fafc')
+     .roundedRect(x, y, width, height, 6)
+     .fill()
+  
+  // Draw card border
+  doc.strokeColor('#cbd5e1')
+     .lineWidth(1)
+     .roundedRect(x, y, width, height, 6)
+     .stroke()
+  
+  // Draw label
+  doc.fillColor('#64748b')
+     .font('Helvetica-Bold')
+     .fontSize(7.5)
+     .text(label.toUpperCase(), x + 10, y + 8)
+  
+  // Draw value
+  doc.fillColor(color)
+     .font('Helvetica-Bold')
+     .fontSize(16)
+     .text(value, x + 10, y + 18)
+  
+  // Draw subtext
+  doc.fillColor('#475569')
+     .font('Helvetica')
+     .fontSize(7.5)
+     .text(subtext, x + 10, y + 36)
+}
+
+function drawBreakdownTable(
+  doc: any,
+  x: number,
+  y: number,
+  width: number,
+  title: string,
+  headers: string[],
+  rows: [string, string | number][]
+) {
+  // Draw title
+  doc.fillColor('#334155')
+     .font('Helvetica-Bold')
+     .fontSize(9)
+     .text(title.toUpperCase(), x, y)
+  
+  const tableY = y + 15
+  const rowHeight = 16
+  
+  // Draw table header background
+  doc.fillColor('#f1f5f9')
+     .rect(x, tableY, width, rowHeight)
+     .fill()
+  
+  // Draw header text
+  doc.fillColor('#475569')
+     .font('Helvetica-Bold')
+     .fontSize(8)
+  doc.text(headers[0], x + 6, tableY + 4, { width: width - 80 })
+  doc.text(headers[1], x + width - 70, tableY + 4, { width: 64, align: 'right' })
+  
+  // Draw header bottom border
+  doc.strokeColor('#cbd5e1')
+     .lineWidth(0.5)
+     .moveTo(x, tableY + rowHeight)
+     .lineTo(x + width, tableY + rowHeight)
+     .stroke()
+  
+  let currentY = tableY + rowHeight
+  rows.forEach(([name, count], index) => {
+    // Zebra striping
+    if (index % 2 === 0) {
+      doc.fillColor('#f8fafc')
+         .rect(x, currentY, width, rowHeight)
+         .fill()
+    }
+    
+    doc.fillColor('#1e293b')
+       .font('Helvetica')
+       .fontSize(8)
+    doc.text(truncateText(sanitizePdfText(name), 30), x + 6, currentY + 4, { width: width - 80 })
+    doc.font('Helvetica-Bold')
+       .text(String(count), x + width - 70, currentY + 4, { width: 64, align: 'right' })
+    
+    doc.strokeColor('#cbd5e1')
+       .lineWidth(0.5)
+       .moveTo(x, currentY + rowHeight)
+       .lineTo(x + width, currentY + rowHeight)
+       .stroke()
+    
+    currentY += rowHeight
+  })
+}
+
+function drawParticipantHeaders(doc: any, y: number) {
+  const rowHeight = 20
+  
+  // Header background
+  doc.fillColor('#f1f5f9')
+     .rect(30, y, 841.89 - 60, rowHeight)
+     .fill()
+  
+  let x = 30
+  doc.fillColor('#334155')
+     .font('Helvetica-Bold')
+     .fontSize(8.5)
+  
+  doc.text('#', x, y + 6, { width: 20, align: 'center' })
+  x += 20
+  
+  doc.text('Serial', x + 5, y + 6, { width: 75, align: 'left' })
+  x += 85
+  
+  doc.text('Participant Name & Institution', x + 5, y + 6, { width: 150, align: 'left' })
+  x += 160
+  
+  doc.text('Contact Details', x + 5, y + 6, { width: 140, align: 'left' })
+  x += 150
+  
+  doc.text('Category', x + 5, y + 6, { width: 140, align: 'left' })
+  x += 150
+  
+  doc.text('Allocated Room', x + 5, y + 6, { width: 70, align: 'left' })
+  x += 80
+  
+  doc.text('Kit', x, y + 6, { width: 30, align: 'center' })
+  x += 30
+  
+  doc.text('Attendance', x, y + 6, { width: 50, align: 'center' })
+  x += 50
+  
+  doc.text('Lunch', x, y + 6, { width: 55, align: 'center' })
+  
+  // Bottom border line
+  doc.strokeColor('#cbd5e1')
+     .lineWidth(1)
+     .moveTo(30, y + rowHeight)
+     .lineTo(841.89 - 30, y + rowHeight)
+     .stroke()
+}
+
+function drawParticipantRow(
+  doc: any,
+  y: number,
+  r: any,
+  index: number
+) {
+  const rowHeight = 30
+  
+  // Zebra striping
+  if (index % 2 === 0) {
+    doc.fillColor('#f8fafc')
+       .rect(30, y, 841.89 - 60, rowHeight)
+       .fill()
+  }
+  
+  let x = 30
+  
+  // 1. Index
+  doc.fillColor('#64748b')
+     .font('Courier')
+     .fontSize(8)
+     .text(String(index), x, y + 10, { width: 20, align: 'center' })
+  x += 20
+  
+  // 2. Serial
+  doc.fillColor('#0f172a')
+     .font('Helvetica-Bold')
+     .fontSize(8.5)
+     .text(sanitizePdfText(r.serial), x + 5, y + 10, { width: 75, align: 'left' })
+  x += 85
+  
+  // 3. Name & Institution
+  doc.fillColor('#0f172a')
+     .font('Helvetica-Bold')
+     .fontSize(8.5)
+     .text(truncateText(sanitizePdfText(r.full_name), 32), x + 5, y + 4, { width: 150, align: 'left' })
+  doc.fillColor('#64748b')
+     .font('Helvetica')
+     .fontSize(7.5)
+     .text(truncateText(sanitizePdfText(r.institution), 36), x + 5, y + 16, { width: 150, align: 'left' })
+  x += 160
+  
+  // 4. Contact
+  doc.fillColor('#0f172a')
+     .font('Helvetica')
+     .fontSize(8)
+     .text(truncateText(sanitizePdfText(r.email_address), 32), x + 5, y + 4, { width: 140, align: 'left' })
+  doc.fillColor('#64748b')
+     .font('Helvetica')
+     .fontSize(7.5)
+     .text(sanitizePdfText(r.phone_number), x + 5, y + 16, { width: 140, align: 'left' })
+  x += 150
+  
+  // 5. Category
+  doc.fillColor('#0f172a')
+     .font('Helvetica')
+     .fontSize(8)
+     .text(truncateText(sanitizePdfText(r.level), 30), x + 5, y + 4, { width: 140, align: 'left' })
+  doc.fillColor('#64748b')
+     .font('Helvetica')
+     .fontSize(7.5)
+     .text(truncateText(sanitizePdfText(r.event), 30), x + 5, y + 16, { width: 140, align: 'left' })
+  x += 150
+  
+  // 6. Room
+  doc.fillColor('#4338ca')
+     .font('Helvetica-Bold')
+     .fontSize(8)
+     .text(truncateText(sanitizePdfText(r.allocated_room || 'Not Allocated'), 18), x + 5, y + 10, { width: 70, align: 'left' })
+  x += 80
+  
+  // 7. Kit
+  const kitText = r.is_kit_coollect ? 'YES' : 'NO'
+  const kitColor = r.is_kit_coollect ? '#1a73e8' : '#5f6368'
+  doc.fillColor(kitColor)
+     .font('Helvetica-Bold')
+     .fontSize(8)
+     .text(kitText, x, y + 10, { width: 30, align: 'center' })
+  x += 30
+  
+  // 8. Present
+  const presText = r.is_present ? 'PRESENT' : 'ABSENT'
+  const presColor = r.is_present ? '#137333' : '#c5221f'
+  doc.fillColor(presColor)
+     .font('Helvetica-Bold')
+     .fontSize(7.5)
+     .text(presText, x, y + 10, { width: 50, align: 'center' })
+  x += 50
+  
+  // 9. Lunch
+  const lunchText = r.is_collect_launch ? 'SERVED' : 'PENDING'
+  const lunchColor = r.is_collect_launch ? '#b06000' : '#5f6368'
+  doc.fillColor(lunchColor)
+     .font('Helvetica-Bold')
+     .fontSize(7.5)
+     .text(lunchText, x, y + 10, { width: 55, align: 'center' })
+  
+  // Bottom border line
+  doc.strokeColor('#cbd5e1')
+     .lineWidth(0.5)
+     .moveTo(30, y + rowHeight)
+     .lineTo(841.89 - 30, y + rowHeight)
+     .stroke()
+}
+
 /**
  * GET /api/admin/registrations/summary-pdf
- * Renders & downloads full Participant Management Summary PDF/HTML report.
+ * Renders & downloads full Participant Management Summary PDF report.
  * Authorized for super_admin, admin, moderators, registration_editors, and volunteers.
  * Supports Authorization: Bearer <token> (mobile apps) & Cookie auth (web).
  */
@@ -45,256 +315,86 @@ export async function GET(request: Request) {
       byEvent[ev] = (byEvent[ev] || 0) + 1
     }
 
-    const levelRowsHtml = Object.entries(byLevel)
-      .map(([lvl, count]) => `<tr><td style="padding:4px 8px;">${lvl}</td><td style="padding:4px 8px;text-align:right;font-weight:bold;">${count}</td></tr>`)
-      .join('')
+    const pdfBuffer = await new Promise<Buffer>((resolve, reject) => {
+      const doc = new PDFDocument({ margin: 30, size: 'A4', layout: 'landscape' })
+      const chunks: Buffer[] = []
+      doc.on('data', (chunk) => chunks.push(chunk))
+      doc.on('end', () => resolve(Buffer.concat(chunks)))
+      doc.on('error', (err) => reject(err))
 
-    const eventRowsHtml = Object.entries(byEvent)
-      .map(([ev, count]) => `<tr><td style="padding:4px 8px;">${ev}</td><td style="padding:4px 8px;text-align:right;font-weight:bold;">${count}</td></tr>`)
-      .join('')
+      // Header bar
+      doc.fillColor('#6366f1')
+         .rect(30, 30, 841.89 - 60, 4)
+         .fill()
 
-    const rowsHtml = list.map((r, index) => `
-      <tr>
-        <td style="font-family: monospace; text-align: center;">${index + 1}</td>
-        <td style="font-family: monospace; font-weight: bold;">${r.serial || ''}</td>
-        <td>
-          <div style="font-weight: bold; color: #1e293b;">${r.full_name || ''}</div>
-          <div style="font-size: 10px; color: #64748b;">${r.institution || ''}</div>
-        </td>
-        <td>${r.email_address || ''}</td>
-        <td>${r.phone_number || ''}</td>
-        <td>${r.level || ''} (${r.class_year_student_of || ''})</td>
-        <td>${r.event || ''}</td>
-        <td style="font-weight: bold; color: #4338ca;">${r.allocated_room || 'Not Allocated'}</td>
-        <td style="text-align: center;">
-          <span style="padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; background: ${r.is_kit_coollect ? '#e8f0fe' : '#f1f3f4'}; color: ${r.is_kit_coollect ? '#1a73e8' : '#5f6368'};">
-            ${r.is_kit_coollect ? 'YES' : 'NO'}
-          </span>
-        </td>
-        <td style="text-align: center;">
-          <span style="padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; background: ${r.is_present ? '#e6f4ea' : '#fce8e6'}; color: ${r.is_present ? '#137333' : '#c5221f'};">
-            ${r.is_present ? 'PRESENT' : 'ABSENT'}
-          </span>
-        </td>
-        <td style="text-align: center;">
-          <span style="padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; background: ${r.is_collect_launch ? '#fef7e0' : '#f1f3f4'}; color: ${r.is_collect_launch ? '#b06000' : '#5f6368'};">
-            ${r.is_collect_launch ? 'SERVED' : 'PENDING'}
-          </span>
-        </td>
-      </tr>
-    `).join('')
+      doc.fillColor('#0f172a')
+         .font('Helvetica-Bold')
+         .fontSize(18)
+         .text('National Mathematics Carnival 2026', 30, 40)
 
-    const html = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>NMC 2026 - Participant Management Summary Report</title>
-          <meta charset="utf-8" />
-          <meta name="viewport" content="width=device-width, initial-scale=1" />
-          <style>
-            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Kalpurush&family=Noto+Sans+Bengali:wght@400;700&display=swap');
-            body {
-              font-family: 'Inter', 'Noto Sans Bengali', 'Kalpurush', sans-serif;
-              padding: 20px;
-              color: #1e293b;
-              background: #ffffff;
-              margin: 0;
-            }
-            .header-bar {
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-              border-bottom: 2px solid #6366f1;
-              padding-bottom: 12px;
-              margin-bottom: 16px;
-            }
-            .header-title {
-              font-size: 20px;
-              font-weight: 800;
-              color: #0f172a;
-            }
-            .header-sub {
-              font-size: 11px;
-              color: #64748b;
-              margin-top: 2px;
-            }
-            .stats-grid {
-              display: grid;
-              grid-template-columns: repeat(4, 1fr);
-              gap: 10px;
-              margin-bottom: 20px;
-            }
-            .stat-box {
-              background: #f8fafc;
-              border: 1px solid #e2e8f0;
-              border-radius: 8px;
-              padding: 10px;
-            }
-            .stat-label {
-              font-size: 10px;
-              font-weight: 700;
-              color: #64748b;
-              text-transform: uppercase;
-            }
-            .stat-val {
-              font-size: 18px;
-              font-weight: 800;
-              color: #0f172a;
-              margin-top: 4px;
-            }
-            .stat-sub {
-              font-size: 10px;
-              color: #475569;
-              margin-top: 2px;
-            }
-            .breakdown-section {
-              display: grid;
-              grid-template-columns: 1fr 1fr;
-              gap: 16px;
-              margin-bottom: 20px;
-            }
-            .breakdown-card {
-              background: #f8fafc;
-              border: 1px solid #e2e8f0;
-              border-radius: 8px;
-              padding: 10px;
-            }
-            .breakdown-title {
-              font-size: 11px;
-              font-weight: 700;
-              color: #334155;
-              margin-bottom: 6px;
-              text-transform: uppercase;
-            }
-            table {
-              width: 100%;
-              border-collapse: collapse;
-              font-size: 11px;
-            }
-            th, td {
-              border: 1px solid #cbd5e1;
-              padding: 6px 8px;
-            }
-            th {
-              background: #f1f5f9;
-              font-weight: 700;
-              color: #334155;
-              text-align: left;
-            }
-            tr:nth-child(even) {
-              background: #f8fafc;
-            }
-            @media print {
-              body { padding: 0; }
-              @page { size: landscape; margin: 12mm; }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="header-bar">
-            <div>
-              <div class="header-title">National Mathematics Carnival 2026</div>
-              <div class="header-sub">Participant Management Summary Report · Generated on ${new Date().toLocaleString()}</div>
-            </div>
-            <div style="text-align: right;">
-              <span style="background: #6366f1; color: white; padding: 4px 10px; border-radius: 6px; font-weight: 700; font-size: 12px;">
-                TOTAL PARTICIPANTS: ${totalCount}
-              </span>
-            </div>
-          </div>
+      doc.fillColor('#64748b')
+         .font('Helvetica')
+         .fontSize(9)
+         .text(`Participant Management Summary Report · Generated on ${new Date().toLocaleString()}`, 30, 60)
 
-          <div class="stats-grid">
-            <div class="stat-box">
-              <div class="stat-label">Total Registrations</div>
-              <div class="stat-val">${totalCount}</div>
-              <div class="stat-sub">Processed Registrations</div>
-            </div>
-            <div class="stat-box">
-              <div class="stat-label">Attendance Rate</div>
-              <div class="stat-val" style="color: #10b981;">${presentPercent}%</div>
-              <div class="stat-sub">Present: ${presentCount} | Absent: ${absentCount}</div>
-            </div>
-            <div class="stat-box">
-              <div class="stat-label">Kit Collection</div>
-              <div class="stat-val" style="color: #3b82f6;">${kitPercent}%</div>
-              <div class="stat-sub">Collected: ${kitCount} | Pending: ${totalCount - kitCount}</div>
-            </div>
-            <div class="stat-box">
-              <div class="stat-label">Lunch Service</div>
-              <div class="stat-val" style="color: #f59e0b;">${launchPercent}%</div>
-              <div class="stat-sub">Served: ${launchCount} | Pending: ${totalCount - launchCount}</div>
-            </div>
-          </div>
+      doc.fillColor('#6366f1')
+         .font('Helvetica-Bold')
+         .fontSize(10)
+         .text(`TOTAL PARTICIPANTS: ${totalCount}`, 30, 72)
 
-          <div class="breakdown-section">
-            <div class="breakdown-card">
-              <div class="breakdown-title">Breakdown by Level</div>
-              <table>
-                <thead>
-                  <tr><th>Level</th><th style="text-align:right;">Participants</th></tr>
-                </thead>
-                <tbody>
-                  ${levelRowsHtml}
-                </tbody>
-              </table>
-            </div>
+      // Stats boxes at y = 90
+      const boxWidth = 184
+      const spacing = 15
+      const statsY = 90
+      const statsHeight = 50
 
-            <div class="breakdown-card">
-              <div class="breakdown-title">Breakdown by Event</div>
-              <table>
-                <thead>
-                  <tr><th>Event</th><th style="text-align:right;">Participants</th></tr>
-                </thead>
-                <tbody>
-                  ${eventRowsHtml}
-                </tbody>
-              </table>
-            </div>
-          </div>
+      drawStatsBox(doc, 30, statsY, boxWidth, statsHeight, 'Total Registrations', String(totalCount), 'Processed Registrations', '#0f172a')
+      drawStatsBox(doc, 30 + boxWidth + spacing, statsY, boxWidth, statsHeight, 'Attendance Rate', `${presentPercent}%`, `Present: ${presentCount} | Absent: ${absentCount}`, '#10b981')
+      drawStatsBox(doc, 30 + (boxWidth + spacing) * 2, statsY, boxWidth, statsHeight, 'Kit Collection', `${kitPercent}%`, `Collected: ${kitCount} | Pending: ${totalCount - kitCount}`, '#3b82f6')
+      drawStatsBox(doc, 30 + (boxWidth + spacing) * 3, statsY, boxWidth, statsHeight, 'Lunch Service', `${launchPercent}%`, `Served: ${launchCount} | Pending: ${totalCount - launchCount}`, '#f59e0b')
 
-          <div style="margin-bottom: 8px; font-size: 12px; font-weight: 700; color: #334155; text-transform: uppercase;">
-            Complete Participant Roster (${totalCount} Records)
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th style="width: 30px; text-align: center;">#</th>
-                <th>Serial</th>
-                <th>Participant Name & Institution</th>
-                <th>Email</th>
-                <th>Mobile</th>
-                <th>Level</th>
-                <th>Event</th>
-                <th>Allocated Room</th>
-                <th style="text-align: center;">Kit</th>
-                <th style="text-align: center;">Present</th>
-                <th style="text-align: center;">Lunch</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${rowsHtml}
-            </tbody>
-          </table>
+      // Breakdown side-by-side tables at y = 155
+      const tableWidth = 375
+      const breakdownY = 155
+      const levelRows = Object.entries(byLevel)
+      const eventRows = Object.entries(byEvent)
 
-          <script>
-            window.onload = function() {
-              setTimeout(function() {
-                window.print();
-              }, 500);
-            };
-          </script>
-        </body>
-      </html>
-    `
+      drawBreakdownTable(doc, 30, breakdownY, tableWidth, 'Breakdown by Level', ['Level', 'Participants'], levelRows)
+      drawBreakdownTable(doc, 436.89, breakdownY, tableWidth, 'Breakdown by Event', ['Event', 'Participants'], eventRows)
 
-    return new Response(html, {
+      // Roster section title
+      doc.fillColor('#334155')
+         .font('Helvetica-Bold')
+         .fontSize(10)
+         .text(`COMPLETE PARTICIPANT ROSTER (${totalCount} RECORDS)`, 30, 265)
+
+      let currentY = 280
+      drawParticipantHeaders(doc, currentY)
+      currentY += 20
+
+      list.forEach((r, idx) => {
+        if (currentY + 30 > 535) {
+          doc.addPage()
+          currentY = 30
+          drawParticipantHeaders(doc, currentY)
+          currentY += 20
+        }
+        drawParticipantRow(doc, currentY, r, idx + 1)
+        currentY += 30
+      })
+
+      doc.end()
+    })
+
+    return new Response(pdfBuffer as any, {
       status: 200,
       headers: {
-        'Content-Type': 'text/html; charset=utf-8',
-        'Content-Disposition': 'inline; filename="Participant_Summary_Report_2026.html"',
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': 'inline; filename="Participant_Summary_Report_2026.pdf"',
       },
     })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
+
