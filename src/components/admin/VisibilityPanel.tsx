@@ -11,7 +11,7 @@ const PAGE_LABELS: Record<string, string> = {
   schedule: 'Schedule', notices: 'Notices', committee: 'Committee',
   advisers: 'Advisers', sponsors: 'Sponsors', contact: 'Contact',
   campus_ambassadors: 'Campus Ambassadors', club_partners: 'Club Partners',
-  certificate: 'Certificate Download',
+  certificate: 'Certificate Download', room_finder: 'Participant Room Finder',
 }
 
 export function VisibilityPanel({ pages, sections }: { pages: PageRow[], sections: SectionRow[] }) {

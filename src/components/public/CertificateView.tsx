@@ -116,7 +116,7 @@ export function CertificateView() {
                 type="text"
                 value={serialQuery}
                 onChange={e => setSerialQuery(e.target.value)}
-                placeholder="e.g. NMC26-S-MO-086 or NMC26-U-MO-219"
+                placeholder="NMC26-X-XX-XXX"
                 maxLength={40}
                 className="interactive-element"
                 style={{
