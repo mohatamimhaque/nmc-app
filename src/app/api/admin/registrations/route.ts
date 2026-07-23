@@ -223,3 +223,85 @@ export async function DELETE(request: Request) {
   }
 }
 
+/**
+ * POST /api/admin/registrations
+ * Add a new registration record individually. Securely protected (requires write access).
+ */
+export async function POST(request: Request) {
+  const guard = await requireRegistrationWriteAccess()
+  if ('response' in guard) return guard.response
+
+  try {
+    const data = await request.json()
+
+    if (!data.serial || String(data.serial).trim() === '') {
+      return NextResponse.json({ error: 'Serial / Registration ID is required.' }, { status: 400 })
+    }
+
+    const supabase = guard.supabase
+    const serial = String(data.serial).trim()
+
+    // 1. Check if serial already exists
+    const { data: existing, error: checkError } = await supabase
+      .from('processed_registrations')
+      .select('serial')
+      .eq('serial', serial)
+      .maybeSingle()
+
+    if (checkError) {
+      return NextResponse.json({ error: checkError.message }, { status: 500 })
+    }
+
+    if (existing) {
+      return NextResponse.json({ error: `Registration with serial "${serial}" already exists.` }, { status: 400 })
+    }
+
+    // 2. Fetch admin name/email to track who created the record
+    const { data: adminRecord } = await supabase
+      .from('admin_users')
+      .select('display_name, email')
+      .eq('id', guard.user.id)
+      .single()
+    const adminName = adminRecord?.display_name || guard.user.email || 'Admin'
+
+    // 3. Prepare insertion payload
+    const insertPayload = {
+      serial: serial,
+      full_name: data.full_name ? String(data.full_name).trim() : null,
+      email_address: data.email_address ? String(data.email_address).trim() : null,
+      phone_number: data.phone_number ? String(data.phone_number).trim() : null,
+      gender: data.gender ? String(data.gender).trim() : null,
+      t_shirt_size: data.t_shirt_size ? String(data.t_shirt_size).trim() : null,
+      level: data.level ? String(data.level).trim() : null,
+      institution: data.institution ? String(data.institution).trim() : null,
+      class_year_student_of: data.class_year_student_of ? String(data.class_year_student_of).trim() : null,
+      event: data.event ? String(data.event).trim() : null,
+      payment_method: data.payment_method ? String(data.payment_method).trim() : null,
+      payment_number: data.payment_number ? String(data.payment_number).trim() : null,
+      transaction_id: data.transaction_id ? String(data.transaction_id).trim() : null,
+      is_kit_coollect: !!data.is_kit_coollect,
+      is_present: !!data.is_present,
+      is_collect_launch: !!data.is_collect_launch,
+      allocated_room: data.allocated_room ? String(data.allocated_room).trim() : null,
+      admit_card_url: data.admit_card_url ? String(data.admit_card_url).trim() : null,
+      updated_by: adminName,
+      updated_at: new Date().toISOString()
+    }
+
+    const { data: inserted, error: insertError } = await supabase
+      .from('processed_registrations')
+      .insert(insertPayload)
+      .select()
+      .single()
+
+    if (insertError) {
+      return NextResponse.json({ error: insertError.message }, { status: 500 })
+    }
+
+    return NextResponse.json({ success: true, registration: inserted })
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 })
+  }
+}
+
+

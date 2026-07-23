@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { requireRegistrationAccess } from '@/lib/admin-auth'
+import { getOrCreateAdmitCardUrl } from '@/lib/admitCardGenerator'
 
 export const runtime = 'nodejs'
 
@@ -35,6 +36,14 @@ export async function GET(request: Request) {
 
     if (!data) {
       return NextResponse.json({ error: `Registration with serial "${serial}" not found.` }, { status: 404 })
+    }
+
+    if (!data.admit_card_url || data.admit_card_url.trim() === '') {
+      try {
+        data.admit_card_url = await getOrCreateAdmitCardUrl(data)
+      } catch (e) {
+        console.error(`Dynamic generation failed for single registration lookup ${data.serial}:`, e)
+      }
     }
 
     return NextResponse.json({

@@ -53,6 +53,7 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
   const [showExcelModal, setShowExcelModal] = useState(false)
   const [excelPreview, setExcelPreview] = useState<{ serial: string; allocated_room: string }[]>([])
   const [showAdmitExcelModal, setShowAdmitExcelModal] = useState(false)
+  const [showAddModal, setShowAddModal] = useState(false)
   const [admitExcelPreview, setAdmitExcelPreview] = useState<{ serial: string; admit_card_url: string }[]>([])
   const [adminPreviewUrl, setAdminPreviewUrl] = useState<string | null>(null)
   const [adminPreviewName, setAdminPreviewName] = useState('')
@@ -60,6 +61,27 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
   const [isUpdating, startUpdateTransition] = useTransition()
   const tableRef = useRef<HTMLTableElement | null>(null)
   const dataTableInstance = useRef<any>(null)
+
+  // Generate admit card state
+  const [generatingSerials, setGeneratingSerials] = useState<Record<string, boolean>>({})
+
+  const handleGenerateAdmitCard = async (serial: string) => {
+    setGeneratingSerials(prev => ({ ...prev, [serial]: true }))
+    try {
+      const res = await fetch(`/api/registrations/admit-card/download?serial=${encodeURIComponent(serial)}&json=true`)
+      const data = await res.json()
+      if (res.ok && data.url) {
+        setRegistrations(prev => prev.map(r => r.serial === serial ? { ...r, admit_card_url: data.url } : r))
+        showToast('Admit card generated successfully!')
+      } else {
+        showToast(data.error || 'Failed to generate admit card.', 'error')
+      }
+    } catch (err) {
+      showToast('Error generating admit card.', 'error')
+    } finally {
+      setGeneratingSerials(prev => ({ ...prev, [serial]: false }))
+    }
+  }
 
   // Show Toast helper
   const showToast = (message: string, tone: ToastTone = 'success') => {
@@ -410,6 +432,7 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
     const is_collect_launch = formData.get('is_collect_launch') === 'true'
     const allocated_room = formData.get('allocated_room') as string
     const admit_card_url = formData.get('admit_card_url') as string
+    const level = formData.get('level') as string
     
     const full_name = formData.get('full_name') as string
     const email_address = formData.get('email_address') as string
@@ -436,6 +459,7 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
               is_collect_launch,
               allocated_room: allocated_room.trim() || null,
               admit_card_url: admit_card_url.trim() || null,
+              level: level.trim() || null,
               full_name: full_name.trim() || null,
               email_address: email_address.trim() || null,
               phone_number: phone_number.trim() || null,
@@ -464,6 +488,7 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
                   is_collect_launch,
                   allocated_room: allocated_room.trim() || null,
                   admit_card_url: admit_card_url.trim() || null,
+                  level: level.trim() || null,
                   full_name: full_name.trim() || null,
                   email_address: email_address.trim() || null,
                   phone_number: phone_number.trim() || null,
@@ -483,6 +508,75 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
 
         showToast('Registration details updated successfully!')
         setEditingReg(null)
+      } catch (err: any) {
+        showToast(err.message, 'error')
+      }
+    })
+  }
+
+  // Save new participant from modal
+  const handleSaveNewParticipant = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+
+    const formData = new FormData(e.currentTarget)
+    const serial = formData.get('serial') as string
+    const is_kit_coollect = formData.get('is_kit_coollect') === 'true'
+    const is_present = formData.get('is_present') === 'true'
+    const is_collect_launch = formData.get('is_collect_launch') === 'true'
+    const allocated_room = formData.get('allocated_room') as string
+    const admit_card_url = formData.get('admit_card_url') as string
+    const level = formData.get('level') as string
+    
+    const full_name = formData.get('full_name') as string
+    const email_address = formData.get('email_address') as string
+    const phone_number = formData.get('phone_number') as string
+    const gender = formData.get('gender') as string
+    const t_shirt_size = formData.get('t_shirt_size') as string
+    const institution = formData.get('institution') as string
+    const class_year_student_of = formData.get('class_year_student_of') as string
+    const event = formData.get('event') as string
+    const payment_method = formData.get('payment_method') as string
+    const payment_number = formData.get('payment_number') as string
+    const transaction_id = formData.get('transaction_id') as string
+
+    if (!serial || serial.trim() === '') {
+      showToast('Serial is required.', 'error')
+      return
+    }
+
+    startUpdateTransition(async () => {
+      try {
+        const res = await fetch('/api/admin/registrations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            serial: serial.trim(),
+            is_kit_coollect,
+            is_present,
+            is_collect_launch,
+            allocated_room: allocated_room.trim() || null,
+            admit_card_url: admit_card_url.trim() || null,
+            level: level.trim() || null,
+            full_name: full_name.trim() || null,
+            email_address: email_address.trim() || null,
+            phone_number: phone_number.trim() || null,
+            gender: gender.trim() || null,
+            t_shirt_size: t_shirt_size.trim() || null,
+            institution: institution.trim() || null,
+            class_year_student_of: class_year_student_of.trim() || null,
+            event: event.trim() || null,
+            payment_method: payment_method.trim() || null,
+            payment_number: payment_number.trim() || null,
+            transaction_id: transaction_id.trim() || null
+          })
+        })
+
+        const result = await res.json()
+        if (!res.ok) throw new Error(result.error || 'Failed to add participant.')
+
+        setRegistrations(prev => [result.registration, ...prev])
+        showToast('Participant added successfully!')
+        setShowAddModal(false)
       } catch (err: any) {
         showToast(err.message, 'error')
       }
@@ -941,6 +1035,37 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
             </select>
           </div>
 
+          {/* Add Participant button */}
+          <button
+            type="button"
+            onClick={() => setShowAddModal(true)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '0.75rem',
+              letterSpacing: '0.05em',
+              textTransform: 'uppercase',
+              padding: '0.6rem 1.2rem',
+              borderRadius: 8,
+              border: '1px solid var(--admin-accent)',
+              background: 'var(--admin-accent)',
+              color: '#fff',
+              cursor: 'pointer',
+              transition: 'background 0.15s, opacity 0.15s',
+              fontWeight: 600
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.opacity = '0.9'
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.opacity = '1'
+            }}
+          >
+            ➕ Add Participant
+          </button>
+
           {/* Excel Export button */}
           <button
             type="button"
@@ -1274,8 +1399,9 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
           }
         ` }} />
 
-        {libLoaded ? (
-          <table ref={tableRef} className="display">
+        <div key={displayedRegistrations.length + '-' + selectedEventFilter}>
+          {libLoaded ? (
+            <table ref={tableRef} className="display">
             <thead>
               <tr>
                 <th style={{ width: '30px', textAlign: 'center' }}>
@@ -1458,7 +1584,37 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
                         View
                       </button>
                     ) : (
-                      <span style={{ color: 'var(--admin-fg-muted)', fontStyle: 'italic', fontSize: '0.75rem' }}>None</span>
+                      <button
+                        type="button"
+                        disabled={generatingSerials[reg.serial]}
+                        onClick={() => handleGenerateAdmitCard(reg.serial)}
+                        style={{
+                          borderRadius: 6,
+                          border: '1px solid rgba(16, 185, 129, 0.3)',
+                          background: 'rgba(16, 185, 129, 0.15)',
+                          color: 'rgb(16, 185, 129)',
+                          padding: '0.35rem 0.75rem',
+                          fontFamily: 'var(--font-mono)',
+                          fontSize: '0.65rem',
+                          letterSpacing: '0.05em',
+                          textTransform: 'uppercase',
+                          cursor: generatingSerials[reg.serial] ? 'not-allowed' : 'pointer',
+                          transition: 'all 0.15s ease',
+                          opacity: generatingSerials[reg.serial] ? 0.7 : 1
+                        }}
+                        onMouseEnter={e => {
+                          if (!generatingSerials[reg.serial]) {
+                            e.currentTarget.style.background = 'rgba(16, 185, 129, 0.3)'
+                          }
+                        }}
+                        onMouseLeave={e => {
+                          if (!generatingSerials[reg.serial]) {
+                            e.currentTarget.style.background = 'rgba(16, 185, 129, 0.15)'
+                          }
+                        }}
+                      >
+                        {generatingSerials[reg.serial] ? 'Generating...' : 'Generate'}
+                      </button>
                     )}
                   </td>
 
@@ -1509,6 +1665,7 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
             `}} />
           </div>
         )}
+      </div>
 
       </GlassCard>
 
@@ -1694,6 +1851,26 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
                     placeholder="E.g. Room 402, Gallery"
                     style={inputStyle}
                   />
+                </div>
+              </div>
+
+              {/* Row 5.5: Category / Level */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', marginBottom: '1.25rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={fieldLabelStyle}>Category / Level</label>
+                  <select
+                    name="level"
+                    defaultValue={editingReg.level || ''}
+                    style={inputStyle}
+                  >
+                    <option value="">Select Category</option>
+                    <option value="School level">School level</option>
+                    <option value="Intermediate level">Intermediate level</option>
+                    <option value="University level">University level</option>
+                  </select>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {/* Empty spacer */}
                 </div>
               </div>
 
@@ -2099,6 +2276,245 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
               </a>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ── Add Participant Modal ── */}
+      {showAddModal && (
+        <div
+          style={modalOverlayStyle}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowAddModal(false)
+            }
+          }}
+        >
+          <form
+            onSubmit={handleSaveNewParticipant}
+            style={modalContainerStyle}
+          >
+            <div style={modalHeaderStyle}>
+              <h3 style={{ margin: 0, fontFamily: 'var(--font-heading)', fontSize: '1.25rem' }}>Add Participant</h3>
+              <button type="button" onClick={() => setShowAddModal(false)} style={closeBtnStyle}>✕</button>
+            </div>
+            <div style={modalBodyStyle}>
+              
+              {/* Row 1: Serial & Full Name */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', marginBottom: '1.25rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={fieldLabelStyle}>Serial / Registration ID <span style={{ color: 'red' }}>*</span></label>
+                  <input
+                    type="text"
+                    name="serial"
+                    required
+                    placeholder="E.g. NMC26-U-MO-999"
+                    style={inputStyle}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={fieldLabelStyle}>Full Name</label>
+                  <input
+                    type="text"
+                    name="full_name"
+                    placeholder="E.g. MD. SIFATULLAH"
+                    style={inputStyle}
+                  />
+                </div>
+              </div>
+
+              {/* Row 2: Email & Phone */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', marginBottom: '1.25rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={fieldLabelStyle}>Email Address</label>
+                  <input
+                    type="email"
+                    name="email_address"
+                    placeholder="E.g. saiful@example.com"
+                    style={inputStyle}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={fieldLabelStyle}>Phone / WhatsApp</label>
+                  <input
+                    type="text"
+                    name="phone_number"
+                    placeholder="E.g. 017xxxxxxxx"
+                    style={inputStyle}
+                  />
+                </div>
+              </div>
+
+              {/* Row 3: Institution & Class/Year */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', marginBottom: '1.25rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={fieldLabelStyle}>Institution</label>
+                  <input
+                    type="text"
+                    name="institution"
+                    placeholder="E.g. Dhaka University"
+                    style={inputStyle}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={fieldLabelStyle}>Class / Year / Student Of</label>
+                  <input
+                    type="text"
+                    name="class_year_student_of"
+                    placeholder="E.g. Class 8, HSC 1st Year"
+                    style={inputStyle}
+                  />
+                </div>
+              </div>
+
+              {/* Row 4: Gender & T-Shirt Size */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', marginBottom: '1.25rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={fieldLabelStyle}>Gender</label>
+                  <select
+                    name="gender"
+                    style={inputStyle}
+                  >
+                    <option value="">Select Gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={fieldLabelStyle}>T-Shirt Size</label>
+                  <input
+                    type="text"
+                    name="t_shirt_size"
+                    placeholder="E.g. S, M, L, XL"
+                    style={inputStyle}
+                  />
+                </div>
+              </div>
+
+              {/* Row 5: Event & Allocated Room */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', marginBottom: '1.25rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={fieldLabelStyle}>Event Enrolled</label>
+                  <select name="event" style={inputStyle}>
+                    <option value="">Select Event</option>
+                    <option value="Math Olympiad">Math Olympiad</option>
+                    <option value="Math Game">Math Game</option>
+                    <option value="Article Writing">Article Writing</option>
+                    <option value="Poster Presentation">Poster Presentation</option>
+                  </select>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={fieldLabelStyle}>Allocated Room</label>
+                  <input
+                    type="text"
+                    name="allocated_room"
+                    placeholder="E.g. Room 402, Gallery"
+                    style={inputStyle}
+                  />
+                </div>
+              </div>
+
+              {/* Row 6: Category/Level & Admit Card URL */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', marginBottom: '1.25rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={fieldLabelStyle}>Category / Level</label>
+                  <select name="level" style={inputStyle}>
+                    <option value="">Select Category</option>
+                    <option value="School level">School level</option>
+                    <option value="Intermediate level">Intermediate level</option>
+                    <option value="University level">University level</option>
+                  </select>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={fieldLabelStyle}>Admit Card URL (Optional)</label>
+                  <input
+                    type="text"
+                    name="admit_card_url"
+                    placeholder="E.g. https://... (generated automatically if blank)"
+                    style={inputStyle}
+                  />
+                </div>
+              </div>
+
+              {/* Row 7: Payment Details */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1.25rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={fieldLabelStyle}>Payment Method</label>
+                  <input
+                    type="text"
+                    name="payment_method"
+                    placeholder="E.g. bKash, Nagad"
+                    style={inputStyle}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={fieldLabelStyle}>Payment Number</label>
+                  <input
+                    type="text"
+                    name="payment_number"
+                    placeholder="017xxxxxxxx"
+                    style={inputStyle}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={fieldLabelStyle}>Transaction ID</label>
+                  <input
+                    type="text"
+                    name="transaction_id"
+                    placeholder="E.g. Txn12345"
+                    style={inputStyle}
+                  />
+                </div>
+              </div>
+
+              {/* Row 8: Status Flags */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginTop: '1.5rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={fieldLabelStyle}>Kit Collected</label>
+                  <select name="is_kit_coollect" style={inputStyle}>
+                    <option value="false">Pending</option>
+                    <option value="true">Collected</option>
+                  </select>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={fieldLabelStyle}>Attendance</label>
+                  <select name="is_present" style={inputStyle}>
+                    <option value="false">Absent</option>
+                    <option value="true">Present</option>
+                  </select>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={fieldLabelStyle}>Lunch Served</label>
+                  <select name="is_collect_launch" style={inputStyle}>
+                    <option value="false">Pending</option>
+                    <option value="true">Served</option>
+                  </select>
+                </div>
+              </div>
+
+            </div>
+            <div style={modalFooterStyle}>
+              <button
+                type="button"
+                onClick={() => setShowAddModal(false)}
+                style={cancelBtnStyle}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isUpdating}
+                style={{
+                  ...submitBtnStyle,
+                  background: 'var(--admin-accent)',
+                  opacity: isUpdating ? 0.7 : 1,
+                  cursor: isUpdating ? 'not-allowed' : 'pointer'
+                }}
+              >
+                {isUpdating ? 'Adding...' : 'Add Participant'}
+              </button>
+            </div>
+          </form>
         </div>
       )}
 

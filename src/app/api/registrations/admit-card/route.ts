@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
+import { getOrCreateAdmitCardUrl } from '@/lib/admitCardGenerator'
 
 export const runtime = 'nodejs'
 
@@ -61,7 +62,18 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({ success: true, registrations: data || [] })
+    const registrations = data || []
+    for (const reg of registrations) {
+      if (!reg.admit_card_url || reg.admit_card_url.trim() === '') {
+        try {
+          reg.admit_card_url = await getOrCreateAdmitCardUrl(reg)
+        } catch (e) {
+          console.error(`Dynamic generation failed for ${reg.serial}:`, e)
+        }
+      }
+    }
+
+    return NextResponse.json({ success: true, registrations })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
