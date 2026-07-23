@@ -74,7 +74,7 @@ function groupedNav(items: NavItem[]) {
 
 // ── Sidebar ───────────────────────────────────────────────────────────────────
 
-export function AdminSidebar() {
+export function AdminSidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname()
   const [role, setRole] = useState<AdminRole | null>(null)
   const [canManageVolunteers, setCanManageVolunteers] = useState(false)
@@ -244,6 +244,7 @@ export function AdminSidebar() {
                 <Link
                   key={item.href}
                   href={item.href}
+                  onClick={onClose}
                   style={{
                     display: 'flex',
                     alignItems: 'center',

@@ -1,5 +1,5 @@
 import { AdminThemeProvider } from '@/components/admin/AdminThemeProvider'
-import { AdminSidebar } from '@/components/admin/AdminSidebar'
+import { AdminLayoutShell } from '@/components/admin/AdminLayoutShell'
 import { MathBackground } from '@/components/admin/MathBackground'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
@@ -33,29 +33,9 @@ export default async function PanelGroupLayout({ children }: { children: React.R
   return (
     <AdminThemeProvider>
       <MathBackground />
-      <div
-        style={{
-          display: 'flex',
-          minHeight: '100vh',
-          position: 'relative',
-          zIndex: 1,
-          background: 'var(--admin-bg)',
-        }}
-      >
-        <AdminSidebar />
-        <main
-          style={{
-            flex: 1,
-            minWidth: 0,
-            overflowY: 'auto',
-            padding: '2rem',
-            color: 'var(--admin-fg)',
-            fontFamily: 'var(--font-body)',
-          }}
-        >
-          {children}
-        </main>
-      </div>
+      <AdminLayoutShell>
+        {children}
+      </AdminLayoutShell>
     </AdminThemeProvider>
   )
 }
