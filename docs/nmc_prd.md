@@ -1,10 +1,10 @@
 # National Mathematics Carnival 2026 — Official Event Website
-## Product Requirements Document (PRD) & Technical Architecture — v2.0
+## Product Requirements Document (PRD) & Technical Architecture — v3.0
 
 | Attribute | Detail |
 |---|---|
-| Document Version | 2.0 |
-| Status | Final Draft |
+| Document Version | 3.0 |
+| Status | Approved |
 | Prepared For | Math Club, DUET |
 | Deployment | Vercel + Supabase |
 | Storage | Cloudflare R2 |
@@ -52,6 +52,10 @@
 11. [Performance & SEO Requirements](#11-performance--seo-requirements)
 12. [Non-Functional Requirements](#12-non-functional-requirements)
 13. [Future Enhancements](#13-future-enhancements)
+14. [Admin Android Mobile Application](#14-admin-android-mobile-application)
+15. [FastAPI PowerPoint PDF Microservice](#15-fastapi-powerpoint-pdf-microservice)
+16. [Certificate Verification & Generation System](#16-certificate-verification--generation-system)
+17. [Participant Room Finder & Live Location Maps](#17-participant-room-finder--live-location-maps)
 
 ---
 
@@ -143,6 +147,10 @@ The website will serve as the primary digital presence for the event — providi
 | Email | Resend or Nodemailer + SMTP | Contact form + registration confirmation emails |
 | State Management | Zustand | Admin panel state, unsaved changes tracking |
 | Real-Time | Supabase Realtime | Live notice board updates, live visitor count in admin |
+| Mobile Stack | Kotlin + Jetpack Compose | Native Android dashboard and scanning viewport |
+| Mobile Storage | Room SQLite + SQLCipher | Offline check-in caching and 256-bit encryption |
+| Mobile Camera | CameraX + Google ML Kit | Scanning barcodes and participant QR codes |
+| PDF Automation | FastAPI + python-pptx | Local microservice driving PowerPoint COM engine |
 
 ### 3.2 Infrastructure Overview
 
@@ -1060,10 +1068,16 @@ Custom field definitions for internal registration forms.
 | id | `uuid PK` | |
 | event_id | `uuid FK` | → `events.id` |
 | label | `text NOT NULL` | |
-| field_type | `text` | `'text'` \| `'number'` \| `'select'` \| `'file'` \| `'email'` |
-| options | `text[]` | For `select` type: dropdown options |
+| field_type | `text` | `'short'` \| `'paragraph'` \| `'mcq'` \| `'checkbox'` \| `'dropdown'` \| `'date'` \| `'time'` \| `'number'` \| `'email'` \| `'phone'` \| `'file'` \| `'grid_radio'` \| `'grid_checkbox'` |
+| options | `text[]` | dropdown or checklist config options |
 | is_required | `boolean DEFAULT false` | |
 | sort_order | `integer` | |
+| section_id | `uuid FK` | → `internal_form_sections.id` |
+| helper_text | `text` | Input guides |
+| config | `jsonb` | Additional field configuration options |
+| validation | `jsonb` | Regex or pattern checks |
+| logic | `jsonb` | Visibility condition checks |
+| is_visible | `boolean DEFAULT true` | |
 
 ---
 
@@ -1077,6 +1091,9 @@ Submissions from internal registration forms.
 | form_data | `jsonb` | Key-value map of field label → submitted value |
 | status | `text` | `'pending'` \| `'confirmed'` \| `'rejected'` |
 | submitted_at | `timestamptz DEFAULT now()` | |
+| public_id | `text UNIQUE` | Public sharing ticket code |
+| registrant_email | `text` | Indexed email |
+| registrant_phone | `text` | Indexed phone |
 
 ---
 
@@ -1304,9 +1321,166 @@ Privacy-first raw analytics event store.
 | id | `uuid PK` | Matches `auth.users.id` |
 | email | `text UNIQUE` | |
 | display_name | `text` | |
-| role | `text` | `'super_admin'` \| `'admin'` |
+| role | `text` | `'super_admin'` \| `'admin'` \| `'moderator'` \| `'registration_editor'` \| `'volunteer'` |
 | last_login_at | `timestamptz` | |
 | created_at | `timestamptz` | |
+| can_manage_volunteers | `boolean` | Allows volunteer profiles access |
+| can_manage_registrations | `boolean` | Allows participant checks access |
+| can_manage_kit | `boolean` | Allows kit check-ins access |
+| can_manage_presents | `boolean` | Allows attendance updates access |
+| can_manage_lunch | `boolean` | Allows lunch distributions access |
+
+---
+
+### `processed_registrations`
+Checked-in participants list derived from registration inputs.
+
+| Column | Type | Description |
+|---|---|---|
+| serial | `text PK` | Unique serial NMC26-X-XX-XXX |
+| full_name | `text` | |
+| email_address | `text` | |
+| phone_number | `text` | |
+| gender | `text` | |
+| t_shirt_size | `text` | |
+| photos | `text` | Uploaded headshot photo |
+| level | `text` | school / college / university |
+| institution | `text` | |
+| class_year_student_of | `text` | |
+| event | `text` | Event title slug |
+| payment_method | `text` | |
+| payment_number | `text` | |
+| transaction_id | `text` | |
+| is_kit_coollect | `boolean DEFAULT false` | Kit check-in flag |
+| is_present | `boolean DEFAULT false` | Attendance check-in flag |
+| is_collect_launch | `boolean DEFAULT false` | Lunch check-in flag |
+| allocated_room | `text` | Classroom room assignment |
+| updated_by | `text` | Admin editor user identity |
+| updated_at | `timestamptz` | |
+| admit_card_url | `text` | Cloudflare R2 PDF card link |
+
+---
+
+### `volunteers`
+Organizing team volunteers list.
+
+| Column | Type | Description |
+|---|---|---|
+| unique_id | `text PK` | Volunteer scan serial |
+| name | `text NOT NULL` | |
+| email | `text UNIQUE` | |
+| number | `text` | |
+| image_url | `text` | |
+| segment | `text` | Sub-committee segment |
+| department | `text` | DUET department |
+| student_id | `text` | DUET student id |
+| year | `text` | |
+| t_shirt_size | `text` | |
+| is_present | `boolean DEFAULT false` | |
+| is_gift_collected | `boolean DEFAULT false` | |
+| is_lunch_collected | `boolean DEFAULT false` | |
+| created_at | `timestamptz` | |
+| updated_at | `timestamptz` | |
+| updated_by | `text` | |
+
+---
+
+### `location_config`
+Global Supabase endpoint coordinates configuration.
+
+| Column | Type | Description |
+|---|---|---|
+| id | `integer PK` | Check id = 1 (singleton) |
+| supabase_url | `text` | |
+| supabase_anon_key | `text` | |
+| live_map_enabled | `boolean` | |
+| updated_by | `uuid FK` | → `auth.users.id` |
+| updated_at | `timestamptz` | |
+
+---
+
+### `users_registry`
+Registry for volunteer location tracking users.
+
+| Column | Type | Description |
+|---|---|---|
+| id | `uuid PK` | |
+| name | `text` | |
+| role | `text` | |
+| initialized_at | `timestamptz` | |
+
+---
+
+### `user_locations`
+Live coordinate maps registry.
+
+| Column | Type | Description |
+|---|---|---|
+| user_id | `uuid PK_FK` | → `users_registry.id` on delete cascade |
+| latitude | `double precision` | |
+| longitude | `double precision` | |
+| is_online | `boolean DEFAULT true` | |
+| updated_at | `timestamptz` | |
+
+---
+
+### `secure_messages`
+Encrypted/secure multicast messenger logging.
+
+| Column | Type | Description |
+|---|---|---|
+| id | `uuid PK` | |
+| sender_id | `uuid FK` | → `users_registry.id` |
+| target_type | `text` | `'unicast'` \| `'multicast'` \| `'broadcast'` |
+| target_value | `text` | target identification |
+| message_text | `text` | |
+| created_at | `timestamptz` | |
+| is_read | `boolean DEFAULT false` | |
+
+---
+
+### `contact_page`
+Singleton contact details copy control.
+
+| Column | Type | Description |
+|---|---|---|
+| id | `uuid PK` | |
+| hero_title | `text` | |
+| hero_subtitle | `text` | |
+| form_title | `text` | |
+| form_subtitle | `text` | |
+| recipient_email | `text` | |
+| location_title | `text` | |
+| location_body | `text` | |
+| map_embed_url | `text` | |
+| social_title | `text` | |
+| updated_at | `timestamptz` | |
+
+---
+
+### `internal_form_sections`
+Form steps for custom builders.
+
+| Column | Type | Description |
+|---|---|---|
+| id | `uuid PK` | |
+| event_id | `uuid FK` | → `events.id` on delete cascade |
+| title | `text NOT NULL` | |
+| description | `text` | |
+| is_visible | `boolean DEFAULT true` | |
+| sort_order | `integer` | |
+
+---
+
+### `schedule_day_settings`
+Visibility configs for program day tabs.
+
+| Column | Type | Description |
+|---|---|---|
+| id | `uuid PK` | |
+| day_number | `integer UNIQUE` | |
+| is_visible | `boolean DEFAULT true` | |
+| sort_order | `integer` | |
 
 ---
 
@@ -1347,6 +1521,7 @@ Privacy-first raw analytics event store.
 | `/contact/` | Contact person photos |
 | `/team/` | About page team member photos |
 | `/docs/` | Downloadable files (PDF schedule etc.) |
+| `/admit-cards/` | Generated attendee PDF admit cards |
 
 ### 9.4 Deletion Policy
 
@@ -1453,6 +1628,89 @@ Privacy-first raw analytics event store.
 
 ---
 
-*End of Document — National Mathematics Carnival 2026 Website PRD v2.0*
+
+---
+
+## 14. Admin Android Mobile Application
+
+### 14.1 Objectives & Offline-First Sync
+The **NMC 2026 Admin Android Application** enables volunteers and editors to perform quick check-ins at event gates. It utilizes `WorkManager` background tasks and a local `Room` database encrypted with `SQLCipher` (AES-256) to cache records during network outages. When connection resumes, pending scans are synchronized automatically.
+
+### 14.2 Scanning Configurations
+Admins select the active operation mode in the app Settings:
+*   **Kit Collections**: Updates participant kit receipt flags (`PATCH /api/admin/registrations/kit`).
+*   **Presence Attendance**: Updates participant arrival checklists (`PATCH /api/admin/registrations/present`).
+*   **Lunch Collect**: Updates lunch token distributions (`PATCH /api/admin/registrations/launch`).
+*   **Info Mode (Read-only)**: Pulls details card layout without modification writes.
+
+---
+
+## 15. FastAPI PowerPoint PDF Microservice ("Autocrat")
+
+### 15.1 PowerPoint slide generation
+The microservice is a local Python **FastAPI** webserver. When invoked by Vercel callbacks, it triggers Windows **COM automation** using `win32com` to modify PowerPoint slides (`.pptx` templates):
+1. Replaces placeholders such as `{{ full_name }}` or `{{ serial }}`.
+2. Generates a custom QR code matching the participant's URL and overrides the placeholder boundaries.
+3. Exports slides to PDF format and uploads them to the Cloudflare R2 bucket.
+
+### 15.2 Thread Security
+To avoid access violations in multi-threaded COM environments, calls are wrapped inside explicit threading tokens:
+*   Initialize thread context: `pythoncom.CoInitialize()`
+*   Uninitialize thread context: `pythoncom.CoUninitialize()`
+
+---
+
+## 16. Certificate Verification & Generation System
+
+### 16.1 Verification Flow
+Participants query their eligibility via `/certificate` by entering their serial number (e.g. `NMC26-S-MO-086`). The request is routed to `/api/certificates/verify` which checks if a record exists in `processed_registrations`. If visible, the app reveals the verified attendee profile card.
+
+### 16.2 Dynamic In-Memory Generation
+To avoid heavy PowerPoint COM automation overhead on serverless Vercel runtimes, certificates are generated dynamically inside the Next.js process:
+1.  **Templates Directory**: PPTX templates (essentially ZIP containers) are loaded from `/Certificate Template/` based on participant level and event mappings (e.g., `School Level Math Game.pptx`).
+2.  **Asset Extraction**: The background JPEG is extracted on-the-fly (`ppt/media/image1.jpg`) using `JSZip`.
+3.  **SVG overlay composition**: An SVG overlay containing the participant's name (styled with handwriting script `Silentha OT.ttf` embedded as a base64 font-face) and unique serial number is composited over the image buffer using `sharp`.
+4.  **Raw PDF Assembly**: The resulting image is compressed to JPEG and wrapped into a standalone single-page A4 Landscape PDF buffer in-memory using direct PDF stream syntax, avoiding any external PDF library dependencies.
+5.  **Output Stream**: Served inline or as an attachment via `/api/certificates/download` depending on whether preview or download is active.
+
+---
+
+## 17. Participant Room Finder & Live Location Maps
+
+### 17.1 Room Finder Search Engine
+When page visibility controls allow public access to `room_finder`, users query their exam room assignment via the search interface. The API endpoint `GET /api/registrations/find-room?query=...` queries both `processed_registrations` (participant serials) and `volunteers` (volunteer IDs) to return profile and room information.
+
+### 17.2 Coordinate Location Mapping
+Room assignments map to campus coordinates in the Next.js route:
+*   **TWB (Textile Workshop)**: Coordinates `(24.01685993912403, 90.41899431404634)` pointing to the Textile Workshop Building.
+*   **School**: Coordinates `(24.019016943046, 90.4180040764991)` pointing to the DUET Engineering School.
+*   **Fallback**: Coordinates `(24.01741790711585, 90.41896685216089)` pointing to the New Academic Building.
+
+### 17.3 Realtime Map Coordinates
+The platform includes location tracking schema `user_locations` and multicast `secure_messages` mapped to Supabase realtime replication channels for visual trackings during carnival operations.
+
+---
+
+## 18. Execution & Deployment Setup
+
+For detailed guidelines on local database setups, microservice installation requirements, and Next.js commands, see the master [README.md](../README.md).
+
+*End of Document — National Mathematics Carnival 2026 Website PRD v3.0*
 
 *Prepared by Math Club, DUET*
+
+
+---
+
+## Developer Credit & Contact Details
+
+This platform was developed and is maintained by:
+*   **Name**: Mohatamim Haque
+*   **Phone (WhatsApp)**: +8801518749114 (01518749114)
+*   **Primary Email**: mohatamimhaque7@gmail.com
+*   **Alternative Email**: mohatamimhaque@outlook.com
+*   **Facebook**: [mohatamim44](https://facebook.com/mohatamim44)
+*   **LinkedIn**: [mohatamim](https://linkedin.com/in/mohatamim)
+*   **GitHub**: [mohatamimhaque](https://github.com/mohatamimhaque)
+
+

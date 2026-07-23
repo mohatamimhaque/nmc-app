@@ -478,3 +478,17 @@ These endpoints are strictly restricted to users with the `super_admin` role. Th
     }
     ```
 
+
+
+---
+
+## Developer Credit & Contact Details
+
+This platform was developed and is maintained by:
+*   **Name**: Mohatamim Haque
+*   **Phone (WhatsApp)**: +8801518749114 (01518749114)
+*   **Primary Email**: mohatamimhaque7@gmail.com
+*   **Alternative Email**: mohatamimhaque@outlook.com
+*   **Facebook**: [mohatamim44](https://facebook.com/mohatamim44)
+*   **LinkedIn**: [mohatamim](https://linkedin.com/in/mohatamim)
+*   **GitHub**: [mohatamimhaque](https://github.com/mohatamimhaque)

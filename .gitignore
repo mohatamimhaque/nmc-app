@@ -45,3 +45,15 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local python card generator temp & cache
+/admit card/temp/
+**/__pycache__/
+*.pyc
+
+# excel sheets (local datasets)
+/*.xlsx
+
+# local development helper scripts
+/scripts/
+
