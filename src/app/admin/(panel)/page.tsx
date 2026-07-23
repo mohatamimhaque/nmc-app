@@ -16,6 +16,11 @@ export default async function AdminDashboardPage() {
     { count: advisersCount },
     { count: committeeCount },
     { count: ambassadorsCount },
+    { count: processedRegistrationsCount },
+    { count: volunteersCount },
+    { count: checkinsCount },
+    { count: kitsCount },
+    { count: lunchCount },
   ] = await Promise.all([
     supabase.from('events').select('*', { count: 'exact', head: true }),
     supabase.from('event_registrations').select('*', { count: 'exact', head: true }),
@@ -23,6 +28,11 @@ export default async function AdminDashboardPage() {
     supabase.from('advisers').select('*', { count: 'exact', head: true }),
     supabase.from('committee_members').select('*', { count: 'exact', head: true }),
     supabase.from('campus_ambassadors').select('*', { count: 'exact', head: true }),
+    supabase.from('processed_registrations').select('*', { count: 'exact', head: true }),
+    supabase.from('volunteers').select('*', { count: 'exact', head: true }),
+    supabase.from('processed_registrations').select('*', { count: 'exact', head: true }).eq('is_present', true),
+    supabase.from('processed_registrations').select('*', { count: 'exact', head: true }).eq('is_kit_coollect', true),
+    supabase.from('processed_registrations').select('*', { count: 'exact', head: true }).eq('is_collect_launch', true),
   ])
 
   const { data: recentEvents } = await supabase
@@ -101,7 +111,7 @@ export default async function AdminDashboardPage() {
         marginBottom: '2rem',
       }}>
         <StatCard label="Events" value={eventsCount?.toString() || '0'} sub="Total events created" icon={<TriangleIcon size={22} />} />
-        <StatCard label="Registrations" value={registrationsCount?.toString() || '0'} sub="Total submissions" trend="up" icon={<HexagonIcon size={22} />} />
+        <StatCard label="Web Submissions" value={registrationsCount?.toString() || '0'} sub="Raw forms submitted" trend="up" icon={<HexagonIcon size={22} />} />
         <StatCard label="Notices" value={noticesCount?.toString() || '0'} sub="Active notices" icon={<InfinityIcon size={22} />} />
         <StatCard
           label="Team Members"
@@ -109,6 +119,11 @@ export default async function AdminDashboardPage() {
           sub="Advisers + Committee + Ambassadors"
           icon={<GridIcon size={22} />}
         />
+        <StatCard label="Verified Attendees" value={processedRegistrationsCount?.toString() || '0'} sub="Total verified check-ins" trend="up" icon={<HexagonIcon size={22} />} />
+        <StatCard label="On-Ground Check-Ins" value={checkinsCount?.toString() || '0'} sub="Present participants" trend="up" icon={<TriangleIcon size={22} />} />
+        <StatCard label="Kits Distributed" value={kitsCount?.toString() || '0'} sub="Kit packages collected" icon={<InfinityIcon size={22} />} />
+        <StatCard label="Lunch Tokens" value={lunchCount?.toString() || '0'} sub="Lunches distributed" icon={<GridIcon size={22} />} />
+        <StatCard label="Volunteers" value={volunteersCount?.toString() || '0'} sub="Registered gate volunteers" icon={<TriangleIcon size={22} />} />
       </div>
 
       <MathDivider formula="f(x) = ax² + bx + c" />
