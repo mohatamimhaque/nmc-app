@@ -89,8 +89,8 @@ erDiagram
     }
     USER_LOCATIONS {
         uuid user_id PK_FK
-        double_precision latitude
-        double_precision longitude
+        doubleprecision latitude
+        doubleprecision longitude
     }
     SECURE_MESSAGES {
         uuid id PK
