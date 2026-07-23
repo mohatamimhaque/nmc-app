@@ -1,2 +1,2 @@
 cd "D:\nmc\nmc26\admit card"
-python -m uvicorn autocrat:app --host 127.0.0.1 --port 8080 --reload
+python -m uvicorn --app-dir "admit card" autocrat:app --host 127.0.0.1 --port 8080 --reload
