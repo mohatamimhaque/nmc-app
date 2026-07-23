@@ -82,22 +82,6 @@ erDiagram
         text name
         text logo_url
     }
-    USERS_REGISTRY {
-        uuid id PK
-        text name
-        text role
-    }
-    USER_LOCATIONS {
-        uuid user_id PK
-        doubleprecision latitude
-        doubleprecision longitude
-    }
-    SECURE_MESSAGES {
-        uuid id PK
-        uuid sender_id FK
-        text target_type
-        text message_text
-    }
     CONTACT_PAGE {
         uuid id PK
         text hero_title
@@ -119,8 +103,6 @@ erDiagram
     SPONSOR_CATEGORIES ||--o{ SPONSORS : "classifies"
     SUB_COMMITTEES ||--o{ COMMITTEE_MEMBERS : "groups"
     CLUB_PARTNER_CATEGORIES ||--o{ CLUB_PARTNERS : "classifies"
-    USERS_REGISTRY ||--|| USER_LOCATIONS : "contains current coordinates"
-    USERS_REGISTRY ||--o{ SECURE_MESSAGES : "initiates"
     CONTACT_PAGE ||--o{ CONTACT_SUBMISSIONS : "logs entries to"
 ```
 
@@ -140,8 +122,6 @@ The following table summarizes foreign key relationships and delete cascades:
 | `sponsor_categories` | `sponsors` | `category_id` | **SET NULL** | Sponsor cards stay intact; category gets unassigned. |
 | `sub_committees` | `committee_members` | `sub_committee_id` | **CASCADE** | Member profiles auto-deleted if sub-committee is deleted. |
 | `club_partner_categories`| `club_partners` | `category_id` | **SET NULL** | Partner logos stay intact; category unassigned. |
-| `users_registry` | `user_locations` | `user_id` | **CASCADE** | Location tracking coordinates deleted if user is removed. |
-| `users_registry` | `secure_messages` | `sender_id` | **CASCADE** | Sent messages deleted if user registry row is removed. |
 
 ---
 

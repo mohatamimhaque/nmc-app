@@ -55,7 +55,7 @@
 14. [Admin Android Mobile Application](#14-admin-android-mobile-application)
 15. [FastAPI PowerPoint PDF Microservice](#15-fastapi-powerpoint-pdf-microservice)
 16. [Certificate Verification & Generation System](#16-certificate-verification--generation-system)
-17. [Participant Room Finder & Live Location Maps](#17-participant-room-finder--live-location-maps)
+17. [Participant Room Finder](#17-participant-room-finder)
 
 ---
 
@@ -1385,60 +1385,6 @@ Organizing team volunteers list.
 
 ---
 
-### `location_config`
-Global Supabase endpoint coordinates configuration.
-
-| Column | Type | Description |
-|---|---|---|
-| id | `integer PK` | Check id = 1 (singleton) |
-| supabase_url | `text` | |
-| supabase_anon_key | `text` | |
-| live_map_enabled | `boolean` | |
-| updated_by | `uuid FK` | → `auth.users.id` |
-| updated_at | `timestamptz` | |
-
----
-
-### `users_registry`
-Registry for volunteer location tracking users.
-
-| Column | Type | Description |
-|---|---|---|
-| id | `uuid PK` | |
-| name | `text` | |
-| role | `text` | |
-| initialized_at | `timestamptz` | |
-
----
-
-### `user_locations`
-Live coordinate maps registry.
-
-| Column | Type | Description |
-|---|---|---|
-| user_id | `uuid PK_FK` | → `users_registry.id` on delete cascade |
-| latitude | `double precision` | |
-| longitude | `double precision` | |
-| is_online | `boolean DEFAULT true` | |
-| updated_at | `timestamptz` | |
-
----
-
-### `secure_messages`
-Encrypted/secure multicast messenger logging.
-
-| Column | Type | Description |
-|---|---|---|
-| id | `uuid PK` | |
-| sender_id | `uuid FK` | → `users_registry.id` |
-| target_type | `text` | `'unicast'` \| `'multicast'` \| `'broadcast'` |
-| target_value | `text` | target identification |
-| message_text | `text` | |
-| created_at | `timestamptz` | |
-| is_read | `boolean DEFAULT false` | |
-
----
-
 ### `contact_page`
 Singleton contact details copy control.
 
@@ -1675,7 +1621,7 @@ To avoid heavy PowerPoint COM automation overhead on serverless Vercel runtimes,
 
 ---
 
-## 17. Participant Room Finder & Live Location Maps
+## 17. Participant Room Finder
 
 ### 17.1 Room Finder Search Engine
 When page visibility controls allow public access to `room_finder`, users query their exam room assignment via the search interface. The API endpoint `GET /api/registrations/find-room?query=...` queries both `processed_registrations` (participant serials) and `volunteers` (volunteer IDs) to return profile and room information.
@@ -1685,9 +1631,6 @@ Room assignments map to campus coordinates in the Next.js route:
 *   **TWB (Textile Workshop)**: Coordinates `(24.01685993912403, 90.41899431404634)` pointing to the Textile Workshop Building.
 *   **School**: Coordinates `(24.019016943046, 90.4180040764991)` pointing to the DUET Engineering School.
 *   **Fallback**: Coordinates `(24.01741790711585, 90.41896685216089)` pointing to the New Academic Building.
-
-### 17.3 Realtime Map Coordinates
-The platform includes location tracking schema `user_locations` and multicast `secure_messages` mapped to Supabase realtime replication channels for visual trackings during carnival operations.
 
 ---
 

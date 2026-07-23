@@ -612,43 +612,13 @@ create table if not exists public.volunteers (
   updated_by             text
 );
 
--- 36. location_config
-create table if not exists public.location_config (
-  id integer primary key default 1 check (id = 1),
-  supabase_url text not null,
-  supabase_anon_key text not null,
-  live_map_enabled boolean default false not null,
-  updated_by uuid references auth.users(id) on delete set null,
-  updated_at timestamp with time zone default now() not null
-);
 
--- 37. users_registry
-create table if not exists public.users_registry (
-  id uuid primary key,
-  name text not null,
-  role text not null,
-  initialized_at timestamp with time zone default now() not null
-);
 
--- 38. user_locations
-create table if not exists public.user_locations (
-  user_id uuid references public.users_registry(id) on delete cascade primary key,
-  latitude double precision not null,
-  longitude double precision not null,
-  is_online boolean default true not null,
-  updated_at timestamp with time zone default now() not null
-);
 
--- 39. secure_messages
-create table if not exists public.secure_messages (
-  id uuid default gen_random_uuid() primary key,
-  sender_id uuid references public.users_registry(id) on delete cascade not null,
-  target_type text not null check (target_type in ('unicast', 'multicast', 'broadcast')),
-  target_value text,
-  message_text text not null,
-  created_at timestamp with time zone default now() not null,
-  is_read boolean default false not null
-);
+
+
+
+
 
 -- 40. contact_page
 create table if not exists public.contact_page (
@@ -768,10 +738,6 @@ alter table public.admin_users              enable row level security;
 alter table public.visibility_audit_log      enable row level security;
 alter table public.processed_registrations  enable row level security;
 alter table public.volunteers               enable row level security;
-alter table public.location_config          enable row level security;
-alter table public.users_registry           enable row level security;
-alter table public.user_locations           enable row level security;
-alter table public.secure_messages          enable row level security;
 alter table public.contact_page             enable row level security;
 
 -- A. PUBLIC SELECT Policies
@@ -844,7 +810,6 @@ create policy "admin_all_club_partners"             on public.club_partners for 
 create policy "admin_read_analytics"                on public.analytics_events for select using (auth.role() = 'authenticated');
 create policy "admin_all_admin_users"               on public.admin_users for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
 create policy "admin_all_visibility_audit"          on public.visibility_audit_log for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
-create policy "admin_all_location_config"           on public.location_config for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
 create policy "admin_all_contact_page"              on public.contact_page for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
 
 -- D. PARTICIPANTS & VOLUNTEERS Access Rules
@@ -871,22 +836,7 @@ create policy "admin_all_volunteers"
   );
 
 -- E. LIVE LOCATION Security Rules
-create policy "Admins can view coordinates"         on public.user_locations for select using (auth.jwt() ->> 'role' in ('admin', 'super_admin'));
-create policy "Users can update own coordinate"     on public.user_locations for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
-create policy "Users can read relevant private messages"
-  on public.secure_messages for select
-  using (
-    auth.uid() = sender_id
-    or target_type = 'broadcast'
-    or (target_type = 'multicast' and target_value = (select role from users_registry where id = auth.uid() limit 1))
-    or (target_type = 'unicast' and target_value = auth.uid()::text)
-  );
 
-create policy "Users can post messages"
-  on public.secure_messages for insert
-  with check (auth.uid() = sender_id);
 
 -- Enable Supabase Realtime Channels for Live Updates
-alter publication supabase_realtime add table user_locations;
-alter publication supabase_realtime add table secure_messages;
