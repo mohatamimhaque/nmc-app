@@ -12,7 +12,7 @@ The diagram below maps the complete relational model of the 40 database tables.
 erDiagram
     EVENTS {
         uuid id PK
-        text slug UK
+        text slug
         text title
         text category
         text status
@@ -88,7 +88,7 @@ erDiagram
         text role
     }
     USER_LOCATIONS {
-        uuid user_id PK_FK
+        uuid user_id PK
         doubleprecision latitude
         doubleprecision longitude
     }
