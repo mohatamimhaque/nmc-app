@@ -637,27 +637,6 @@ To resolve discrepancies (e.g., a student claiming they did not receive their la
 +------------------------------------------+
 ```
 
-### Viewport C: Participant Details & Result Sheet
-```text
-+------------------------------------------+
-|  < Back (Dashboard)                      |
-|  +------------------------------------+  |
-|  |      SUCCESSFULLY UPDATED          |  |
-|  +------------------------------------+  |
-|  Name: Saddman Faruque Walid             |
-|  Serial: NMC26-I-AW-001                  |
-|  Institution: Daffodil Polytechnic       |
-|  Event: Article Writing                  |
-|                                          |
-|  STATUS OVERRIDES                        |
-|  [o] Kit Collected     [o] Present       |
-|  [o] Launch served     [o] Breakfast     |
-|                                          |
-|  [ VIEW ADMIT CARD (PDF) ]               |
-|                                          |
-|                 [ RESCAN ]               |
-+------------------------------------------+
-```
 
 
 
