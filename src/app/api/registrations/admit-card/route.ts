@@ -20,13 +20,14 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Search query parameter is required.' }, { status: 400 })
     }
 
-    // Determine if input is a valid email or phone number format
+    // Determine if input is a valid email, phone number, or serial number format
     const cleanPhone = query.replace(/[\s\-]/g, '')
     const isEmail = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(query)
     const isPhone = /^\+?[0-9]{9,15}$/.test(cleanPhone)
+    const isSerial = /^[a-zA-Z0-9\-\/]{4,30}$/.test(query)
 
-    if (!isEmail && !isPhone) {
-      return NextResponse.json({ error: 'Please enter a valid full Email address or Phone number.' }, { status: 400 })
+    if (!isEmail && !isPhone && !isSerial) {
+      return NextResponse.json({ error: 'Please enter a valid Email address, Phone number, or Serial Number.' }, { status: 400 })
     }
 
     const serviceClient = createServiceClient()
@@ -44,6 +45,9 @@ export async function GET(request: Request) {
     if (isEmail) {
       // Case-insensitive exact match for email address
       dbQuery = dbQuery.ilike('email_address', query)
+    } else if (isSerial) {
+      // Case-insensitive exact match for serial number
+      dbQuery = dbQuery.ilike('serial', query)
     } else {
       // Normalize Bangladesh phone numbers (strip +880 or 880 prefix if present)
       let phoneToMatch = cleanPhone

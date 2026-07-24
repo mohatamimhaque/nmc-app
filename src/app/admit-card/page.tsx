@@ -32,10 +32,11 @@ export default function AdmitCardPage() {
     const cleanPhone = searchVal.replace(/[\s\-]/g, '')
     const isEmail = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(searchVal)
     const isPhone = /^\+?[0-9]{9,15}$/.test(cleanPhone)
+    const isSerial = /^[a-zA-Z0-9\-\/]{4,30}$/.test(searchVal)
 
-    if (!isEmail && !isPhone) {
+    if (!isEmail && !isPhone && !isSerial) {
       setStatus('error')
-      setError('Please enter a valid full Email address or Phone number.')
+      setError('Please enter a valid Email address, Phone number, or Serial Number.')
       return
     }
 
@@ -63,323 +64,199 @@ export default function AdmitCardPage() {
   }
 
   return (
-    <main style={{ position: 'relative', zIndex: previewUrl ? 99999 : 1, minHeight: '80vh', paddingBottom: '5rem' }}>
-      
-      {/* Page Header */}
-      <section className="admit-card-header" style={{ padding: '4rem 1.5rem 2rem', maxWidth: 900, margin: '0 auto' }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--color-accent)' }}>
+    <main style={{ position: 'relative', zIndex: previewUrl ? 99999 : 1, minHeight: '80vh' }}>
+      <div className="admit-card-container">
+        
+        {/* Page Header */}
+        <header className="admit-card-header">
+          <div className="admit-card-subtitle">
             National Mathematics Carnival 2026
           </div>
-          <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: 'clamp(2rem,5vw,2.8rem)', fontWeight: 800, margin: '0.6rem 0' }}>
-            Download Admit Card
+          <h1 className="admit-card-title">
+            Admit Card Portal
           </h1>
-          <p style={{ color: 'var(--foreground-muted)', maxWidth: 620, margin: '0 auto', fontSize: '1rem', lineHeight: '1.5' }}>
-            Select your Category and Event, then enter your Email address or Phone number to retrieve your admit card.
+          <p className="admit-card-desc">
+            Find and download your official participation admit card. Select your Category and Event, then look up via your Registration Serial Number, Email address, or Phone number.
           </p>
-        </div>
-      </section>
+        </header>
 
-      {/* Search Panel Card */}
-      <section className="admit-card-search-section" style={{ padding: '0 1.5rem 3rem', maxWidth: 850, margin: '0 auto' }}>
-        <form 
-          onSubmit={handleSearch}
-          className="admit-card-search-form"
-          style={{ 
-            background: 'var(--surface)', 
-            border: '1px solid var(--border)', 
-            borderRadius: 20, 
-            padding: '2rem',
-            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.05)'
-          }}
-        >
-          <div className="admit-card-form-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.25rem', marginBottom: '1.5rem' }}>
-            
-            {/* Level Selector */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--foreground-muted)' }}>
-                Select Level
-              </label>
-              <select
-                value={level}
-                onChange={e => setLevel(e.target.value)}
-                style={{
-                  borderRadius: 10,
-                  border: '1px solid var(--border)',
-                  padding: '0.75rem 1rem',
-                  fontFamily: 'var(--font-body)',
-                  fontSize: '0.95rem',
-                  background: 'var(--surface-container, #fff)',
-                  color: 'var(--foreground)',
-                  cursor: 'pointer',
-                  outline: 'none'
-                }}
-              >
-                <option value="all">All Levels</option>
-                <option value="School level">School level</option>
-                <option value="Intermediate level">Intermediate level</option>
-                <option value="University level">University level</option>
-              </select>
-            </div>
-
-            {/* Event Selector */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--foreground-muted)' }}>
-                Select Event
-              </label>
-              <select
-                value={event}
-                onChange={e => setEvent(e.target.value)}
-                style={{
-                  borderRadius: 10,
-                  border: '1px solid var(--border)',
-                  padding: '0.75rem 1rem',
-                  fontFamily: 'var(--font-body)',
-                  fontSize: '0.95rem',
-                  background: 'var(--surface-container, #fff)',
-                  color: 'var(--foreground)',
-                  cursor: 'pointer',
-                  outline: 'none'
-                }}
-              >
-                <option value="all">All Events</option>
-                <option value="Math Olympiad">Math Olympiad</option>
-                <option value="Math Game">Math Game</option>
-                <option value="Article Writing">Article Writing</option>
-                <option value="Poster Presentation">Poster Presentation</option>
-              </select>
-            </div>
-
-            {/* Name/Phone Search query */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--foreground-muted)' }}>
-                Email or Phone Number
-              </label>
-              <input
-                type="text"
-                value={query}
-                onChange={e => setQuery(e.target.value)}
-                placeholder="e.g. user@example.com or 01xxxxxxxxxx"
-                maxLength={50}
-                style={{
-                  borderRadius: 10,
-                  border: '1px solid var(--border)',
-                  padding: '0.75rem 1rem',
-                  fontFamily: 'var(--font-body)',
-                  fontSize: '0.95rem',
-                  background: 'var(--surface-container, #fff)',
-                  color: 'var(--foreground)',
-                  outline: 'none'
-                }}
-              />
-            </div>
-
-          </div>
-
-          <div className="admit-card-submit-container" style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '2rem' }}>
-            <button
-              type="submit"
-              disabled={status === 'loading'}
-              className="admit-card-submit-btn"
-              style={{
-                borderRadius: 10,
-                border: 'none',
-                background: 'var(--color-primary)',
-                color: '#fff',
-                padding: '0.8rem 2rem',
-                fontFamily: 'var(--font-body)',
-                fontWeight: 700,
-                fontSize: '1rem',
-                cursor: status === 'loading' ? 'not-allowed' : 'pointer',
-                opacity: status === 'loading' ? 0.7 : 1,
-                transition: 'all 0.2s ease'
-              }}
-            >
-              {status === 'loading' ? 'Searching...' : 'Search Admit Card'}
-            </button>
-          </div>
-
-          {status === 'error' && (
-            <div style={{ color: '#ef4444', marginTop: '1.25rem', fontSize: '0.9rem', fontWeight: 500 }}>
-              ⚠ {error}
-            </div>
-          )}
-        </form>
-      </section>
-
-      {/* Results View */}
-      {status === 'success' && (
-        <section className="admit-card-results-section" style={{ padding: '0 1.5rem', maxWidth: 900, margin: '0 auto' }}>
-          <PublicMathDivider />
-          
-          <div style={{ marginTop: '2rem' }}>
-            <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.5rem', fontWeight: 700, marginBottom: '1.5rem' }}>
-              Search Results ({results.length})
-            </h2>
-
-            {results.length === 0 ? (
-              <div 
-                style={{ 
-                  textAlign: 'center', 
-                  padding: '3rem 1.5rem', 
-                  border: '1px dashed var(--border)', 
-                  borderRadius: 18,
-                  color: 'var(--foreground-muted)'
-                }}
-              >
-                No registrations matched your search criteria. Please verify your Email or Phone number.
+        {/* Search Panel Card */}
+        <section className="admit-card-card-wrapper">
+          <form onSubmit={handleSearch}>
+            <div className="admit-card-grid">
+              
+              {/* Level Selector */}
+              <div className="admit-card-field">
+                <label className="admit-card-label">
+                  Category Level
+                </label>
+                <select
+                  value={level}
+                  onChange={e => setLevel(e.target.value)}
+                  className="admit-card-select"
+                >
+                  <option value="all">All Levels</option>
+                  <option value="School level">School level</option>
+                  <option value="Intermediate level">Intermediate level</option>
+                  <option value="University level">University level</option>
+                </select>
               </div>
-            ) : (
-              <div className="admit-card-table-wrapper" style={{ overflowX: 'auto', border: '1px solid var(--border)', borderRadius: 18, background: 'var(--surface)' }}>
-                <table className="admit-card-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: 600 }}>
-                  <thead>
-                    <tr style={{ borderBottom: '1px solid var(--border)', background: 'rgba(0,0,0,0.02)' }}>
-                      <th style={{ padding: '1rem 1.25rem', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--foreground-muted)' }}>Serial</th>
-                      <th style={{ padding: '1rem 1.25rem', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--foreground-muted)' }}>Name</th>
-                      <th style={{ padding: '1rem 1.25rem', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--foreground-muted)' }}>Level / Event</th>
-                      <th style={{ padding: '1rem 1.25rem', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--foreground-muted)', textAlign: 'center' }}>Admit Card</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {results.map((reg) => (
-                      <tr key={reg.serial} style={{ borderBottom: '1px solid var(--border)' }}>
-                        <td data-label="Serial" style={{ padding: '1.25rem', fontFamily: 'var(--font-mono)', fontSize: '0.85rem', fontWeight: 600 }}>{reg.serial}</td>
-                        <td data-label="Name" style={{ padding: '1.25rem', fontWeight: 600 }}>
-                          {reg.full_name}
-                          <div style={{ fontSize: '0.75rem', color: 'var(--foreground-muted)', fontFamily: 'var(--font-mono)', marginTop: '2px' }}>
-                            Phone: ****{reg.phone_number ? reg.phone_number.slice(-4) : 'N/A'}
-                          </div>
-                        </td>
-                        <td data-label="Level / Event" style={{ padding: '1.25rem', fontSize: '0.9rem' }}>
-                          <span style={{ display: 'block', fontWeight: 500 }}>{reg.event}</span>
-                          <span style={{ fontSize: '0.75rem', color: 'var(--foreground-muted)' }}>{reg.level}</span>
-                        </td>
-                        <td data-label="Admit Card" style={{ padding: '1.25rem', textAlign: 'center' }}>
-                          {reg.admit_card_url ? (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setPreviewUrl(reg.admit_card_url)
-                                setPreviewName(reg.full_name)
-                              }}
-                              style={{
-                                borderRadius: 8,
-                                border: '1px solid rgba(99, 102, 241, 0.2)',
-                                background: 'rgba(99, 102, 241, 0.1)',
-                                color: 'var(--color-primary)',
-                                padding: '0.5rem 1rem',
-                                fontFamily: 'var(--font-body)',
-                                fontWeight: 600,
-                                fontSize: '0.85rem',
-                                cursor: 'pointer',
-                                transition: 'all 0.15s ease'
-                              }}
-                            >
-                              View & Print
-                            </button>
-                          ) : (
-                            <span 
-                              style={{ 
-                                display: 'inline-block',
-                                fontSize: '0.75rem', 
-                                padding: '3px 8px', 
-                                borderRadius: 6, 
-                                background: 'rgba(0, 0, 0, 0.05)',
-                                color: 'var(--foreground-muted)',
-                                fontWeight: 500
-                              }}
-                            >
-                              Not Ready Yet
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+
+              {/* Event Selector */}
+              <div className="admit-card-field">
+                <label className="admit-card-label">
+                  Competition Event
+                </label>
+                <select
+                  value={event}
+                  onChange={e => setEvent(e.target.value)}
+                  className="admit-card-select"
+                >
+                  <option value="all">All Events</option>
+                  <option value="Math Olympiad">Math Olympiad</option>
+                  <option value="Math Game">Math Game</option>
+                  <option value="Article Writing">Article Writing</option>
+                  <option value="Poster Presentation">Poster Presentation</option>
+                </select>
+              </div>
+
+              {/* Search query input */}
+              <div className="admit-card-field">
+                <label className="admit-card-label">
+                  Search Query
+                </label>
+                <input
+                  type="text"
+                  value={query}
+                  onChange={e => setQuery(e.target.value)}
+                  placeholder="Serial, Email or Phone (e.g. 01xxxxxxxxxx)"
+                  maxLength={50}
+                  className="admit-card-input"
+                />
+              </div>
+
+            </div>
+
+            <div className="admit-card-actions">
+              <button
+                type="submit"
+                disabled={status === 'loading'}
+                className="admit-card-btn"
+              >
+                {status === 'loading' ? 'Searching...' : 'Search Admit Card'}
+              </button>
+            </div>
+
+            {status === 'error' && (
+              <div className="admit-card-error">
+                <span>⚠</span> {error}
               </div>
             )}
-          </div>
+          </form>
         </section>
-      )}
+
+        {/* Results View */}
+        {status === 'success' && (
+          <section style={{ marginTop: '3rem' }}>
+            <div className="admit-card-divider">
+              <PublicMathDivider />
+            </div>
+            
+            <div>
+              <h2 className="admit-card-results-title">
+                Search Results ({results.length})
+              </h2>
+
+              {results.length === 0 ? (
+                <div className="admit-card-empty-results">
+                  No registrations matched your search criteria. Please verify your Serial Number, Email or Phone number.
+                </div>
+              ) : (
+                <div className="admit-card-results-grid">
+                  {results.map((reg) => (
+                    <article key={reg.serial} className="reg-card">
+                      <div className="reg-card-header">
+                        <h3 className="reg-card-name">{reg.full_name}</h3>
+                        <span className="reg-card-badge">{reg.event}</span>
+                      </div>
+                      
+                      <div className="reg-card-body">
+                        <div className="reg-card-info-row">
+                          <span className="reg-card-info-label">Serial Number</span>
+                          <span className="reg-card-info-value monospace">{reg.serial}</span>
+                        </div>
+                        <div className="reg-card-info-row">
+                          <span className="reg-card-info-label">Level / Category</span>
+                          <span className="reg-card-info-value">{reg.level}</span>
+                        </div>
+                        <div className="reg-card-info-row">
+                          <span className="reg-card-info-label">Reference Phone</span>
+                          <span className="reg-card-info-value">
+                            ****{reg.phone_number ? reg.phone_number.slice(-4) : 'N/A'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="reg-card-footer">
+                        {reg.admit_card_url ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPreviewUrl(reg.admit_card_url)
+                              setPreviewName(reg.full_name)
+                            }}
+                            className="reg-card-download-btn"
+                          >
+                            View & Print Admit Card
+                          </button>
+                        ) : (
+                          <div className="reg-card-not-ready">
+                            Admit Card Not Ready Yet
+                          </div>
+                        )}
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+      </div>
 
       {/* High-Fidelity Preview Modal */}
       {previewUrl && (
         <div
           className="admit-card-modal-overlay"
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            width: '100vw',
-            height: '100vh',
-            background: 'rgba(0,0,0,0.6)',
-            backdropFilter: 'blur(5px)',
-            zIndex: 9999,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '1rem',
-          }}
           onClick={(e) => {
             if (e.target === e.currentTarget) {
               setPreviewUrl(null)
             }
           }}
         >
-          <div
-            className="admit-card-modal-card"
-            style={{
-              background: '#fff',
-              borderRadius: 16,
-              width: '100%',
-              maxWidth: '850px',
-              height: '85vh',
-              display: 'flex',
-              flexDirection: 'column',
-              overflow: 'hidden',
-              boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
-              animation: 'scaleIn 0.2s ease-out'
-            }}
-          >
+          <div className="admit-card-modal-card">
             {/* Modal Header */}
-            <div 
-              className="admit-card-modal-header"
-              style={{ 
-                padding: '1.25rem 1.5rem', 
-                borderBottom: '1px solid var(--border)', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'space-between',
-                background: 'var(--surface)'
-              }}
-            >
+            <div className="admit-card-modal-header">
               <div>
-                <h3 style={{ margin: 0, fontFamily: 'var(--font-heading)', fontSize: '1.2rem', fontWeight: 700 }}>
-                  Admit Card
+                <h3 className="admit-card-modal-title">
+                  Admit Card Preview
                 </h3>
-                <p style={{ margin: '2px 0 0', fontSize: '0.75rem', color: 'var(--foreground-muted)' }}>
+                <p className="admit-card-modal-subtitle">
                   Participant: {previewName}
                 </p>
               </div>
               <button 
                 type="button" 
                 onClick={() => setPreviewUrl(null)}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  color: 'var(--foreground-muted)',
-                  cursor: 'pointer',
-                  fontSize: '1.1rem',
-                  padding: '4px'
-                }}
+                className="admit-card-modal-close"
+                aria-label="Close Preview"
               >
                 ✕
               </button>
             </div>
 
             {/* Modal Body: PDF Container */}
-            <div style={{ flex: 1, background: '#f3f4f6', position: 'relative' }}>
+            <div className="admit-card-modal-body">
               <object
                 data={`${previewUrl}#toolbar=1&navpanes=0&scrollbar=1`}
                 type="application/pdf"
@@ -409,19 +286,7 @@ export default function AdmitCardPage() {
                     href={previewUrl}
                     target="_blank"
                     rel="noreferrer"
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      borderRadius: 8,
-                      background: 'var(--color-primary)',
-                      color: '#fff',
-                      padding: '0.6rem 1.5rem',
-                      fontFamily: 'var(--font-body)',
-                      fontWeight: 700,
-                      fontSize: '0.9rem',
-                      textDecoration: 'none',
-                      boxShadow: '0 4px 12px rgba(99, 102, 241, 0.2)'
-                    }}
+                    className="admit-card-modal-btn-download"
                   >
                     Open PDF in New Tab
                   </a>
@@ -430,31 +295,11 @@ export default function AdmitCardPage() {
             </div>
 
             {/* Modal Footer */}
-            <div 
-              className="admit-card-modal-footer"
-              style={{ 
-                padding: '1rem 1.5rem', 
-                borderTop: '1px solid var(--border)', 
-                display: 'flex', 
-                justifyContent: 'flex-end',
-                gap: '0.75rem',
-                background: 'var(--surface)'
-              }}
-            >
+            <div className="admit-card-modal-footer">
               <button
                 type="button"
                 onClick={() => setPreviewUrl(null)}
-                style={{
-                  borderRadius: 8,
-                  border: '1px solid var(--border)',
-                  background: '#fff',
-                  color: 'var(--foreground)',
-                  padding: '0.5rem 1.25rem',
-                  fontFamily: 'var(--font-body)',
-                  fontWeight: 600,
-                  fontSize: '0.9rem',
-                  cursor: 'pointer'
-                }}
+                className="admit-card-modal-btn-close"
               >
                 Close
               </button>
@@ -481,17 +326,7 @@ export default function AdmitCardPage() {
                     }
                   }
                 }}
-                style={{
-                  borderRadius: 8,
-                  border: '1px solid var(--color-primary)',
-                  background: 'transparent',
-                  color: 'var(--color-primary)',
-                  padding: '0.5rem 1.5rem',
-                  fontFamily: 'var(--font-body)',
-                  fontWeight: 700,
-                  fontSize: '0.9rem',
-                  cursor: 'pointer'
-                }}
+                className="admit-card-modal-btn-print"
               >
                 Print Card
               </button>
@@ -500,139 +335,463 @@ export default function AdmitCardPage() {
                 download
                 target="_blank"
                 rel="noreferrer"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  borderRadius: 8,
-                  background: 'var(--color-primary)',
-                  color: '#fff',
-                  padding: '0.5rem 1.5rem',
-                  fontFamily: 'var(--font-body)',
-                  fontWeight: 700,
-                  fontSize: '0.9rem',
-                  textDecoration: 'none',
-                  textAlign: 'center',
-                  cursor: 'pointer'
-                }}
+                className="admit-card-modal-btn-download"
               >
                 Download PDF
               </a>
             </div>
           </div>
-          
-          <style dangerouslySetInnerHTML={{ __html: `
-            @keyframes scaleIn {
-              from { opacity: 0; transform: scale(0.96); }
-              to { opacity: 1; transform: scale(1); }
-            }
-
-            @media (max-width: 640px) {
-              .admit-card-header {
-                padding: 2.5rem 1rem 1.5rem !important;
-              }
-              .admit-card-search-section {
-                padding: 0 1rem 2rem !important;
-              }
-              .admit-card-search-form {
-                padding: 1.25rem 1rem !important;
-                border-radius: 16px !important;
-              }
-              .admit-card-form-grid {
-                grid-template-columns: 1fr !important;
-                gap: 1rem !important;
-                margin-bottom: 1rem !important;
-              }
-              .admit-card-submit-container {
-                margin-top: 1.5rem !important;
-              }
-              .admit-card-submit-btn {
-                width: 100% !important;
-                text-align: center !important;
-                padding: 0.8rem 1.5rem !important;
-              }
-              .admit-card-results-section {
-                padding: 0 1rem !important;
-              }
-              .admit-card-table-wrapper {
-                border: none !important;
-                background: transparent !important;
-                border-radius: 0 !important;
-                overflow-x: visible !important;
-              }
-              .admit-card-table {
-                display: block !important;
-                width: 100% !important;
-                min-width: unset !important;
-              }
-              .admit-card-table thead {
-                display: none !important;
-              }
-              .admit-card-table tbody {
-                display: block !important;
-                width: 100% !important;
-              }
-              .admit-card-table tr {
-                display: block !important;
-                background: var(--surface) !important;
-                border: 1px solid var(--border) !important;
-                border-radius: 16px !important;
-                margin-bottom: 1rem !important;
-                padding: 1.25rem !important;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.02) !important;
-              }
-              .admit-card-table td {
-                display: flex !important;
-                flex-direction: column !important;
-                align-items: flex-start !important;
-                padding: 0.5rem 0 !important;
-                border-bottom: 1px solid rgba(0,0,0,0.05) !important;
-              }
-              .admit-card-table td:last-child {
-                border-bottom: none !important;
-                padding-bottom: 0 !important;
-                align-items: stretch !important;
-              }
-              .admit-card-table td::before {
-                content: attr(data-label);
-                font-family: var(--font-mono);
-                font-size: 0.7rem;
-                letter-spacing: 0.05em;
-                text-transform: uppercase;
-                color: var(--foreground-muted);
-                margin-bottom: 4px;
-                font-weight: 600;
-              }
-              .admit-card-table td:last-child button {
-                width: 100% !important;
-                text-align: center !important;
-                padding: 0.75rem 1rem !important;
-              }
-              .admit-card-modal-overlay {
-                padding: 0.5rem !important;
-              }
-              .admit-card-modal-card {
-                height: 95vh !important;
-                border-radius: 12px !important;
-              }
-              .admit-card-modal-header {
-                padding: 1rem !important;
-              }
-              .admit-card-modal-footer {
-                padding: 1rem !important;
-                flex-direction: column-reverse !important;
-                gap: 0.5rem !important;
-              }
-              .admit-card-modal-footer button,
-              .admit-card-modal-footer a {
-                width: 100% !important;
-                justify-content: center !important;
-                text-align: center !important;
-                padding: 0.75rem 1.25rem !important;
-              }
-            }
-          `}} />
         </div>
       )}
+
+      {/* Styled CSS Rules */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes scaleIn {
+          from { opacity: 0; transform: scale(0.97); }
+          to { opacity: 1; transform: scale(1); }
+        }
+
+        .admit-card-container {
+          max-width: 1000px;
+          margin: 0 auto;
+          padding: 4rem 1.5rem 6rem;
+        }
+
+        .admit-card-header {
+          text-align: center;
+          margin-bottom: 3.5rem;
+        }
+        .admit-card-subtitle {
+          font-family: var(--font-mono);
+          font-size: 0.75rem;
+          letter-spacing: 0.25em;
+          text-transform: uppercase;
+          color: var(--color-accent);
+          margin-bottom: 0.75rem;
+          font-weight: 600;
+        }
+        .admit-card-title {
+          font-family: var(--font-heading);
+          font-size: clamp(2.2rem, 5vw, 3.2rem);
+          font-weight: 800;
+          margin: 0.5rem 0;
+          color: var(--foreground);
+        }
+        .admit-card-desc {
+          color: var(--foreground-muted);
+          max-width: 640px;
+          margin: 0.75rem auto 0;
+          font-size: 1rem;
+          line-height: 1.6;
+        }
+
+        .admit-card-card-wrapper {
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: 24px;
+          padding: 2.5rem;
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+          transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .admit-card-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+          gap: 1.5rem;
+          margin-bottom: 2rem;
+        }
+
+        .admit-card-field {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+        .admit-card-label {
+          font-family: var(--font-mono);
+          font-size: 0.7rem;
+          font-weight: 600;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+          color: var(--foreground-muted);
+        }
+        .admit-card-select, .admit-card-input {
+          border-radius: 12px;
+          border: 1px solid var(--border);
+          padding: 0.85rem 1.1rem;
+          font-family: var(--font-body);
+          font-size: 0.95rem;
+          background: var(--surface-container, #ffffff);
+          color: var(--foreground);
+          outline: none;
+          cursor: pointer;
+          transition: border-color 0.2s ease, box-shadow 0.2s ease;
+          width: 100%;
+          box-sizing: border-box;
+        }
+        .admit-card-input {
+          cursor: text;
+        }
+        .admit-card-select:focus, .admit-card-input:focus {
+          border-color: var(--color-primary);
+          box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+        }
+
+        .admit-card-actions {
+          display: flex;
+          justify-content: flex-end;
+        }
+        .admit-card-btn {
+          border-radius: 12px;
+          border: none;
+          background: var(--color-primary);
+          color: #ffffff;
+          padding: 0.9rem 2.5rem;
+          font-family: var(--font-body);
+          font-weight: 700;
+          font-size: 1rem;
+          cursor: pointer;
+          box-shadow: 0 4px 14px rgba(99, 102, 241, 0.15);
+          transition: all 0.2s ease;
+        }
+        .admit-card-btn:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 6px 18px rgba(99, 102, 241, 0.25);
+        }
+        .admit-card-btn:disabled {
+          opacity: 0.7;
+          cursor: not-allowed;
+          transform: none;
+          box-shadow: none;
+        }
+
+        .admit-card-error {
+          color: #ef4444;
+          margin-top: 1.5rem;
+          font-size: 0.9rem;
+          font-weight: 500;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+
+        .admit-card-divider {
+          margin: 3.5rem 0;
+        }
+
+        .admit-card-results-title {
+          font-family: var(--font-heading);
+          font-size: 1.6rem;
+          font-weight: 700;
+          margin-bottom: 1.75rem;
+          color: var(--foreground);
+        }
+        .admit-card-empty-results {
+          text-align: center;
+          padding: 4rem 2rem;
+          border: 1px dashed var(--border);
+          border-radius: 20px;
+          color: var(--foreground-muted);
+          font-size: 0.95rem;
+          background: rgba(0, 0, 0, 0.01);
+        }
+        .admit-card-results-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+          gap: 1.5rem;
+        }
+
+        .reg-card {
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: 20px;
+          padding: 1.5rem;
+          box-shadow: 0 4px 14px rgba(0, 0, 0, 0.02);
+          display: flex;
+          flex-direction: column;
+          gap: 1.25rem;
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .reg-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04);
+        }
+        .reg-card-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 0.75rem;
+        }
+        .reg-card-name {
+          font-size: 1.1rem;
+          font-weight: 700;
+          color: var(--foreground);
+          line-height: 1.3;
+          margin: 0;
+        }
+        .reg-card-badge {
+          font-family: var(--font-mono);
+          font-size: 0.65rem;
+          font-weight: 600;
+          text-transform: uppercase;
+          color: var(--color-primary);
+          background: rgba(99, 102, 241, 0.08);
+          border: 1px solid rgba(99, 102, 241, 0.15);
+          padding: 4px 10px;
+          border-radius: 9999px;
+          white-space: nowrap;
+        }
+        .reg-card-body {
+          display: flex;
+          flex-direction: column;
+          gap: 0.75rem;
+          border-top: 1px solid rgba(0, 0, 0, 0.05);
+          border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+          padding: 1rem 0;
+        }
+        .reg-card-info-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          font-size: 0.85rem;
+        }
+        .reg-card-info-label {
+          color: var(--foreground-muted);
+        }
+        .reg-card-info-value {
+          font-weight: 600;
+          color: var(--foreground);
+        }
+        .reg-card-info-value.monospace {
+          font-family: var(--font-mono);
+          color: var(--color-accent);
+        }
+        .reg-card-footer {
+          margin-top: auto;
+        }
+        .reg-card-download-btn {
+          width: 100%;
+          border-radius: 10px;
+          border: 1px solid rgba(99, 102, 241, 0.2);
+          background: rgba(99, 102, 241, 0.06);
+          color: var(--color-primary);
+          padding: 0.75rem 1rem;
+          font-family: var(--font-body);
+          font-weight: 700;
+          font-size: 0.9rem;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          text-align: center;
+          box-sizing: border-box;
+        }
+        .reg-card-download-btn:hover {
+          background: var(--color-primary);
+          color: #ffffff;
+          box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+        }
+        .reg-card-not-ready {
+          width: 100%;
+          border-radius: 10px;
+          background: rgba(0, 0, 0, 0.04);
+          color: var(--foreground-muted);
+          padding: 0.75rem 1rem;
+          font-family: var(--font-body);
+          font-weight: 600;
+          font-size: 0.85rem;
+          text-align: center;
+          box-sizing: border-box;
+        }
+
+        /* Modal Layout */
+        .admit-card-modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100vw;
+          height: 100vh;
+          background: rgba(0, 0, 0, 0.6);
+          backdrop-filter: blur(6px);
+          z-index: 99999;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 1.5rem;
+          box-sizing: border-box;
+        }
+        .admit-card-modal-card {
+          background: #ffffff;
+          border-radius: 24px;
+          width: 100%;
+          max-width: 850px;
+          height: 85vh;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+          box-shadow: 0 24px 64px rgba(0, 0, 0, 0.25);
+          animation: scaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .admit-card-modal-header {
+          padding: 1.25rem 1.75rem;
+          border-bottom: 1px solid var(--border);
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          background: var(--surface);
+          box-sizing: border-box;
+        }
+        .admit-card-modal-title {
+          margin: 0;
+          font-family: var(--font-heading);
+          font-size: 1.25rem;
+          font-weight: 700;
+        }
+        .admit-card-modal-subtitle {
+          margin: 2px 0 0;
+          font-size: 0.75rem;
+          color: var(--foreground-muted);
+        }
+        .admit-card-modal-close {
+          background: transparent;
+          border: none;
+          color: var(--foreground-muted);
+          cursor: pointer;
+          font-size: 1.25rem;
+          padding: 6px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 50%;
+          transition: background-color 0.15s ease;
+        }
+        .admit-card-modal-close:hover {
+          background: rgba(0, 0, 0, 0.05);
+        }
+        .admit-card-modal-body {
+          flex: 1;
+          background: #f1f5f9;
+          position: relative;
+        }
+        .admit-card-modal-footer {
+          padding: 1.25rem 1.75rem;
+          border-top: 1px solid var(--border);
+          display: flex;
+          justify-content: flex-end;
+          gap: 0.75rem;
+          background: var(--surface);
+          box-sizing: border-box;
+        }
+        .admit-card-modal-btn-close {
+          border-radius: 10px;
+          border: 1px solid var(--border);
+          background: #ffffff;
+          color: var(--foreground);
+          padding: 0.6rem 1.5rem;
+          font-family: var(--font-body);
+          font-weight: 600;
+          font-size: 0.9rem;
+          cursor: pointer;
+          transition: background-color 0.2s ease;
+        }
+        .admit-card-modal-btn-close:hover {
+          background: #f8fafc;
+        }
+        .admit-card-modal-btn-print {
+          border-radius: 10px;
+          border: 1px solid var(--color-primary);
+          background: transparent;
+          color: var(--color-primary);
+          padding: 0.6rem 1.75rem;
+          font-family: var(--font-body);
+          font-weight: 700;
+          font-size: 0.9rem;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        .admit-card-modal-btn-print:hover {
+          background: rgba(99, 102, 241, 0.04);
+        }
+        .admit-card-modal-btn-download {
+          display: inline-flex;
+          align-items: center;
+          border-radius: 10px;
+          background: var(--color-primary);
+          color: #ffffff;
+          padding: 0.6rem 1.75rem;
+          font-family: var(--font-body);
+          font-weight: 700;
+          font-size: 0.9rem;
+          text-decoration: none;
+          cursor: pointer;
+          box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+          transition: all 0.2s ease;
+        }
+        .admit-card-modal-btn-download:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 6px 16px rgba(99, 102, 241, 0.25);
+        }
+
+        /* ─────────────────────────────────────────────
+           MOBILE RESPONSIVENESS OVERRIDES
+        ───────────────────────────────────────────── */
+        @media (max-width: 640px) {
+          .admit-card-container {
+            padding: 2.5rem 1rem 4rem;
+          }
+          .admit-card-header {
+            margin-bottom: 2rem;
+          }
+          .admit-card-card-wrapper {
+            padding: 1.75rem 1.25rem;
+            border-radius: 20px;
+          }
+          .admit-card-grid {
+            grid-template-columns: 1fr;
+            gap: 1.25rem;
+            margin-bottom: 1.5rem;
+          }
+          .admit-card-actions {
+            margin-top: 1rem;
+          }
+          .admit-card-btn {
+            width: 100%;
+            text-align: center;
+            padding: 0.85rem 1.5rem;
+          }
+          .admit-card-divider {
+            margin: 2.5rem 0;
+          }
+          .admit-card-results-grid {
+            grid-template-columns: 1fr;
+            gap: 1.25rem;
+          }
+          .reg-card {
+            padding: 1.25rem;
+            border-radius: 16px;
+          }
+          .admit-card-modal-overlay {
+            padding: 0.5rem;
+          }
+          .admit-card-modal-card {
+            height: 95vh;
+            border-radius: 18px;
+          }
+          .admit-card-modal-header {
+            padding: 1rem;
+          }
+          .admit-card-modal-footer {
+            padding: 1rem;
+            flex-direction: column-reverse;
+            gap: 0.5rem;
+          }
+          .admit-card-modal-btn-close,
+          .admit-card-modal-btn-print,
+          .admit-card-modal-btn-download {
+            width: 100%;
+            justify-content: center;
+            text-align: center;
+            padding: 0.75rem 1rem;
+          }
+        }
+      `}} />
     </main>
   )
 }
