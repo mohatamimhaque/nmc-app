@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { isPageVisible } from '@/lib/visibility'
-import { RoomSecurityGuard } from '@/components/public/RoomSecurityGuard'
 import { RoomFinderView } from '@/components/public/RoomFinderView'
 
 export const metadata: Metadata = {
@@ -16,10 +15,8 @@ export default async function RoomFinderPage() {
   }
 
   return (
-    <RoomSecurityGuard>
-      <main style={{ minHeight: '80vh', padding: '1rem 0' }}>
-        <RoomFinderView />
-      </main>
-    </RoomSecurityGuard>
+    <main style={{ minHeight: '80vh', padding: '1rem 0' }}>
+      <RoomFinderView />
+    </main>
   )
 }
