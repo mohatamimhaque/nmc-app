@@ -658,6 +658,7 @@ export interface AdminUser {
   can_manage_kit: boolean
   can_manage_presents: boolean
   can_manage_lunch: boolean
+  can_manage_breakfast: boolean
   last_login_at: string | null
   created_at: string
 }
@@ -690,6 +691,7 @@ export interface ProcessedRegistration {
   is_kit_coollect: boolean
   is_present: boolean
   is_collect_launch: boolean
+  is_collect_breakfast: boolean
   allocated_room: string | null
   updated_by: string | null
   updated_at: string

@@ -12,6 +12,7 @@ export type AdminUserRow = {
   can_manage_kit: boolean
   can_manage_presents: boolean
   can_manage_lunch: boolean
+  can_manage_breakfast: boolean
   last_login_at: string | null
   created_at: string
 }
@@ -27,6 +28,7 @@ export function AdminUsersPanel({ initialUsers, currentUserId }: { initialUsers:
     can_manage_kit: false,
     can_manage_presents: false,
     can_manage_lunch: false,
+    can_manage_breakfast: false,
   })
   const [editingUser, setEditingUser] = useState<AdminUserRow | null>(null)
   const [status, setStatus] = useState<string | null>(null)
@@ -70,6 +72,7 @@ export function AdminUsersPanel({ initialUsers, currentUserId }: { initialUsers:
       can_manage_kit: user.can_manage_kit || false,
       can_manage_presents: user.can_manage_presents || false,
       can_manage_lunch: user.can_manage_lunch || false,
+      can_manage_breakfast: user.can_manage_breakfast || false,
     })
     setStatus(null)
   }
@@ -85,6 +88,7 @@ export function AdminUsersPanel({ initialUsers, currentUserId }: { initialUsers:
       can_manage_kit: false,
       can_manage_presents: false,
       can_manage_lunch: false,
+      can_manage_breakfast: false,
     })
     setStatus(null)
   }
@@ -111,6 +115,7 @@ export function AdminUsersPanel({ initialUsers, currentUserId }: { initialUsers:
             can_manage_kit: form.role === 'super_admin' || form.role === 'admin' || form.role === 'registration_editor' ? true : form.can_manage_kit,
             can_manage_presents: form.role === 'super_admin' || form.role === 'admin' || form.role === 'registration_editor' ? true : form.can_manage_presents,
             can_manage_lunch: form.role === 'super_admin' || form.role === 'admin' || form.role === 'registration_editor' ? true : form.can_manage_lunch,
+            can_manage_breakfast: form.role === 'super_admin' || form.role === 'admin' || form.role === 'registration_editor' ? true : form.can_manage_breakfast,
           }),
         })
         const payload = await res.json()
@@ -134,6 +139,7 @@ export function AdminUsersPanel({ initialUsers, currentUserId }: { initialUsers:
             can_manage_kit: form.role === 'super_admin' || form.role === 'admin' || form.role === 'registration_editor' ? true : form.can_manage_kit,
             can_manage_presents: form.role === 'super_admin' || form.role === 'admin' || form.role === 'registration_editor' ? true : form.can_manage_presents,
             can_manage_lunch: form.role === 'super_admin' || form.role === 'admin' || form.role === 'registration_editor' ? true : form.can_manage_lunch,
+            can_manage_breakfast: form.role === 'super_admin' || form.role === 'admin' || form.role === 'registration_editor' ? true : form.can_manage_breakfast,
           }),
         })
         const payload = await res.json()
@@ -150,6 +156,7 @@ export function AdminUsersPanel({ initialUsers, currentUserId }: { initialUsers:
           can_manage_kit: false,
           can_manage_presents: false,
           can_manage_lunch: false,
+          can_manage_breakfast: false,
         })
         setStatus('Admin user created successfully.')
       }
@@ -325,6 +332,29 @@ export function AdminUsersPanel({ initialUsers, currentUserId }: { initialUsers:
             Can Manage Lunch/Launch
           </label>
 
+          <label
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              color: 'var(--admin-fg)',
+              fontFamily: 'var(--font-body)',
+              fontSize: '0.8rem',
+              cursor: 'pointer',
+              margin: '0.2rem 0',
+              opacity: (form.role === 'super_admin' || form.role === 'admin' || form.role === 'registration_editor') ? 0.6 : 1,
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={(form.role === 'super_admin' || form.role === 'admin' || form.role === 'registration_editor') ? true : form.can_manage_breakfast}
+              disabled={form.role === 'super_admin' || form.role === 'admin' || form.role === 'registration_editor'}
+              onChange={e => onChange('can_manage_breakfast', e.target.checked)}
+              style={{ cursor: 'pointer' }}
+            />
+            Can Manage Breakfast
+          </label>
+
           <button
             onClick={submit}
             disabled={isSubmitting}
@@ -439,6 +469,19 @@ export function AdminUsersPanel({ initialUsers, currentUserId }: { initialUsers:
                       border: '1px solid rgba(37,99,235,0.2)'
                     }}>
                       Lunch OK
+                    </span>
+                  )}
+                  {user.can_manage_breakfast && (
+                    <span style={{
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: '0.55rem',
+                      background: 'rgba(20,184,166,0.1)',
+                      color: 'rgb(45,212,191)',
+                      padding: '0.1rem 0.3rem',
+                      borderRadius: 4,
+                      border: '1px solid rgba(20,184,166,0.2)'
+                    }}>
+                      Breakfast OK
                     </span>
                   )}
                 </div>

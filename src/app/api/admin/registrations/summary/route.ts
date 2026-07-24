@@ -19,7 +19,7 @@ export async function GET() {
     // Query columns needed for statistics
     const { data, error } = await supabase
       .from('processed_registrations')
-      .select('is_kit_coollect, is_present, is_collect_launch, level, event')
+      .select('is_kit_coollect, is_present, is_collect_launch, is_collect_breakfast, level, event')
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
@@ -32,6 +32,8 @@ export async function GET() {
     let attendanceAbsent = 0
     let launchServed = 0
     let launchPending = 0
+    let breakfastServed = 0
+    let breakfastPending = 0
 
     const byLevel: Record<string, number> = {}
     const byEvent: Record<string, number> = {}
@@ -55,6 +57,12 @@ export async function GET() {
           launchServed++
         } else {
           launchPending++
+        }
+
+        if (row.is_collect_breakfast) {
+          breakfastServed++
+        } else {
+          breakfastPending++
         }
 
         if (row.level) {
@@ -82,6 +90,10 @@ export async function GET() {
       launch_status: {
         served: launchServed,
         pending: launchPending,
+      },
+      breakfast_status: {
+        served: breakfastServed,
+        pending: breakfastPending,
       },
       by_level: byLevel,
       by_event: byEvent,

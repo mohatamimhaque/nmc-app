@@ -190,6 +190,39 @@ R2_PUBLIC_URL=https://pub-99e7fad4ec9f4d2dafa1e77c8558eee0.r2.dev
 
 ---
 
+## 3b. Public Self-Registration (Secret Link)
+*   **Route**: `POST /api/volunteers`
+*   **Description**: Public endpoint to register a volunteer. Only active when the visibility flag `volunteer_add_modal` is turned on by an administrator.
+*   **Validation**: Name and Phone Number (`number`) are mandatory. Email is optional. If email is not supplied, it is automatically formatted as `<phone>@volunteers.nmcbd.app` to serve as their system login username.
+*   **Request Format**:
+    ```json
+    {
+      "name": "Asif Iqbal",
+      "number": "01812345678",
+      "email": "asif@example.com", // Optional
+      "image_url": null, // Optional
+      "segment": "Logistics", // Optional
+      "department": "EEE", // Optional
+      "student_id": "1904002", // Optional
+      "year": "3rd Year", // Optional
+      "t_shirt_size": "L" // Optional (defaults to L)
+    }
+    ```
+*   **Response Format (200 OK)**:
+    ```json
+    {
+      "success": true,
+      "data": {
+        "unique_id": "CY6NGPU3",
+        "serial_no": "V260002",
+        "name": "Asif Iqbal",
+        ...
+      }
+    }
+    ```
+
+---
+
 ## 4. Quick Attendance Verification (Toggle Presence)
 *   **Route**: `PATCH /api/admin/volunteers/present`
 *   **Description**: Check-in or check-out a volunteer by marking their presence.

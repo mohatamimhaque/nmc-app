@@ -33,7 +33,7 @@ export default async function AdminUsersPage() {
 
   const { data: adminUsers } = await supabase
     .from('admin_users')
-    .select('id, email, display_name, role, can_manage_volunteers, can_manage_kit, can_manage_presents, can_manage_lunch, last_login_at, created_at')
+    .select('id, email, display_name, role, can_manage_volunteers, can_manage_kit, can_manage_presents, can_manage_lunch, can_manage_breakfast, last_login_at, created_at')
     .order('created_at', { ascending: false })
 
   return (

@@ -3,7 +3,7 @@ import { createServiceClient } from '@/lib/supabase/server'
 import { requireAdminRole } from '@/lib/admin-auth'
 
 export async function POST(req: NextRequest) {
-  const guard = await requireAdminRole(['super_admin'])
+  const guard = await requireAdminRole(['super_admin', 'admin'])
   if ('response' in guard) {
     return guard.response
   }

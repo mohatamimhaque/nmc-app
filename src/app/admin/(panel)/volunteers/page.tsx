@@ -6,16 +6,19 @@ import { VolunteersTable } from '@/components/admin/VolunteersTable'
 
 export default async function VolunteersPage() {
   const supabase = await createClient()
-  const { data: volunteers, error } = await supabase
-    .from('volunteers')
-    .select('*')
-    .order('unique_id')
+  const [volunteersRes, visibilityRes] = await Promise.all([
+    supabase.from('volunteers').select('*').order('unique_id'),
+    supabase.from('page_visibility').select('is_visible').eq('page_key', 'volunteer_add_modal').maybeSingle(),
+  ])
 
-  if (error) {
-    console.error('Failed to fetch volunteers for SSR:', error.message)
+  if (volunteersRes.error) {
+    console.error('Failed to fetch volunteers for SSR:', volunteersRes.error.message)
   }
 
   return (
-    <VolunteersTable initialVolunteers={volunteers ?? []} />
+    <VolunteersTable 
+      initialVolunteers={volunteersRes.data ?? []} 
+      initialRegOpen={visibilityRes.data?.is_visible ?? false} 
+    />
   )
 }

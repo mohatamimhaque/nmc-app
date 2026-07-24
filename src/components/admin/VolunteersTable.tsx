@@ -17,6 +17,7 @@ function generateRandomId(): string {
 
 interface VolunteersTableProps {
   initialVolunteers: Volunteer[]
+  initialRegOpen: boolean
 }
 
 type ToastTone = 'success' | 'error'
@@ -26,10 +27,16 @@ interface ToastState {
   tone: ToastTone
 }
 
-export function VolunteersTable({ initialVolunteers }: VolunteersTableProps) {
+export function VolunteersTable({ initialVolunteers, initialRegOpen }: VolunteersTableProps) {
   const [volunteers, setVolunteers] = useState<Volunteer[]>(initialVolunteers)
   const [libLoaded, setLibLoaded] = useState(false)
   const [toast, setToast] = useState<ToastState | null>(null)
+  const [regOpen, setRegOpen] = useState(initialRegOpen)
+  const [origin, setOrigin] = useState('')
+
+  useEffect(() => {
+    setOrigin(window.location.origin)
+  }, [])
 
   // Selection state
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
@@ -832,6 +839,94 @@ export function VolunteersTable({ initialVolunteers }: VolunteersTableProps) {
           </button>
         </div>
       </div>
+
+      {/* ── Secret Registration Link Control Card ── */}
+      <GlassCard padding="1rem" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', borderColor: 'rgba(99, 102, 241, 0.2)' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', color: 'var(--admin-accent)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            Public Self-Registration Link (Secret Link)
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8rem', color: regOpen ? 'var(--admin-fg)' : 'var(--admin-fg-muted)', textDecoration: regOpen ? 'none' : 'line-through' }}>
+              {origin ? `${origin}/volunteer/register` : '/volunteer/register'}
+            </span>
+            <button
+              onClick={() => {
+                const url = `${origin || window.location.origin}/volunteer/register`
+                navigator.clipboard.writeText(url)
+                showToast('Registration link copied to clipboard!')
+              }}
+              style={{
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid var(--admin-border)',
+                borderRadius: 6,
+                padding: '0.2rem 0.5rem',
+                fontSize: '0.65rem',
+                color: 'var(--admin-fg-muted)',
+                cursor: 'pointer',
+                fontFamily: 'var(--font-mono)'
+              }}
+            >
+              Copy Link
+            </button>
+            <a
+              href="/volunteer/register"
+              target="_blank"
+              rel="noreferrer"
+              style={{
+                background: 'rgba(99, 102, 241, 0.1)',
+                border: '1px solid rgba(99, 102, 241, 0.2)',
+                borderRadius: 6,
+                padding: '0.2rem 0.5rem',
+                fontSize: '0.65rem',
+                color: 'var(--admin-accent)',
+                cursor: 'pointer',
+                fontFamily: 'var(--font-mono)',
+                textDecoration: 'none'
+              }}
+            >
+              Open Page ↗
+            </a>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: '0.8rem', fontWeight: 600, color: regOpen ? '#10b981' : '#ef4444' }}>
+            {regOpen ? '🟢 Registration Live' : '🔴 Registration Closed'}
+          </div>
+          <button
+            onClick={async () => {
+              const nextVal = !regOpen
+              setRegOpen(nextVal)
+              try {
+                const res = await fetch('/api/admin/visibility/page', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ page_key: 'volunteer_add_modal', is_visible: nextVal })
+                })
+                if (!res.ok) throw new Error()
+                showToast(nextVal ? 'Public registration opened successfully.' : 'Public registration closed successfully.')
+              } catch (err) {
+                setRegOpen(!nextVal)
+                showToast('Failed to toggle public registration.', 'error')
+              }
+            }}
+            style={{
+              background: regOpen ? '#ef4444' : '#10b981',
+              color: 'white',
+              border: 'none',
+              borderRadius: 8,
+              padding: '0.45rem 1rem',
+              fontFamily: 'var(--font-body)',
+              fontWeight: 600,
+              fontSize: '0.75rem',
+              cursor: 'pointer'
+            }}
+          >
+            {regOpen ? 'Close Registration' : 'Open Registration'}
+          </button>
+        </div>
+      </GlassCard>
 
       {/* ── Stats Overview cards ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>

@@ -19,7 +19,7 @@ export async function GET() {
   // Get admin_users record
   const { data: adminRecord, error: dbError } = await supabase
     .from('admin_users')
-    .select('id, email, display_name, role, can_manage_volunteers, can_manage_registrations, can_manage_kit, can_manage_presents, can_manage_lunch, created_at')
+    .select('id, email, display_name, role, can_manage_volunteers, can_manage_registrations, can_manage_kit, can_manage_presents, can_manage_lunch, can_manage_breakfast, created_at')
     .eq('id', user.id)
     .single()
 
@@ -141,7 +141,7 @@ export async function PATCH(request: Request) {
     // Fetch refreshed admin record
     const { data: updatedAdmin } = await supabase
       .from('admin_users')
-      .select('id, email, display_name, role, can_manage_volunteers, can_manage_registrations, can_manage_kit, can_manage_presents, can_manage_lunch, created_at')
+      .select('id, email, display_name, role, can_manage_volunteers, can_manage_registrations, can_manage_kit, can_manage_presents, can_manage_lunch, can_manage_breakfast, created_at')
       .eq('id', user.id)
       .single()
 

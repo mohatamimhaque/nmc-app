@@ -140,14 +140,14 @@ function drawParticipantHeaders(doc: any, y: number) {
   doc.text('Serial', x + 5, y + 6, { width: 75, align: 'left' })
   x += 85
   
-  doc.text('Participant Name & Institution', x + 5, y + 6, { width: 150, align: 'left' })
-  x += 160
+  doc.text('Participant Name & Institution', x + 5, y + 6, { width: 105, align: 'left' })
+  x += 115
   
-  doc.text('Contact Details', x + 5, y + 6, { width: 140, align: 'left' })
-  x += 150
+  doc.text('Contact Details', x + 5, y + 6, { width: 110, align: 'left' })
+  x += 120
   
-  doc.text('Category', x + 5, y + 6, { width: 140, align: 'left' })
-  x += 150
+  doc.text('Category', x + 5, y + 6, { width: 110, align: 'left' })
+  x += 120
   
   doc.text('Allocated Room', x + 5, y + 6, { width: 70, align: 'left' })
   x += 80
@@ -155,10 +155,13 @@ function drawParticipantHeaders(doc: any, y: number) {
   doc.text('Kit', x, y + 6, { width: 30, align: 'center' })
   x += 30
   
-  doc.text('Attendance', x, y + 6, { width: 50, align: 'center' })
-  x += 50
+  doc.text('Present', x, y + 6, { width: 40, align: 'center' })
+  x += 40
   
-  doc.text('Lunch', x, y + 6, { width: 55, align: 'center' })
+  doc.text('Breakfast', x, y + 6, { width: 45, align: 'center' })
+  x += 45
+  
+  doc.text('Lunch', x, y + 6, { width: 45, align: 'center' })
   
   // Bottom border line
   doc.strokeColor('#cbd5e1')
@@ -202,35 +205,35 @@ function drawParticipantRow(
   // 3. Name & Institution
   doc.fillColor('#0f172a')
      .font('Helvetica-Bold')
-     .fontSize(8.5)
-     .text(truncateText(sanitizePdfText(r.full_name), 32), x + 5, y + 4, { width: 150, align: 'left' })
+     .fontSize(8)
+     .text(truncateText(sanitizePdfText(r.full_name), 26), x + 5, y + 4, { width: 105, align: 'left' })
   doc.fillColor('#64748b')
      .font('Helvetica')
      .fontSize(7.5)
-     .text(truncateText(sanitizePdfText(r.institution), 36), x + 5, y + 16, { width: 150, align: 'left' })
-  x += 160
+     .text(truncateText(sanitizePdfText(r.institution), 36), x + 5, y + 16, { width: 105, align: 'left' })
+  x += 115
   
   // 4. Contact
   doc.fillColor('#0f172a')
      .font('Helvetica')
      .fontSize(8)
-     .text(truncateText(sanitizePdfText(r.email_address), 32), x + 5, y + 4, { width: 140, align: 'left' })
+     .text(truncateText(sanitizePdfText(r.email_address), 24), x + 5, y + 4, { width: 110, align: 'left' })
   doc.fillColor('#64748b')
      .font('Helvetica')
      .fontSize(7.5)
-     .text(sanitizePdfText(r.phone_number), x + 5, y + 16, { width: 140, align: 'left' })
-  x += 150
+     .text(sanitizePdfText(r.phone_number), x + 5, y + 16, { width: 110, align: 'left' })
+  x += 120
   
   // 5. Category
   doc.fillColor('#0f172a')
      .font('Helvetica')
      .fontSize(8)
-     .text(truncateText(sanitizePdfText(r.level), 30), x + 5, y + 4, { width: 140, align: 'left' })
+     .text(truncateText(sanitizePdfText(r.level), 22), x + 5, y + 4, { width: 110, align: 'left' })
   doc.fillColor('#64748b')
      .font('Helvetica')
      .fontSize(7.5)
-     .text(truncateText(sanitizePdfText(r.event), 30), x + 5, y + 16, { width: 140, align: 'left' })
-  x += 150
+     .text(truncateText(sanitizePdfText(r.event), 22), x + 5, y + 16, { width: 110, align: 'left' })
+  x += 120
   
   // 6. Room
   doc.fillColor('#4338ca')
@@ -249,21 +252,30 @@ function drawParticipantRow(
   x += 30
   
   // 8. Present
-  const presText = r.is_present ? 'PRESENT' : 'ABSENT'
+  const presText = r.is_present ? 'YES' : 'NO'
   const presColor = r.is_present ? '#137333' : '#c5221f'
   doc.fillColor(presColor)
      .font('Helvetica-Bold')
-     .fontSize(7.5)
-     .text(presText, x, y + 10, { width: 50, align: 'center' })
-  x += 50
+     .fontSize(8)
+     .text(presText, x, y + 10, { width: 40, align: 'center' })
+  x += 40
   
-  // 9. Lunch
+  // 9. Breakfast
+  const bfastText = r.is_collect_breakfast ? 'SERVED' : 'PENDING'
+  const bfastColor = r.is_collect_breakfast ? '#137333' : '#5f6368'
+  doc.fillColor(bfastColor)
+     .font('Helvetica-Bold')
+     .fontSize(7)
+     .text(bfastText, x, y + 10, { width: 45, align: 'center' })
+  x += 45
+  
+  // 10. Lunch
   const lunchText = r.is_collect_launch ? 'SERVED' : 'PENDING'
   const lunchColor = r.is_collect_launch ? '#b06000' : '#5f6368'
   doc.fillColor(lunchColor)
      .font('Helvetica-Bold')
-     .fontSize(7.5)
-     .text(lunchText, x, y + 10, { width: 55, align: 'center' })
+     .fontSize(7)
+     .text(lunchText, x, y + 10, { width: 45, align: 'center' })
   
   // Bottom border line
   doc.strokeColor('#cbd5e1')
@@ -301,10 +313,12 @@ export async function GET(request: Request) {
     const absentCount = totalCount - presentCount
     const kitCount = list.filter(r => r.is_kit_coollect).length
     const launchCount = list.filter(r => r.is_collect_launch).length
+    const breakfastCount = list.filter(r => r.is_collect_breakfast).length
 
     const presentPercent = totalCount > 0 ? ((presentCount / totalCount) * 100).toFixed(1) : '0'
     const kitPercent = totalCount > 0 ? ((kitCount / totalCount) * 100).toFixed(1) : '0'
     const launchPercent = totalCount > 0 ? ((launchCount / totalCount) * 100).toFixed(1) : '0'
+    const breakfastPercent = totalCount > 0 ? ((breakfastCount / totalCount) * 100).toFixed(1) : '0'
 
     const byLevel: Record<string, number> = {}
     const byEvent: Record<string, number> = {}
@@ -344,7 +358,7 @@ export async function GET(request: Request) {
          .text(`TOTAL PARTICIPANTS: ${totalCount}`, 30, 72)
 
       // Stats boxes at y = 90
-      const boxWidth = 184
+      const boxWidth = 144
       const spacing = 15
       const statsY = 90
       const statsHeight = 50
@@ -352,7 +366,8 @@ export async function GET(request: Request) {
       drawStatsBox(doc, 30, statsY, boxWidth, statsHeight, 'Total Registrations', String(totalCount), 'Processed Registrations', '#0f172a')
       drawStatsBox(doc, 30 + boxWidth + spacing, statsY, boxWidth, statsHeight, 'Attendance Rate', `${presentPercent}%`, `Present: ${presentCount} | Absent: ${absentCount}`, '#10b981')
       drawStatsBox(doc, 30 + (boxWidth + spacing) * 2, statsY, boxWidth, statsHeight, 'Kit Collection', `${kitPercent}%`, `Collected: ${kitCount} | Pending: ${totalCount - kitCount}`, '#3b82f6')
-      drawStatsBox(doc, 30 + (boxWidth + spacing) * 3, statsY, boxWidth, statsHeight, 'Lunch Service', `${launchPercent}%`, `Served: ${launchCount} | Pending: ${totalCount - launchCount}`, '#f59e0b')
+      drawStatsBox(doc, 30 + (boxWidth + spacing) * 3, statsY, boxWidth, statsHeight, 'Breakfast Service', `${breakfastPercent}%`, `Served: ${breakfastCount} | Pending: ${totalCount - breakfastCount}`, '#14b8a6')
+      drawStatsBox(doc, 30 + (boxWidth + spacing) * 4, statsY, boxWidth, statsHeight, 'Lunch Service', `${launchPercent}%`, `Served: ${launchCount} | Pending: ${totalCount - launchCount}`, '#f59e0b')
 
       // Breakdown side-by-side tables at y = 155
       const tableWidth = 375

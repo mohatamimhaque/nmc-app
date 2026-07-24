@@ -45,6 +45,7 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
   const [bulkKit, setBulkKit] = useState<boolean | 'no-change'>('no-change')
   const [bulkPresent, setBulkPresent] = useState<boolean | 'no-change'>('no-change')
   const [bulkLaunch, setBulkLaunch] = useState<boolean | 'no-change'>('no-change')
+  const [bulkBreakfast, setBulkBreakfast] = useState<boolean | 'no-change'>('no-change')
   const [bulkRoom, setBulkRoom] = useState<string>('')
   const [applyBulkRoom, setApplyBulkRoom] = useState<boolean>(false) // checkbox to determine if room should be updated
   
@@ -177,8 +178,8 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
       stateSave: true,
       destroy: true,
       columnDefs: [
-        { orderable: false, targets: [0, 8, 9, 10, 11, 14, 15] },
-        { searchable: false, targets: [0, 9, 10, 11, 14, 15] }
+        { orderable: false, targets: [0, 9, 10, 11, 12, 15, 16] },
+        { searchable: false, targets: [0, 9, 10, 11, 12, 15, 16] }
       ],
       pageLength: 25,
       lengthMenu: [10, 25, 50, 100, 250],
@@ -394,7 +395,7 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
   }
 
   // Trigger individual toggles
-  const handleToggleField = (serial: string, field: 'is_kit_coollect' | 'is_present' | 'is_collect_launch', currentValue: boolean) => {
+  const handleToggleField = (serial: string, field: 'is_kit_coollect' | 'is_present' | 'is_collect_launch' | 'is_collect_breakfast', currentValue: boolean) => {
     startUpdateTransition(async () => {
       try {
         const updatedValue = !currentValue
@@ -430,6 +431,7 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
     const is_kit_coollect = formData.get('is_kit_coollect') === 'true'
     const is_present = formData.get('is_present') === 'true'
     const is_collect_launch = formData.get('is_collect_launch') === 'true'
+    const is_collect_breakfast = formData.get('is_collect_breakfast') === 'true'
     const allocated_room = formData.get('allocated_room') as string
     const admit_card_url = formData.get('admit_card_url') as string
     const level = formData.get('level') as string
@@ -457,6 +459,7 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
               is_kit_coollect,
               is_present,
               is_collect_launch,
+              is_collect_breakfast,
               allocated_room: allocated_room.trim() || null,
               admit_card_url: admit_card_url.trim() || null,
               level: level.trim() || null,
@@ -486,6 +489,7 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
                   is_kit_coollect,
                   is_present,
                   is_collect_launch,
+                  is_collect_breakfast,
                   allocated_room: allocated_room.trim() || null,
                   admit_card_url: admit_card_url.trim() || null,
                   level: level.trim() || null,
@@ -523,6 +527,7 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
     const is_kit_coollect = formData.get('is_kit_coollect') === 'true'
     const is_present = formData.get('is_present') === 'true'
     const is_collect_launch = formData.get('is_collect_launch') === 'true'
+    const is_collect_breakfast = formData.get('is_collect_breakfast') === 'true'
     const allocated_room = formData.get('allocated_room') as string
     const admit_card_url = formData.get('admit_card_url') as string
     const level = formData.get('level') as string
@@ -554,6 +559,7 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
             is_kit_coollect,
             is_present,
             is_collect_launch,
+            is_collect_breakfast,
             allocated_room: allocated_room.trim() || null,
             admit_card_url: admit_card_url.trim() || null,
             level: level.trim() || null,
@@ -597,6 +603,7 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
     if (bulkKit !== 'no-change') updateObj.is_kit_coollect = bulkKit
     if (bulkPresent !== 'no-change') updateObj.is_present = bulkPresent
     if (bulkLaunch !== 'no-change') updateObj.is_collect_launch = bulkLaunch
+    if (bulkBreakfast !== 'no-change') updateObj.is_collect_breakfast = bulkBreakfast
     if (applyBulkRoom) {
       updateObj.allocated_room = bulkRoom.trim() || null
     }
@@ -645,6 +652,12 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
         if (target === 'selected') {
           setSelectedSerials(new Set())
         }
+        setBulkKit('no-change')
+        setBulkPresent('no-change')
+        setBulkLaunch('no-change')
+        setBulkBreakfast('no-change')
+        setBulkRoom('')
+        setApplyBulkRoom(false)
       } catch (err: any) {
         showToast(err.message, 'error')
       }
@@ -694,6 +707,7 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
       'Transaction ID': r.transaction_id || '',
       'Kit Collected': r.is_kit_coollect ? 'Yes' : 'No',
       'Present': r.is_present ? 'Yes' : 'No',
+      'Breakfast Collected': r.is_collect_breakfast ? 'Yes' : 'No',
       'Launch Collected': r.is_collect_launch ? 'Yes' : 'No',
       'Allocated Room': r.allocated_room || '',
       'Updated By': r.updated_by || '',
@@ -728,10 +742,12 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
     const presentCount = targetData.filter(r => r.is_present).length
     const kitCount = targetData.filter(r => r.is_kit_coollect).length
     const launchCount = targetData.filter(r => r.is_collect_launch).length
-
+    const breakfastCount = targetData.filter(r => r.is_collect_breakfast).length
+ 
     const presentPercent = totalCount > 0 ? (presentCount / totalCount) * 100 : 0
     const kitPercent = totalCount > 0 ? (kitCount / totalCount) * 100 : 0
     const launchPercent = totalCount > 0 ? (launchCount / totalCount) * 100 : 0
+    const breakfastPercent = totalCount > 0 ? (breakfastCount / totalCount) * 100 : 0
 
     // Build table rows HTML
     const rowsHtml = targetData.map((r, index) => `
@@ -877,6 +893,7 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
                 <div><strong>Total Registrations:</strong> ${totalCount}</div>
                 <div><strong>Present Attendance:</strong> ${presentCount} / ${totalCount} (${presentPercent.toFixed(1)}%)</div>
                 <div><strong>Kits Collected:</strong> ${kitCount} / ${totalCount} (${kitPercent.toFixed(1)}%)</div>
+                <div><strong>Breakfast Served:</strong> ${breakfastCount} / ${totalCount} (${breakfastPercent.toFixed(1)}%)</div>
                 <div><strong>Launch Served:</strong> ${launchCount} / ${totalCount} (${launchPercent.toFixed(1)}%)</div>
               </div>
             </div>
@@ -900,6 +917,16 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
                   <text x="18" y="18" dominant-baseline="central" text-anchor="middle" font-size="6" font-family="sans-serif" font-weight="bold" fill="#333" style="transform: rotate(90deg); transform-origin: 18px 18px;">${kitPercent.toFixed(0)}%</text>
                 </svg>
                 <div style="font-size: 10px; font-weight: bold; margin-top: 5px; color: #4b5563;">Kits Distributed</div>
+              </div>
+              <!-- SVG Donut Chart for Breakfast -->
+              <div class="chart-box">
+                <svg width="80" height="80" viewBox="0 0 36 36" style="transform: rotate(-90deg);">
+                  <circle cx="18" cy="18" r="15.915" fill="none" stroke="#e5e7eb" stroke-width="3" />
+                  <circle cx="18" cy="18" r="15.915" fill="none" stroke="#14b8a6" stroke-width="3" 
+                          stroke-dasharray="${breakfastPercent} ${100 - breakfastPercent}" />
+                  <text x="18" y="18" dominant-baseline="central" text-anchor="middle" font-size="6" font-family="sans-serif" font-weight="bold" fill="#333" style="transform: rotate(90deg); transform-origin: 18px 18px;">${breakfastPercent.toFixed(0)}%</text>
+                </svg>
+                <div style="font-size: 10px; font-weight: bold; margin-top: 5px; color: #4b5563;">Breakfast Served</div>
               </div>
               <!-- SVG Donut Chart for Launch -->
               <div class="chart-box">
@@ -986,6 +1013,7 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
       kits: displayedRegistrations.filter(r => r.is_kit_coollect).length,
       present: displayedRegistrations.filter(r => r.is_present).length,
       launch: displayedRegistrations.filter(r => r.is_collect_launch).length,
+      breakfast: displayedRegistrations.filter(r => r.is_collect_breakfast).length,
       rooms: displayedRegistrations.filter(r => r.allocated_room !== null && r.allocated_room !== '').length
     }
   }, [displayedRegistrations])
@@ -1182,6 +1210,10 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
           <div style={statValStyle}><span style={{ color: '#0dcaf0' }}>{stats.kits}</span> / {stats.total}</div>
         </div>
         <div style={statCardStyle}>
+          <div style={statLabelStyle}>Breakfast Distributed</div>
+          <div style={statValStyle}><span style={{ color: '#17a2b8' }}>{stats.breakfast}</span> / {stats.total}</div>
+        </div>
+        <div style={statCardStyle}>
           <div style={statLabelStyle}>Launch Distributed</div>
           <div style={statValStyle}><span style={{ color: '#ffc107' }}>{stats.launch}</span> / {stats.total}</div>
         </div>
@@ -1236,6 +1268,20 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
               <select
                 value={bulkLaunch === 'no-change' ? 'no-change' : String(bulkLaunch)}
                 onChange={e => setBulkLaunch(e.target.value === 'no-change' ? 'no-change' : e.target.value === 'true')}
+                style={bulkSelectStyle}
+              >
+                <option value="no-change">- No change -</option>
+                <option value="true">Collected</option>
+                <option value="false">Not Collected</option>
+              </select>
+            </div>
+
+            {/* Breakfast Toggle */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+              <label style={bulkLabelStyle}>Breakfast Status</label>
+              <select
+                value={bulkBreakfast === 'no-change' ? 'no-change' : String(bulkBreakfast)}
+                onChange={e => setBulkBreakfast(e.target.value === 'no-change' ? 'no-change' : e.target.value === 'true')}
                 style={bulkSelectStyle}
               >
                 <option value="no-change">- No change -</option>
@@ -1422,6 +1468,7 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
                 <th>Payment Info</th>
                 <th style={{ textAlign: 'center' }}>Kit</th>
                 <th style={{ textAlign: 'center' }}>Present</th>
+                <th style={{ textAlign: 'center' }}>Breakfast</th>
                 <th style={{ textAlign: 'center' }}>Launch</th>
                 <th>Room</th>
                 <th>Updated By</th>
@@ -1520,6 +1567,17 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
                       style={toggleBadgeStyle(reg.is_present, '#20c997')}
                     >
                       {reg.is_present ? 'Present' : 'Absent'}
+                    </button>
+                  </td>
+
+                  {/* Breakfast Collected Toggle Button */}
+                  <td style={{ textAlign: 'center' }}>
+                    <button
+                      type="button"
+                      onClick={() => handleToggleField(reg.serial, 'is_collect_breakfast', reg.is_collect_breakfast)}
+                      style={toggleBadgeStyle(reg.is_collect_breakfast, '#17a2b8')}
+                    >
+                      {reg.is_collect_breakfast ? 'Yes' : 'No'}
                     </button>
                   </td>
 
@@ -1954,8 +2012,8 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
 
               <hr style={{ border: 'none', borderTop: '1px solid var(--admin-border)', margin: '1.25rem 0' }} />
 
-              {/* Row 8: Status Flags (Kit, Present, Launch) */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1.25rem', marginBottom: '0.5rem' }}>
+              {/* Row 8: Status Flags (Kit, Present, Breakfast, Lunch) */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.25rem', marginBottom: '0.5rem' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <label style={fieldLabelStyle}>Kit Collected?</label>
                   <select name="is_kit_coollect" defaultValue={String(editingReg.is_kit_coollect)} style={inputStyle}>
@@ -1969,6 +2027,14 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
                   <select name="is_present" defaultValue={String(editingReg.is_present)} style={inputStyle}>
                     <option value="true">Present</option>
                     <option value="false">Absent</option>
+                  </select>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={fieldLabelStyle}>Breakfast Collected?</label>
+                  <select name="is_collect_breakfast" defaultValue={String(editingReg.is_collect_breakfast)} style={inputStyle}>
+                    <option value="true">Collected (Yes)</option>
+                    <option value="false">Not Collected (No)</option>
                   </select>
                 </div>
 
@@ -2468,7 +2534,7 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
               </div>
 
               {/* Row 8: Status Flags */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginTop: '1.5rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginTop: '1.5rem' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <label style={fieldLabelStyle}>Kit Collected</label>
                   <select name="is_kit_coollect" style={inputStyle}>
@@ -2481,6 +2547,13 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
                   <select name="is_present" style={inputStyle}>
                     <option value="false">Absent</option>
                     <option value="true">Present</option>
+                  </select>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={fieldLabelStyle}>Breakfast Served</label>
+                  <select name="is_collect_breakfast" style={inputStyle}>
+                    <option value="false">Pending</option>
+                    <option value="true">Served</option>
                   </select>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>

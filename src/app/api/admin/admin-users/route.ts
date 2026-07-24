@@ -15,7 +15,7 @@ export async function GET() {
   const { supabase } = guard
   const { data, error } = await supabase
     .from('admin_users')
-    .select('id, email, display_name, role, can_manage_volunteers, can_manage_registrations, can_manage_kit, can_manage_presents, can_manage_lunch, last_login_at, created_at')
+    .select('id, email, display_name, role, can_manage_volunteers, can_manage_registrations, can_manage_kit, can_manage_presents, can_manage_lunch, can_manage_breakfast, last_login_at, created_at')
     .order('created_at', { ascending: false })
 
   if (error) {
@@ -61,6 +61,7 @@ export async function POST(request: Request) {
   const canManageKit = body?.can_manage_kit !== undefined ? !!body.can_manage_kit : false
   const canManagePresents = body?.can_manage_presents !== undefined ? !!body.can_manage_presents : false
   const canManageLunch = body?.can_manage_lunch !== undefined ? !!body.can_manage_lunch : false
+  const canManageBreakfast = body?.can_manage_breakfast !== undefined ? !!body.can_manage_breakfast : false
 
   const { error: adminError, data: adminData } = await service
     .from('admin_users')
@@ -73,8 +74,9 @@ export async function POST(request: Request) {
       can_manage_kit: (role === 'super_admin' || role === 'admin') ? true : canManageKit,
       can_manage_presents: (role === 'super_admin' || role === 'admin') ? true : canManagePresents,
       can_manage_lunch: (role === 'super_admin' || role === 'admin') ? true : canManageLunch,
+      can_manage_breakfast: (role === 'super_admin' || role === 'admin') ? true : canManageBreakfast,
     })
-    .select('id, email, display_name, role, can_manage_volunteers, can_manage_kit, can_manage_presents, can_manage_lunch, created_at')
+    .select('id, email, display_name, role, can_manage_volunteers, can_manage_kit, can_manage_presents, can_manage_lunch, can_manage_breakfast, created_at')
     .single()
 
   if (adminError) {
@@ -98,6 +100,7 @@ export async function PATCH(request: Request) {
   const canManageKit = body?.can_manage_kit !== undefined ? !!body.can_manage_kit : undefined
   const canManagePresents = body?.can_manage_presents !== undefined ? !!body.can_manage_presents : undefined
   const canManageLunch = body?.can_manage_lunch !== undefined ? !!body.can_manage_lunch : undefined
+  const canManageBreakfast = body?.can_manage_breakfast !== undefined ? !!body.can_manage_breakfast : undefined
 
   if (!id) {
     return NextResponse.json({ error: 'Admin User ID is required.' }, { status: 400 })
@@ -115,6 +118,7 @@ export async function PATCH(request: Request) {
       updatePayload.can_manage_kit = true
       updatePayload.can_manage_presents = true
       updatePayload.can_manage_lunch = true
+      updatePayload.can_manage_breakfast = true
     }
   }
   if (displayName !== undefined) {
@@ -132,6 +136,9 @@ export async function PATCH(request: Request) {
   if (canManageLunch !== undefined && role !== 'super_admin' && role !== 'admin') {
     updatePayload.can_manage_lunch = canManageLunch
   }
+  if (canManageBreakfast !== undefined && role !== 'super_admin' && role !== 'admin') {
+    updatePayload.can_manage_breakfast = canManageBreakfast
+  }
   const canManageRegistrations = body?.can_manage_registrations !== undefined ? !!body.can_manage_registrations : undefined
   if (canManageRegistrations !== undefined) {
     updatePayload.can_manage_registrations = canManageRegistrations
@@ -146,7 +153,7 @@ export async function PATCH(request: Request) {
     .from('admin_users')
     .update(updatePayload)
     .eq('id', id)
-    .select('id, email, display_name, role, can_manage_volunteers, can_manage_registrations, can_manage_kit, can_manage_presents, can_manage_lunch, last_login_at, created_at')
+    .select('id, email, display_name, role, can_manage_volunteers, can_manage_registrations, can_manage_kit, can_manage_presents, can_manage_lunch, can_manage_breakfast, last_login_at, created_at')
     .single()
 
   if (error) {

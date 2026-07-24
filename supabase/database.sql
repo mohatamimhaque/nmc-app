@@ -553,7 +553,8 @@ create table if not exists public.admin_users (
   can_manage_registrations boolean not null default false,
   can_manage_kit           boolean not null default false,
   can_manage_presents      boolean not null default false,
-  can_manage_lunch         boolean not null default false
+  can_manage_lunch         boolean not null default false,
+  can_manage_breakfast     boolean not null default false
 );
 
 -- 33. visibility_audit_log
@@ -586,6 +587,7 @@ create table if not exists public.processed_registrations (
   is_kit_coollect        boolean not null default false,
   is_present             boolean not null default false,
   is_collect_launch      boolean not null default false,
+  is_collect_breakfast   boolean not null default false,
   allocated_room         text default null,
   updated_by             text,
   updated_at             timestamptz not null default now(),
@@ -596,8 +598,8 @@ create table if not exists public.processed_registrations (
 create table if not exists public.volunteers (
   unique_id              text primary key,
   name                   text not null,
-  email                  text not null unique,
-  number                 text,
+  email                  text unique,
+  number                 text not null unique,
   image_url              text,
   segment                text,
   department             text,

@@ -58,6 +58,7 @@ export async function PATCH(request: Request) {
     if (data.is_kit_coollect !== undefined) updatePayload.is_kit_coollect = !!data.is_kit_coollect
     if (data.is_present !== undefined) updatePayload.is_present = !!data.is_present
     if (data.is_collect_launch !== undefined) updatePayload.is_collect_launch = !!data.is_collect_launch
+    if (data.is_collect_breakfast !== undefined) updatePayload.is_collect_breakfast = !!data.is_collect_breakfast
     if (data.allocated_room !== undefined) {
       updatePayload.allocated_room = data.allocated_room === null || String(data.allocated_room).trim() === ''
         ? null
@@ -282,6 +283,7 @@ export async function POST(request: Request) {
       is_kit_coollect: !!data.is_kit_coollect,
       is_present: !!data.is_present,
       is_collect_launch: !!data.is_collect_launch,
+      is_collect_breakfast: !!data.is_collect_breakfast,
       allocated_room: data.allocated_room ? String(data.allocated_room).trim() : null,
       admit_card_url: data.admit_card_url ? String(data.admit_card_url).trim() : null,
       updated_by: adminName,

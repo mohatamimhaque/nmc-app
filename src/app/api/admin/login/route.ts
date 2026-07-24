@@ -144,10 +144,9 @@ export async function POST(request: Request) {
       )
     }
 
-    // ── VERIFY & FETCH ROLE DETAILS ───────────────────────────────────────
     let { data: adminRecord } = await supabase
       .from('admin_users')
-      .select('role, display_name, can_manage_volunteers, can_manage_kit, can_manage_presents, can_manage_lunch')
+      .select('role, display_name, can_manage_volunteers, can_manage_kit, can_manage_presents, can_manage_lunch, can_manage_breakfast')
       .eq('id', authData.user.id)
       .single()
 
@@ -194,6 +193,7 @@ export async function POST(request: Request) {
         can_manage_kit: !!adminRecord.can_manage_kit,
         can_manage_presents: !!adminRecord.can_manage_presents,
         can_manage_lunch: !!adminRecord.can_manage_lunch,
+        can_manage_breakfast: !!adminRecord.can_manage_breakfast,
       },
     })
   } catch (err: any) {
