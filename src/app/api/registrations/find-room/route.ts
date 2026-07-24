@@ -35,7 +35,17 @@ export function getLocationForRoom(room: string | null | undefined): {
     }
   }
 
-  // 3. Default fallback location
+  // 3. If allocated room includes 'auditorium' or 'audithorium' in any case
+  if (normRoom.includes('auditorium') || normRoom.includes('audithorium') || normRoom.includes('audit')) {
+    return {
+      lat: 24.018771481627127,
+      lng: 90.41790091257646,
+      location_name: 'Shahid Shakil Parvez Auditorium, DUET',
+      venue: 'Shahid Shakil Parvez Auditorium, DUET',
+    }
+  }
+
+  // 4. Default fallback location
   return {
     lat: 24.01741790711585,
     lng: 90.41896685216089,

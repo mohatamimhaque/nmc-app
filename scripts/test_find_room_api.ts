@@ -36,23 +36,31 @@ function getLocationForRoom(room: string | null | undefined) {
     return {
       lat: 24.01685993912403,
       lng: 90.41899431404634,
-      location_name: 'TWB Building (Teaching & Workshop Building)',
-      venue: 'TWB Building Complex, DUET',
+      location_name: 'Textile Workshop Building (টেক্সটাইল ওয়ার্কশপ ভবন)',
+      venue: 'Textile Workshop Building, DUET',
     }
   }
   if (normRoom.includes('school')) {
     return {
       lat: 24.019016943046,
       lng: 90.4180040764991,
-      location_name: 'DUET High School Building',
-      venue: 'DUET High School Campus, Gazipur',
+      location_name: 'DUET Engineering School (ডুয়েট ইঞ্জিনিয়ারিং স্কুল)',
+      venue: 'DUET Engineering School Campus, Gazipur',
+    }
+  }
+  if (normRoom.includes('auditorium') || normRoom.includes('audithorium') || normRoom.includes('audit')) {
+    return {
+      lat: 24.018771481627127,
+      lng: 90.41790091257646,
+      location_name: 'Shahid Shakil Parvez Auditorium, DUET',
+      venue: 'Shahid Shakil Parvez Auditorium, DUET',
     }
   }
   return {
     lat: 24.01741790711585,
     lng: 90.41896685216089,
-    location_name: 'DUET Main Academic Building / Exam Center',
-    venue: 'DUET Main Campus, Gazipur',
+    location_name: 'New Academic Building (নতুন একাডেমিক ভবন)',
+    venue: 'New Academic Building, DUET',
   }
 }
 
