@@ -90,7 +90,14 @@ export async function POST(request: Request) {
         .eq('email', targetEmail)
         .maybeSingle()
 
-      const displayName = resolvedName || volunteerRecord?.name || targetEmail.split('@')[0]
+      if (!volunteerRecord) {
+        return NextResponse.json(
+          { error: 'Access denied: Account is not registered as an authorized volunteer or admin.' },
+          { status: 403 }
+        )
+      }
+
+      const displayName = volunteerRecord.name || resolvedName || targetEmail.split('@')[0]
 
       // Check if Supabase Auth user exists
       const { data: userList } = await service.auth.admin.listUsers()
@@ -151,8 +158,22 @@ export async function POST(request: Request) {
       .single()
 
     if (!adminRecord) {
-      // Auto-insert default volunteer role if not present
-      const defaultName = resolvedName || targetEmail.split('@')[0]
+      // Check if they exist in volunteers table before auto-inserting
+      const { data: volunteerRecord } = await service
+        .from('volunteers')
+        .select('name')
+        .eq('email', targetEmail)
+        .maybeSingle()
+
+      if (!volunteerRecord) {
+        await supabase.auth.signOut()
+        return NextResponse.json(
+          { error: 'Access denied: Account is not registered as an authorized user.' },
+          { status: 403 }
+        )
+      }
+
+      const defaultName = volunteerRecord.name || resolvedName || targetEmail.split('@')[0]
       const { data: newAdmin } = await service
         .from('admin_users')
         .upsert({
