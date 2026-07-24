@@ -749,22 +749,38 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
     const launchPercent = totalCount > 0 ? (launchCount / totalCount) * 100 : 0
     const breakfastPercent = totalCount > 0 ? (breakfastCount / totalCount) * 100 : 0
 
+    // Compute segment level & event breakdown
+    const byLevel: Record<string, number> = {}
+    const byEvent: Record<string, number> = {}
+    for (const r of targetData) {
+      const lvl = r.level || 'General'
+      byLevel[lvl] = (byLevel[lvl] || 0) + 1
+      const ev = r.event || 'Olympiad'
+      byEvent[ev] = (byEvent[ev] || 0) + 1
+    }
+
     // Build table rows HTML
     const rowsHtml = targetData.map((r, index) => `
       <tr>
-        <td style="font-family: monospace;">${index + 1}</td>
-        <td>${r.serial || ''}</td>
+        <td style="font-family: monospace; text-align: center;">${index + 1}</td>
+        <td style="font-family: monospace; font-weight: bold; color: #1e293b;">${r.serial || ''}</td>
         <td>
-          <div style="font-weight: bold;">${r.full_name || ''}</div>
-          <div style="font-size: 10px; color: #555;">${r.institution || ''}</div>
+          <div style="font-weight: 700; color: #0f172a;">${r.full_name || ''}</div>
+          <div style="font-size: 9.5px; color: #64748b; margin-top: 2px; line-height: 1.2;">${r.institution || ''}</div>
         </td>
-        <td>${r.email_address || ''}</td>
-        <td>${r.phone_number || ''}</td>
+        <td style="font-family: monospace; color: #334155;">${r.phone_number || ''}</td>
         <td>${r.level || ''} (${r.class_year_student_of || ''})</td>
         <td>${r.event || ''}</td>
-        <td>${r.allocated_room || 'Not Allocated'}</td>
-        <td style="text-align: center;">${r.is_kit_coollect ? 'Yes' : 'No'}</td>
-        <td style="text-align: center;">${r.is_present ? 'Present' : 'Absent'}</td>
+        <td>
+          ${r.allocated_room 
+            ? `<span style="color: #4f46e5; font-weight: 700;">${r.allocated_room}</span>` 
+            : `<span style="color: #94a3b8; font-style: italic; font-size: 9.5px;">Not Allocated</span>`
+          }
+        </td>
+        <td style="text-align: center;"><span class="${r.is_kit_coollect ? 'badge-yes' : 'badge-no'}">${r.is_kit_coollect ? 'Yes' : 'No'}</span></td>
+        <td style="text-align: center;"><span class="${r.is_present ? 'badge-present' : 'badge-absent'}">${r.is_present ? 'Present' : 'Absent'}</span></td>
+        <td style="text-align: center;"><span class="${r.is_collect_breakfast ? 'badge-served-bfast' : 'badge-no'}">${r.is_collect_breakfast ? 'Served' : 'No'}</span></td>
+        <td style="text-align: center;"><span class="${r.is_collect_launch ? 'badge-served-launch' : 'badge-no'}">${r.is_collect_launch ? 'Served' : 'No'}</span></td>
       </tr>
     `).join('')
 
@@ -775,11 +791,12 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
           <title>${title}</title>
           <meta charset="utf-8" />
           <style>
-            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Kalpurush&family=Noto+Sans+Bengali:wght@400;700&display=swap');
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Kalpurush&family=Noto+Sans+Bengali:wght@400;700&display=swap');
             body {
               font-family: 'Inter', 'Noto Sans Bengali', 'Kalpurush', sans-serif;
               padding: 20px;
-              color: #333;
+              color: #1e293b;
+              background-color: #ffffff;
             }
             h1 {
               font-size: 20px;
@@ -794,15 +811,15 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
             .summary-card {
               display: flex; 
               gap: 40px; 
-              margin-bottom: 30px; 
+              margin-bottom: 24px; 
               align-items: center; 
-              border: 1px solid #e5e7eb; 
-              padding: 25px; 
+              border: 1px solid #e2e8f0; 
+              padding: 24px; 
               border-radius: 12px; 
               background-color: #ffffff;
               background-image: radial-gradient(#e2e8f0 1.5px, transparent 1.5px);
               background-size: 15px 15px;
-              box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+              box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
             }
             .stats-text {
               flex: 1;
@@ -814,12 +831,14 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
               text-transform: uppercase; 
               color: #4f46e5; 
               letter-spacing: 0.05em;
+              font-weight: 700;
             }
             .stats-grid {
               display: grid; 
               grid-template-columns: 1fr 1fr; 
               gap: 8px; 
               font-size: 12px;
+              color: #334155;
             }
             .chart-container {
               display: flex; 
@@ -828,32 +847,90 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
             .chart-box {
               text-align: center;
             }
-            table {
+            .breakdown-wrapper {
+              display: flex;
+              gap: 20px;
+              margin-bottom: 24px;
+            }
+            .breakdown-card {
+              flex: 1;
+              border: 1px solid #e2e8f0;
+              border-radius: 12px;
+              padding: 20px;
+              background-color: #ffffff;
+              box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+            }
+            .breakdown-card h3 {
+              margin-top: 0;
+              margin-bottom: 12px;
+              font-size: 11px;
+              text-transform: uppercase;
+              color: #4f46e5;
+              letter-spacing: 0.05em;
+              font-weight: 700;
+              border-bottom: 1px solid #e2e8f0;
+              padding-bottom: 6px;
+            }
+            .breakdown-table {
               width: 100%;
               border-collapse: collapse;
-              font-size: 11px;
+            }
+            .breakdown-table th {
+              background-color: #f8fafc;
+              color: #475569;
+              font-size: 9.5px;
+              text-transform: uppercase;
+              font-weight: 700;
+              padding: 6px 8px;
+              border: 1px solid #e2e8f0;
+              text-align: left;
+            }
+            .breakdown-table td {
+              padding: 6px 8px;
+              font-size: 10px;
+              color: #334155;
+              border: 1px solid #e2e8f0;
+            }
+            table.roster-table {
+              width: 100%;
+              border-collapse: collapse;
+              font-size: 10px;
               table-layout: fixed;
             }
-            th, td {
-              border: 1px solid #ddd;
-              padding: 8px;
+            table.roster-table th, table.roster-table td {
+              border: 1px solid #e2e8f0;
+              padding: 6px 8px;
               text-align: left;
               vertical-align: middle;
               word-wrap: break-word;
               word-break: break-word;
               overflow: hidden;
             }
-            th {
-              background-color: #f3f4f6;
+            table.roster-table th {
+              background-color: #f8fafc;
+              color: #475569;
               font-weight: 700;
+              text-transform: uppercase;
+              font-size: 9px;
+              letter-spacing: 0.03em;
             }
-            tr:nth-child(even) {
-              background-color: #fafafa;
+            table.roster-table tr:nth-child(even) {
+              background-color: #f8fafc;
             }
+            .badge-yes { padding: 2px 5px; border-radius: 4px; font-weight: 700; font-size: 8.5px; text-transform: uppercase; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; display: inline-block; }
+            .badge-no { padding: 2px 5px; border-radius: 4px; font-weight: 700; font-size: 8.5px; text-transform: uppercase; background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; display: inline-block; }
+            .badge-present { padding: 2px 5px; border-radius: 4px; font-weight: 700; font-size: 8.5px; text-transform: uppercase; background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; display: inline-block; }
+            .badge-absent { padding: 2px 5px; border-radius: 4px; font-weight: 700; font-size: 8.5px; text-transform: uppercase; background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; display: inline-block; }
+            .badge-served-bfast { padding: 2px 5px; border-radius: 4px; font-weight: 700; font-size: 8.5px; text-transform: uppercase; background: #ccfbf1; color: #0f766e; border: 1px solid #99f6e4; display: inline-block; }
+            .badge-served-launch { padding: 2px 5px; border-radius: 4px; font-weight: 700; font-size: 8.5px; text-transform: uppercase; background: #fef3c7; color: #b45309; border: 1px solid #fde68a; display: inline-block; }
             @media print {
               body { padding: 0; }
               @page { size: landscape; margin: 1cm; }
               .summary-card { background-color: #ffffff !important; background-image: radial-gradient(#e2e8f0 1.5px, transparent 1.5px) !important; background-size: 15px 15px !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+              .breakdown-card { background-color: #ffffff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+              .breakdown-wrapper, .summary-card {
+                page-break-inside: avoid;
+              }
             }
           </style>
         </head>
@@ -941,19 +1018,64 @@ export function RegistrationsTable({ initialRegistrations }: RegistrationsTableP
             </div>
           </div>
 
-          <table>
+          <!-- Breakdown by Segment Level and Event -->
+          <div class="breakdown-wrapper">
+            <div class="breakdown-card">
+              <h3>Breakdown by Segment Level</h3>
+              <table class="breakdown-table">
+                <thead>
+                  <tr>
+                    <th>Segment Level</th>
+                    <th style="text-align: right; width: 30%;">Count</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${Object.entries(byLevel).sort((a, b) => b[1] - a[1]).map(([level, count]) => `
+                    <tr>
+                      <td style="font-weight: 600; color: #1e293b;">${level}</td>
+                      <td style="text-align: right; font-weight: 700; font-family: monospace; color: #4f46e5;">${count}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+            
+            <div class="breakdown-card">
+              <h3>Breakdown by Event</h3>
+              <table class="breakdown-table">
+                <thead>
+                  <tr>
+                    <th>Event</th>
+                    <th style="text-align: right; width: 30%;">Count</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${Object.entries(byEvent).sort((a, b) => b[1] - a[1]).map(([event, count]) => `
+                    <tr>
+                      <td style="font-weight: 600; color: #1e293b;">${event}</td>
+                      <td style="text-align: right; font-weight: 700; font-family: monospace; color: #4f46e5;">${count}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <h2 style="font-family: sans-serif; font-size: 13px; font-weight: 700; color: #1e293b; margin: 24px 0 10px; text-transform: uppercase; letter-spacing: 0.03em;">Complete Participant Roster (${totalCount} Records)</h2>
+          <table class="roster-table">
             <thead>
               <tr>
-                <th style="width: 3.5%; text-align: center;">#</th>
-                <th style="width: 7.5%;">Serial</th>
-                <th style="width: 29%;">Name / Institution</th>
-                <th style="width: 14%;">Email</th>
-                <th style="width: 8%;">Phone</th>
-                <th style="width: 14%;">Level &amp; Year</th>
+                <th style="width: 3%; text-align: center;">#</th>
+                <th style="width: 8%;">Serial</th>
+                <th style="width: 23%;">Name / Institution</th>
+                <th style="width: 9%;">Phone</th>
+                <th style="width: 13%;">Level &amp; Year</th>
                 <th style="width: 12%;">Event</th>
-                <th style="width: 6%;">Room</th>
-                <th style="width: 3%; text-align: center;">Kit</th>
-                <th style="width: 3%; text-align: center;">Pres</th>
+                <th style="width: 7%;">Room</th>
+                <th style="width: 6%; text-align: center;">Kit</th>
+                <th style="width: 6%; text-align: center;">Pres</th>
+                <th style="width: 6%; text-align: center;">Bfast</th>
+                <th style="width: 7%; text-align: center;">Launch</th>
               </tr>
             </thead>
             <tbody>
