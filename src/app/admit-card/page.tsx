@@ -159,7 +159,7 @@ export default function AdmitCardPage() {
                 type="text"
                 value={query}
                 onChange={e => setQuery(e.target.value)}
-                placeholder="e.g. user@example.com or 01716608477"
+                placeholder="e.g. user@example.com or 01xxxxxxxxxx"
                 maxLength={50}
                 style={{
                   borderRadius: 10,
