@@ -66,7 +66,7 @@ export default function AdmitCardPage() {
     <main style={{ position: 'relative', zIndex: previewUrl ? 99999 : 1, minHeight: '80vh', paddingBottom: '5rem' }}>
       
       {/* Page Header */}
-      <section style={{ padding: '4rem 1.5rem 2rem', maxWidth: 900, margin: '0 auto' }}>
+      <section className="admit-card-header" style={{ padding: '4rem 1.5rem 2rem', maxWidth: 900, margin: '0 auto' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--color-accent)' }}>
             National Mathematics Carnival 2026
@@ -81,9 +81,10 @@ export default function AdmitCardPage() {
       </section>
 
       {/* Search Panel Card */}
-      <section style={{ padding: '0 1.5rem 3rem', maxWidth: 850, margin: '0 auto' }}>
+      <section className="admit-card-search-section" style={{ padding: '0 1.5rem 3rem', maxWidth: 850, margin: '0 auto' }}>
         <form 
           onSubmit={handleSearch}
+          className="admit-card-search-form"
           style={{ 
             background: 'var(--surface)', 
             border: '1px solid var(--border)', 
@@ -92,7 +93,7 @@ export default function AdmitCardPage() {
             boxShadow: '0 10px 30px rgba(0, 0, 0, 0.05)'
           }}
         >
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.25rem', marginBottom: '1.5rem' }}>
+          <div className="admit-card-form-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.25rem', marginBottom: '1.5rem' }}>
             
             {/* Level Selector */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -175,10 +176,11 @@ export default function AdmitCardPage() {
 
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '2rem' }}>
+          <div className="admit-card-submit-container" style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '2rem' }}>
             <button
               type="submit"
               disabled={status === 'loading'}
+              className="admit-card-submit-btn"
               style={{
                 borderRadius: 10,
                 border: 'none',
@@ -207,7 +209,7 @@ export default function AdmitCardPage() {
 
       {/* Results View */}
       {status === 'success' && (
-        <section style={{ padding: '0 1.5rem', maxWidth: 900, margin: '0 auto' }}>
+        <section className="admit-card-results-section" style={{ padding: '0 1.5rem', maxWidth: 900, margin: '0 auto' }}>
           <PublicMathDivider />
           
           <div style={{ marginTop: '2rem' }}>
@@ -228,8 +230,8 @@ export default function AdmitCardPage() {
                 No registrations matched your search criteria. Please verify your Email or Phone number.
               </div>
             ) : (
-              <div style={{ overflowX: 'auto', border: '1px solid var(--border)', borderRadius: 18, background: 'var(--surface)' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: 600 }}>
+              <div className="admit-card-table-wrapper" style={{ overflowX: 'auto', border: '1px solid var(--border)', borderRadius: 18, background: 'var(--surface)' }}>
+                <table className="admit-card-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: 600 }}>
                   <thead>
                     <tr style={{ borderBottom: '1px solid var(--border)', background: 'rgba(0,0,0,0.02)' }}>
                       <th style={{ padding: '1rem 1.25rem', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--foreground-muted)' }}>Serial</th>
@@ -241,18 +243,18 @@ export default function AdmitCardPage() {
                   <tbody>
                     {results.map((reg) => (
                       <tr key={reg.serial} style={{ borderBottom: '1px solid var(--border)' }}>
-                        <td style={{ padding: '1.25rem', fontFamily: 'var(--font-mono)', fontSize: '0.85rem', fontWeight: 600 }}>{reg.serial}</td>
-                        <td style={{ padding: '1.25rem', fontWeight: 600 }}>
+                        <td data-label="Serial" style={{ padding: '1.25rem', fontFamily: 'var(--font-mono)', fontSize: '0.85rem', fontWeight: 600 }}>{reg.serial}</td>
+                        <td data-label="Name" style={{ padding: '1.25rem', fontWeight: 600 }}>
                           {reg.full_name}
                           <div style={{ fontSize: '0.75rem', color: 'var(--foreground-muted)', fontFamily: 'var(--font-mono)', marginTop: '2px' }}>
                             Phone: ****{reg.phone_number ? reg.phone_number.slice(-4) : 'N/A'}
                           </div>
                         </td>
-                        <td style={{ padding: '1.25rem', fontSize: '0.9rem' }}>
+                        <td data-label="Level / Event" style={{ padding: '1.25rem', fontSize: '0.9rem' }}>
                           <span style={{ display: 'block', fontWeight: 500 }}>{reg.event}</span>
                           <span style={{ fontSize: '0.75rem', color: 'var(--foreground-muted)' }}>{reg.level}</span>
                         </td>
-                        <td style={{ padding: '1.25rem', textAlign: 'center' }}>
+                        <td data-label="Admit Card" style={{ padding: '1.25rem', textAlign: 'center' }}>
                           {reg.admit_card_url ? (
                             <button
                               type="button"
@@ -304,6 +306,7 @@ export default function AdmitCardPage() {
       {/* High-Fidelity Preview Modal */}
       {previewUrl && (
         <div
+          className="admit-card-modal-overlay"
           style={{
             position: 'fixed',
             top: 0,
@@ -325,6 +328,7 @@ export default function AdmitCardPage() {
           }}
         >
           <div
+            className="admit-card-modal-card"
             style={{
               background: '#fff',
               borderRadius: 16,
@@ -340,6 +344,7 @@ export default function AdmitCardPage() {
           >
             {/* Modal Header */}
             <div 
+              className="admit-card-modal-header"
               style={{ 
                 padding: '1.25rem 1.5rem', 
                 borderBottom: '1px solid var(--border)', 
@@ -426,6 +431,7 @@ export default function AdmitCardPage() {
 
             {/* Modal Footer */}
             <div 
+              className="admit-card-modal-footer"
               style={{ 
                 padding: '1rem 1.5rem', 
                 borderTop: '1px solid var(--border)', 
@@ -518,6 +524,111 @@ export default function AdmitCardPage() {
             @keyframes scaleIn {
               from { opacity: 0; transform: scale(0.96); }
               to { opacity: 1; transform: scale(1); }
+            }
+
+            @media (max-width: 640px) {
+              .admit-card-header {
+                padding: 2.5rem 1rem 1.5rem !important;
+              }
+              .admit-card-search-section {
+                padding: 0 1rem 2rem !important;
+              }
+              .admit-card-search-form {
+                padding: 1.25rem 1rem !important;
+                border-radius: 16px !important;
+              }
+              .admit-card-form-grid {
+                grid-template-columns: 1fr !important;
+                gap: 1rem !important;
+                margin-bottom: 1rem !important;
+              }
+              .admit-card-submit-container {
+                margin-top: 1.5rem !important;
+              }
+              .admit-card-submit-btn {
+                width: 100% !important;
+                text-align: center !important;
+                padding: 0.8rem 1.5rem !important;
+              }
+              .admit-card-results-section {
+                padding: 0 1rem !important;
+              }
+              .admit-card-table-wrapper {
+                border: none !important;
+                background: transparent !important;
+                border-radius: 0 !important;
+                overflow-x: visible !important;
+              }
+              .admit-card-table {
+                display: block !important;
+                width: 100% !important;
+                min-width: unset !important;
+              }
+              .admit-card-table thead {
+                display: none !important;
+              }
+              .admit-card-table tbody {
+                display: block !important;
+                width: 100% !important;
+              }
+              .admit-card-table tr {
+                display: block !important;
+                background: var(--surface) !important;
+                border: 1px solid var(--border) !important;
+                border-radius: 16px !important;
+                margin-bottom: 1rem !important;
+                padding: 1.25rem !important;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.02) !important;
+              }
+              .admit-card-table td {
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                padding: 0.5rem 0 !important;
+                border-bottom: 1px solid rgba(0,0,0,0.05) !important;
+              }
+              .admit-card-table td:last-child {
+                border-bottom: none !important;
+                padding-bottom: 0 !important;
+                align-items: stretch !important;
+              }
+              .admit-card-table td::before {
+                content: attr(data-label);
+                font-family: var(--font-mono);
+                font-size: 0.7rem;
+                letter-spacing: 0.05em;
+                text-transform: uppercase;
+                color: var(--foreground-muted);
+                margin-bottom: 4px;
+                font-weight: 600;
+              }
+              .admit-card-table td:last-child button {
+                width: 100% !important;
+                text-align: center !important;
+                padding: 0.75rem 1rem !important;
+              }
+              .admit-card-modal-overlay {
+                padding: 0.5rem !important;
+              }
+              .admit-card-modal-card {
+                height: 95vh !important;
+                border-radius: 12px !important;
+              }
+              .admit-card-modal-header {
+                padding: 1rem !important;
+              }
+              .admit-card-modal-footer {
+                padding: 1rem !important;
+                flex-direction: column-reverse !important;
+                gap: 0.5rem !important;
+              }
+              .admit-card-modal-footer button,
+              .admit-card-modal-footer a {
+                width: 100% !important;
+                justify-content: center !important;
+                text-align: center !important;
+                padding: 0.75rem 1.25rem !important;
+              }
             }
           `}} />
         </div>
