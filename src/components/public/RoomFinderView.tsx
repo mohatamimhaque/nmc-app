@@ -1,6 +1,8 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
+
 
 interface LocationInfo {
   lat: number
@@ -97,6 +99,27 @@ export function RoomFinderView() {
         }}>
           Enter your <strong style={{ color: 'var(--foreground, #1e293b)' }}>Registration Serial Number</strong> to locate your assigned room & venue map.
         </p>
+        <div style={{ marginTop: '0.75rem' }}>
+          <Link
+            href="/schedule"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              color: 'var(--color-primary, #6366f1)',
+              textDecoration: 'none',
+              fontSize: '0.875rem',
+              fontWeight: 600,
+              fontFamily: 'var(--font-body)',
+              transition: 'opacity 0.2s',
+            }}
+            onMouseEnter={e => e.currentTarget.style.opacity = '0.8'}
+            onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>calendar_month</span>
+            View Event Schedule (কার্নিভাল সূচী)
+          </Link>
+        </div>
       </div>
 
       {/* Search Input Box */}
