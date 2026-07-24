@@ -31,24 +31,19 @@ async function generateNextSerialNo(supabase: any): Promise<string> {
   const { data } = await supabase
     .from('volunteers')
     .select('serial_no')
-    .like('serial_no', 'V26%')
+    .like('serial_no', 'NMC26-V-%')
+    .order('serial_no', { ascending: false })
+    .limit(1)
+    .maybeSingle()
 
-  let maxNum = 0
-  if (data && data.length > 0) {
-    for (const v of data) {
-      if (v.serial_no) {
-         const match = v.serial_no.match(/^V26(\d+)$/)
-        if (match) {
-          const num = parseInt(match[1], 10)
-          if (num > maxNum) {
-            maxNum = num
-          }
-        }
-      }
+  if (data && data.serial_no) {
+    const match = data.serial_no.match(/^NMC26-V-(\d+)$/)
+    if (match) {
+      const nextNum = parseInt(match[1], 10) + 1
+      return `NMC26-V-${String(nextNum).padStart(3, '0')}`
     }
   }
-  const nextNum = maxNum + 1
-  return `V26${String(nextNum).padStart(4, '0')}`
+  return 'NMC26-V-001'
 }
 
 /**
