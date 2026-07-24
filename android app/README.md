@@ -45,7 +45,6 @@ You can compile and build the APK using the gradle wrapper scripts from your ter
 
 ---
 
-*courtesy: mohatamim*
 
 
 <p align="center">
